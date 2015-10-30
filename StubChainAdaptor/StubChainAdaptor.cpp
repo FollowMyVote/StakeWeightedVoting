@@ -101,7 +101,8 @@ StubChainAdaptor::StubChainAdaptor(QObject* parent)
     ucontest.setCoin(1);
     ucontest.setName("Lunch poll");
     ucontest.setDescription("Where should we go for lunch?");
-    ucontest.setStartTime(QDateTime::fromString("2015-09-20T12:00:00", Qt::ISODate).toMSecsSinceEpoch());
+    ucontest.setStartTime(static_cast<uint64_t>(QDateTime::fromString("2015-09-20T12:00:00",
+                                                                      Qt::ISODate).toMSecsSinceEpoch()));
     auto tags = ucontest.initTags(1);
     tags[0].setKey("category");
     tags[0].setValue("food");
@@ -121,8 +122,10 @@ StubChainAdaptor::StubChainAdaptor(QObject* parent)
     ucontest.initId(1)[0] = 1;
     ucontest.setCoin(0);
     ucontest.setName("Upgrade Authorization");
-    ucontest.setDescription("Do the BitShares stakeholders accept the upgrade to version 2.0, using the Graphene Toolkit?");
-    ucontest.setStartTime(QDateTime::fromString("2015-09-11T12:00:00", Qt::ISODate).toMSecsSinceEpoch());
+    ucontest.setDescription("Do the BitShares stakeholders accept the upgrade to version 2.0, "
+                            "using the Graphene Toolkit?");
+    ucontest.setStartTime(static_cast<uint64_t>(QDateTime::fromString("2015-09-11T12:00:00",
+                                                                      Qt::ISODate).toMSecsSinceEpoch()));
     tags = ucontest.initTags(1);
     tags[0].setKey("category");
     tags[0].setValue("hard-forks");
@@ -134,7 +137,7 @@ StubChainAdaptor::StubChainAdaptor(QObject* parent)
     contests.emplace_back(kj::mv(contestOrphan));
 }
 
-StubChainAdaptor::~StubChainAdaptor() throw() {}
+StubChainAdaptor::~StubChainAdaptor() noexcept {}
 
 kj::Promise<Coin::Reader> StubChainAdaptor::getCoin(quint64 id) const
 {
@@ -201,7 +204,7 @@ kj::Promise<Contest::Reader> StubChainAdaptor::getContest(QByteArray contestId) 
 {
     if (contestId.size() != 1 || char(contestId[0]) < 0 || char(contestId[0]) > 2)
         return KJ_EXCEPTION(FAILED, "Could not find the specified contest.");
-    return contests[contestId[0]].getReader();
+    return contests[static_cast<size_t>(contestId[0])].getReader();
 }
 
 kj::Promise<void> StubChainAdaptor::publishDatagram(QByteArray payerBalance)
@@ -216,7 +219,8 @@ kj::Promise<void> StubChainAdaptor::publishDatagram(QByteArray payerBalance)
         builder.setAmount(builder.getAmount() - 10);
 
         auto schema = reader.getSchema();
-        auto key = payerBalance.append(QByteArray::fromRawData((char*)schema.begin(), schema.size()));
+        auto key = payerBalance.append(QByteArray::fromRawData(reinterpret_cast<const char*>(schema.begin()),
+                                                               static_cast<int>(schema.size())));
         datagrams[key] = kj::mv(dgram);
     } else {
         KJ_FAIL_REQUIRE("Could not find the specified balance.");
@@ -240,7 +244,7 @@ kj::Maybe<capnp::Orphan<Balance>&> StubChainAdaptor::getBalanceOrphan(QByteArray
     {
         auto itr = std::find_if(bals.second.begin(), bals.second.end(), [id](const capnp::Orphan<Balance>& balance) {
             auto data = balance.getReader().getId();
-            QByteArray otherId((char*)data.begin(), data.size());
+            QByteArray otherId(reinterpret_cast<const char*>(data.begin()), static_cast<int>(data.size()));
             return otherId == id;
         });
         if (itr != bals.second.end())
@@ -255,7 +259,7 @@ kj::Maybe<const capnp::Orphan<Balance>&> StubChainAdaptor::getBalanceOrphan(QByt
     {
         auto itr = std::find_if(bals.second.begin(), bals.second.end(), [id](const capnp::Orphan<Balance>& balance) {
             auto data = balance.getReader().getId();
-            QByteArray otherId((char*)data.begin(), data.size());
+            QByteArray otherId(reinterpret_cast<const char*>(data.begin()), static_cast<int>(data.size()));
             return otherId == id;
         });
         if (itr != bals.second.end())

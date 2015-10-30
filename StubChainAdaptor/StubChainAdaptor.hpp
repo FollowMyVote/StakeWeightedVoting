@@ -35,12 +35,10 @@ namespace swv {
 class STUBCHAINADAPTORSHARED_EXPORT StubChainAdaptor : public QObject, public BlockchainAdaptorInterface
 {
     Q_OBJECT
-    using DatagramReader = ::Datagram::Reader;
-    using ContestReader = ::Contest::Reader;
 
 public:
     StubChainAdaptor(QObject* parent = nullptr);
-    virtual ~StubChainAdaptor() throw();
+    virtual ~StubChainAdaptor() noexcept;
 
     virtual kj::Promise<Coin::Reader> getCoin(quint64 id) const;
     virtual kj::Promise<Coin::Reader> getCoin(QString symbol) const;
@@ -48,11 +46,11 @@ public:
     virtual kj::Promise<kj::Array<QString>> getMyAccounts() const;
     virtual kj::Promise<Balance::Reader> getBalance(QByteArray id) const;
     virtual kj::Promise<kj::Array<Balance::Reader>> getBalancesForOwner(QString owner) const;
-    virtual kj::Promise<ContestReader> getContest(QByteArray contestId) const;
+    virtual kj::Promise<::Contest::Reader> getContest(QByteArray contestId) const;
 
     virtual ::Datagram::Builder createDatagram();
     virtual kj::Promise<void> publishDatagram(QByteArray payerBalance);
-    virtual kj::Promise<DatagramReader> getDatagram(QByteArray balanceId, QString schema) const;
+    virtual kj::Promise<::Datagram::Reader> getDatagram(QByteArray balanceId, QString schema) const;
 
 protected:
     capnp::MallocMessageBuilder message;

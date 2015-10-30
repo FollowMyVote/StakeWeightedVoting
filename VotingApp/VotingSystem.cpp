@@ -44,7 +44,6 @@
 #include <StubChainAdaptor.hpp>
 
 namespace swv {
-using CapnpDecision = ::Decision;
 
 const static QString PENDING_DECISIONS = QStringLiteral("pendingDecisions");
 const static QString PENDING_DECISION = QStringLiteral("pendingDecisions/%1");
@@ -72,7 +71,7 @@ public:
                          static_cast<void (QTcpSocket::*)(QAbstractSocket::SocketError)>(&QTcpSocket::error),
                          q_ptr, [this](QAbstractSocket::SocketError e) {socketError(e);});
     }
-    ~VotingSystemPrivate() throw()
+    ~VotingSystemPrivate() noexcept
     {}
 
     VotingSystem* q_ptr;
@@ -132,7 +131,7 @@ VotingSystem::VotingSystem(QObject *parent)
     connect(d->adaptor, &ChainAdaptorWrapper::hasAdaptorChanged, this, &VotingSystem::adaptorReadyChanged);
 }
 
-VotingSystem::~VotingSystem() throw()
+VotingSystem::~VotingSystem() noexcept
 {}
 
 QString VotingSystem::lastError() const {
@@ -235,13 +234,12 @@ void VotingSystem::castCurrentDecision(swv::Contest* contest)
     decision->setState(Decision::Casting);
 
     // Get all balances for current account, filter out the ones in a coin other than this contest's coin
-    using workaroundType = ::Balance::Reader;
     auto future = chain->adaptor()->getBalancesForOwner(d->currentAccount);
-    auto finishPromise = future.then([this, d, decision, chain, contest](kj::Array<workaroundType> balances) {
-        auto newEnd = std::remove_if(balances.begin(), balances.end(), [contest](workaroundType b) {
+    auto finishPromise = future.then([this, d, decision, chain, contest](kj::Array<::Balance::Reader> balances) {
+        auto newEnd = std::remove_if(balances.begin(), balances.end(), [contest](::Balance::Reader b) {
                            return b.getType() != contest->getCoin();
                        });
-        balances = kj::heapArray<workaroundType>(balances.begin(), newEnd);
+        balances = kj::heapArray<::Balance::Reader>(balances.begin(), newEnd);
 
         if (balances.size() == 0) {
             auto coinPromise = chain->getCoin(contest->getCoin());
@@ -259,7 +257,7 @@ void VotingSystem::castCurrentDecision(swv::Contest* contest)
             dgram->setSchema(DECISION_SCHEMA + contest->id());
             dgram->setContent(serialDecision);
 
-            chain->publishDatagram(QByteArray::fromHex(QByteArray((char*)balance.getId().begin())));
+            chain->publishDatagram(QByteArray::fromHex(QByteArray(reinterpret_cast<const char*>(balance.getId().begin()))));
         }
 
         // TODO: detect transaction confirmation and set decision state to Cast

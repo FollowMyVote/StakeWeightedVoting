@@ -70,7 +70,7 @@ class VotingSystem : public QObject
 
 public:
     explicit VotingSystem(QObject *parent = 0);
-    ~VotingSystem() throw();
+    ~VotingSystem() noexcept;
 
     QString lastError() const;
     bool isReady() const;

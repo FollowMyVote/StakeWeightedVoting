@@ -71,9 +71,8 @@ Promise* ChainAdaptorWrapper::getCoin(QString symbol)
 Promise* ChainAdaptorWrapper::listAllCoins()
 {
     if (hasAdaptor()) {
-        using workaroundType = ::Coin::Reader;
         return promiseConverter.wrap(m_adaptor->listAllCoins(),
-                                   [](kj::Array<workaroundType> coins) -> QVariantList {
+                                   [](kj::Array<::Coin::Reader> coins) -> QVariantList {
             QList<Coin*> results;
             std::transform(coins.begin(), coins.end(), std::back_inserter(results),
                            [](::Coin::Reader r) { return new Coin(r); });
@@ -107,9 +106,8 @@ Promise* ChainAdaptorWrapper::getBalance(QByteArray id)
 Promise* ChainAdaptorWrapper::getAccountBalances(QString account)
 {
     if (hasAdaptor()) {
-        using workaroundType = ::Balance::Reader;
         return promiseConverter.wrap(m_adaptor->getBalancesForOwner(account),
-                                   [](kj::Array<workaroundType> balances) -> QVariantList {
+                                   [](kj::Array<::Balance::Reader> balances) -> QVariantList {
             QList<Balance*> results;
             std::transform(balances.begin(), balances.end(), std::back_inserter(results),
                            [](::Balance::Reader r) { return new Balance(r); });
@@ -123,9 +121,8 @@ Promise* ChainAdaptorWrapper::getBalancesForOwner(QString owner)
 {
     QList<Balance*> results;
     if (hasAdaptor()) {
-        using workaroundType = ::Balance::Reader;
         return promiseConverter.wrap(m_adaptor->getBalancesForOwner(owner),
-                                   [](kj::Array<workaroundType> balances) -> QVariantList {
+                                   [](kj::Array<::Balance::Reader> balances) -> QVariantList {
             QList<Balance*> results;
             std::transform(balances.begin(), balances.end(), std::back_inserter(results),
                            [](::Balance::Reader r) { return new Balance(r); });
