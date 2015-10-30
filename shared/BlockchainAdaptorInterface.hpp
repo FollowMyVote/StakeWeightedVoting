@@ -58,20 +58,20 @@ public:
      * @brief Get a list of all coins
      * @return A list of all coins known to the system (could be large; avoid calling this frequently)
      */
-    virtual QList<Coin::Reader> listAllCoins() const = 0;
+    virtual kj::Promise<kj::Array<Coin::Reader>> listAllCoins() const = 0;
 
     /**
      * @brief Get a list of accounts controlled by this interface
      * @return Accounts which can be controlled by this interface
      */
-    virtual QStringList getMyAccounts() const = 0;
+    virtual kj::Promise<kj::Array<QString>> getMyAccounts() const = 0;
 
     /**
      * @brief Get a balance by ID
      * @param id ID of the balance to retrieve
-     * @return Balance having the provided ID
+     * @return Promise for the balance having the provided ID. Promise will be broken if balance is not found.
      */
-    virtual kj::Maybe<Balance::Reader> getBalance(QByteArray id) const = 0;
+    virtual kj::Promise<Balance::Reader> getBalance(QByteArray id) const = 0;
     /**
      * @brief Get all balances belonging to the specified owner
      * @param owner Unambiguous ID of the owner; exact semantics are chain-specific
@@ -80,12 +80,12 @@ public:
      * The exact contents of the owner string depend on the chain being used. For instance, on a Graphene-based
      * blockchain, owner could be an account name or an account object ID. On Bitcoin, the owner would be an address.
      */
-    virtual QList<Balance::Reader> getBalancesForOwner(QString owner) const = 0;
+    virtual kj::Promise<kj::Array<Balance::Reader>> getBalancesForOwner(QString owner) const = 0;
 
     /**
      * @brief Get the contest with the specified ID
      * @param contestId ID of the contest to retrieve
-     * @return Contest having the provided ID
+     * @return Promise for the contest having the provided ID. Promise will be broken if contest is not found.
      */
     virtual kj::Promise<Contest::Reader> getContest(QByteArray contestId) const = 0;
 
@@ -100,6 +100,8 @@ public:
     /**
      * @brief Publish a datagram to the blockchain
      * @param payer Balance which will be used to pay for the publication
+     * @return A promise which will resolve when the datagram is successfully broadcast (not yet confirmed), or broken
+     * in case of an error broadcasting the transaction
      *
      * This method will publish the datagram last retrieved using @ref getDatagram using the specified balance. Only
      * one datagram should be retrieved and published at a time.
@@ -107,7 +109,7 @@ public:
      * This datagram will replace any datagram with the same schema which is already owned by the specified balance.
      * Datagrams owned by the balance with different schemas will be preserved.
      */
-    virtual void publishDatagram(QByteArray payerBalance) = 0;
+    virtual kj::Promise<void> publishDatagram(QByteArray payerBalance) = 0;
     /**
      * @brief Get the datagram with the specified schema belonging to the specified balance
      * @param balanceId ID of the balance owning the requested datagram

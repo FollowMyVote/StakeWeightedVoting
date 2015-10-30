@@ -61,8 +61,8 @@ public:
           eventPort(kj::heap<QtEventPort>()),
           loop(*eventPort.get()),
           waitScope(loop),
-          promiseWrapper(kj::heap<PromiseConverter>()),
-          adaptor(kj::heap<ChainAdaptorWrapper>(*promiseWrapper)),
+          promiseConverter(kj::heap<PromiseConverter>()),
+          adaptor(kj::heap<ChainAdaptorWrapper>(*promiseConverter)),
           socket(kj::heap<QTcpSocket>())
     {
         eventPort->setLoop(&loop);
@@ -80,7 +80,7 @@ public:
     kj::Own<QtEventPort> eventPort;
     kj::EventLoop loop;
     kj::WaitScope waitScope;
-    kj::Own<PromiseConverter> promiseWrapper;
+    kj::Own<PromiseConverter> promiseConverter;
     kj::Own<ChainAdaptorWrapper> adaptor;
     kj::Own<TwoPartyClient> client;
     kj::Own<BackendWrapper> backend;
@@ -93,7 +93,7 @@ public:
 
         socketWrapper = kj::heap<QSocketWrapper>(*socket);
         client = kj::heap<TwoPartyClient>(*socketWrapper);
-        backend = kj::heap<BackendWrapper>(client->bootstrap().castAs<Backend>(), *promiseWrapper);
+        backend = kj::heap<BackendWrapper>(client->bootstrap().castAs<Backend>(), *promiseConverter);
         emit q->backendConnectedChanged(true);
         connectionPromise->resolve({});
         QQmlEngine::setObjectOwnership(connectionPromise, QQmlEngine::JavaScriptOwnership);
@@ -235,31 +235,39 @@ void VotingSystem::castCurrentDecision(swv::Contest* contest)
     decision->setState(Decision::Casting);
 
     // Get all balances for current account, filter out the ones in a coin other than this contest's coin
-    auto balances = chain->getAccountBalances(d->currentAccount);
-    balances.erase(std::remove_if(balances.begin(), balances.end(), [contest](Balance* b) {
-        return b->getType() != contest->getCoin();
-    }), balances.end());
+    using workaroundType = ::Balance::Reader;
+    auto future = chain->adaptor()->getBalancesForOwner(d->currentAccount);
+    auto finishPromise = future.then([this, d, decision, chain, contest](kj::Array<workaroundType> balances) {
+        auto newEnd = std::remove_if(balances.begin(), balances.end(), [contest](workaroundType b) {
+                           return b.getType() != contest->getCoin();
+                       });
+        balances = kj::heapArray<workaroundType>(balances.begin(), newEnd);
 
-    if (balances.empty()) {
-        auto coinPromise = chain->getCoin(contest->getCoin());
-        auto results = coinPromise->wait();
-        if (coinPromise->state() == Promise::State::REJECTED)
-            setLastError(tr("Unable to cast vote because the coin for the contest was not found."));
+        if (balances.size() == 0) {
+            auto coinPromise = chain->getCoin(contest->getCoin());
+            auto results = coinPromise->wait();
+            if (coinPromise->state() == Promise::State::REJECTED)
+                setLastError(tr("Unable to cast vote because the coin for the contest was not found."));
 
-        setLastError(tr("Unable to cast vote because the current account, %1, has no %2.")
-                     .arg(d->currentAccount).arg(results.first().value<swv::Coin*>()->name()));
-    }
+            setLastError(tr("Unable to cast vote because the current account, %1, has no %2.")
+                         .arg(d->currentAccount).arg(results.first().value<swv::Coin*>()->name()));
+        }
 
-    QString serialDecision = decision->serialize().toHex();
-    for (auto balance : balances) {
-        auto dgram = chain->getDatagram();
-        dgram->setSchema(DECISION_SCHEMA + contest->id());
-        dgram->setContent(serialDecision);
+        QString serialDecision = decision->serialize().toHex();
+        for (auto balance : balances) {
+            auto dgram = chain->getDatagram();
+            dgram->setSchema(DECISION_SCHEMA + contest->id());
+            dgram->setContent(serialDecision);
 
-        chain->publishDatagram(QByteArray::fromHex(balance->id().toLocal8Bit()));
-    }
+            chain->publishDatagram(QByteArray::fromHex(QByteArray((char*)balance.getId().begin())));
+        }
 
-    // TODO: detect transaction confirmation and set decision state to Cast
+        // TODO: detect transaction confirmation and set decision state to Cast
+    });
+
+    finishPromise.detach([this] (kj::Exception e) {
+        setLastError(QString::fromStdString(e.getDescription()));
+    });
 }
 
 void VotingSystem::setCurrentAccount(QString currentAccount)

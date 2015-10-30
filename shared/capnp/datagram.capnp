@@ -17,6 +17,9 @@
 @0x8ed11a20887e5444;
 
 struct Datagram {
+# A piece of data stored on the blockchain. Datagrams are stored as belonging to a particular Balance, and the datagram
+# schema is unique per-balance.
+
     schema @0 :Data;
     # A magic number to roughly identify the type of a datagram
     content @1 :Data;

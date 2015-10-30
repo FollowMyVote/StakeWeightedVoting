@@ -30,20 +30,20 @@ namespace swv {
 
 ChainAdaptorWrapper::ChainAdaptorWrapper(PromiseConverter& promiseWrapper, QObject *parent)
     : QObject(parent),
-      promiseWrapper(promiseWrapper)
+      promiseConverter(promiseWrapper)
 {}
 
 ChainAdaptorWrapper::~ChainAdaptorWrapper() noexcept
 {}
 
 void ChainAdaptorWrapper::setAdaptor(kj::Own<BlockchainAdaptorInterface> adaptor) {
-    this->adaptor = std::move(adaptor);
+    this->m_adaptor = std::move(adaptor);
     hasAdaptorChanged(hasAdaptor());
 }
 
-kj::Own<BlockchainAdaptorInterface> ChainAdaptorWrapper::getAdaptor() {
+kj::Own<BlockchainAdaptorInterface> ChainAdaptorWrapper::takeAdaptor() {
     // Do this tmp dance so that when we emit the notify signal, hasAdaptor() will return false.
-    auto tmp = std::move(adaptor);
+    auto tmp = std::move(m_adaptor);
     emit hasAdaptorChanged(false);
     return tmp;
 }
@@ -51,9 +51,9 @@ kj::Own<BlockchainAdaptorInterface> ChainAdaptorWrapper::getAdaptor() {
 Promise* ChainAdaptorWrapper::getCoin(quint64 id)
 {
     if (hasAdaptor())
-        return promiseWrapper.wrap(adaptor->getCoin(id),
-                                   [this](::Coin::Reader r) -> QVariantList {
-            return {QVariant::fromValue<QObject*>(new Coin(r, this))};
+        return promiseConverter.wrap(m_adaptor->getCoin(id),
+                                   [](::Coin::Reader r) -> QVariantList {
+            return {QVariant::fromValue<QObject*>(new Coin(r))};
         });
     return nullptr;
 }
@@ -61,65 +61,85 @@ Promise* ChainAdaptorWrapper::getCoin(quint64 id)
 Promise* ChainAdaptorWrapper::getCoin(QString symbol)
 {
     if (hasAdaptor())
-        return promiseWrapper.wrap(adaptor->getCoin(symbol),
-                                   [this](::Coin::Reader r) -> QVariantList {
-            return {QVariant::fromValue<QObject*>(new Coin(r, this))};
+        return promiseConverter.wrap(m_adaptor->getCoin(symbol),
+                                   [](::Coin::Reader r) -> QVariantList {
+            return {QVariant::fromValue<QObject*>(new Coin(r))};
         });
    return nullptr;
 }
 
-QList<Coin*> ChainAdaptorWrapper::listAllCoins()
+Promise* ChainAdaptorWrapper::listAllCoins()
 {
-    QList<Coin*> results;
     if (hasAdaptor()) {
-        auto coins = adaptor->listAllCoins();
-        std::transform(coins.begin(), coins.end(), std::back_inserter(results),
-                       [this](::Coin::Reader r) { return new Coin(r, this); });
+        using workaroundType = ::Coin::Reader;
+        return promiseConverter.wrap(m_adaptor->listAllCoins(),
+                                   [](kj::Array<workaroundType> coins) -> QVariantList {
+            QList<Coin*> results;
+            std::transform(coins.begin(), coins.end(), std::back_inserter(results),
+                           [](::Coin::Reader r) { return new Coin(r); });
+            return {QVariant::fromValue(results)};
+        });
     }
-    return results;
-}
-
-QStringList ChainAdaptorWrapper::getMyAccounts() {
-    if (hasAdaptor())
-        return adaptor->getMyAccounts();
-    return {};
-}
-
-Balance* ChainAdaptorWrapper::getBalance(QByteArray id)
-{
-    if (hasAdaptor())
-        KJ_IF_MAYBE(balance, adaptor->getBalance(id))
-            return new Balance(*balance, this);
     return nullptr;
 }
 
-QList<Balance*> ChainAdaptorWrapper::getAccountBalances(QString account)
-{
-    QList<Balance*> results;
-    if (hasAdaptor()) {
-        auto balances = adaptor->getBalancesForOwner(account);
-        std::transform(balances.begin(), balances.end(), std::back_inserter(results),
-                       [this](::Balance::Reader r) { return new Balance(r, this); });
-    }
-    return results;
+Promise* ChainAdaptorWrapper::getMyAccounts() {
+    if (hasAdaptor())
+        return promiseConverter.wrap(m_adaptor->getMyAccounts(),
+                                   [](kj::Array<QString> accounts) -> QVariantList {
+            QStringList results;
+            std::transform(accounts.begin(), accounts.end(), std::back_inserter(results),
+                           [](QString account) { return account; });
+            return {QVariant::fromValue(results)};
+        });
+    return nullptr;
 }
 
-QList<Balance*> ChainAdaptorWrapper::getBalancesForOwner(QString owner)
+Promise* ChainAdaptorWrapper::getBalance(QByteArray id)
+{
+    if (hasAdaptor())
+        return promiseConverter.wrap(m_adaptor->getBalance(id), [](::Balance::Reader r) -> QVariantList {
+            return {QVariant::fromValue<QObject*>(new Balance(r))};
+        });
+    return nullptr;
+}
+
+Promise* ChainAdaptorWrapper::getAccountBalances(QString account)
+{
+    if (hasAdaptor()) {
+        using workaroundType = ::Balance::Reader;
+        return promiseConverter.wrap(m_adaptor->getBalancesForOwner(account),
+                                   [](kj::Array<workaroundType> balances) -> QVariantList {
+            QList<Balance*> results;
+            std::transform(balances.begin(), balances.end(), std::back_inserter(results),
+                           [](::Balance::Reader r) { return new Balance(r); });
+            return {QVariant::fromValue(results)};
+        });
+    }
+    return nullptr;
+}
+
+Promise* ChainAdaptorWrapper::getBalancesForOwner(QString owner)
 {
     QList<Balance*> results;
     if (hasAdaptor()) {
-        auto balances = adaptor->getBalancesForOwner(owner);
-        std::transform(balances.begin(), balances.end(), std::back_inserter(results),
-                       [this](::Balance::Reader r) { return new Balance(r, this); });
+        using workaroundType = ::Balance::Reader;
+        return promiseConverter.wrap(m_adaptor->getBalancesForOwner(owner),
+                                   [](kj::Array<workaroundType> balances) -> QVariantList {
+            QList<Balance*> results;
+            std::transform(balances.begin(), balances.end(), std::back_inserter(results),
+                           [](::Balance::Reader r) { return new Balance(r); });
+            return {QVariant::fromValue(results)};
+        });
     }
-    return results;
+    return nullptr;
 }
 
 Promise* ChainAdaptorWrapper::getContest(QString contestId)
 {
     QByteArray realContestId = QByteArray::fromHex(contestId.toLocal8Bit());
     if (hasAdaptor())
-        return promiseWrapper.wrap(adaptor->getContest(realContestId),
+        return promiseConverter.wrap(m_adaptor->getContest(realContestId),
                                    [this](::Contest::Reader r) -> QVariantList {
             //TODO: Check signature
             return {QVariant::fromValue<QObject*>(new Contest(r.getContest(), this))};
@@ -130,20 +150,20 @@ Promise* ChainAdaptorWrapper::getContest(QString contestId)
 Datagram* ChainAdaptorWrapper::getDatagram()
 {
     if (hasAdaptor())
-        return new Datagram(adaptor->createDatagram(), this);
+        return new Datagram(m_adaptor->createDatagram(), this);
     return nullptr;
 }
 
 void ChainAdaptorWrapper::publishDatagram(QByteArray payerBalanceId)
 {
     if (hasAdaptor())
-        adaptor->publishDatagram(payerBalanceId);
+        m_adaptor->publishDatagram(payerBalanceId);
 }
 
 Promise* ChainAdaptorWrapper::getDatagram(QByteArray balanceId, QString schema)
 {
     if (hasAdaptor()) {
-        return promiseWrapper.wrap(adaptor->getDatagram(balanceId, schema),
+        return promiseConverter.wrap(m_adaptor->getDatagram(balanceId, schema),
                                    [this](::Datagram::Reader r) -> QVariantList {
             return {QVariant::fromValue<QObject*>(new OwningWrapper<Datagram>(r, this))};
         });

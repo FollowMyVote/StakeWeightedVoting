@@ -1,17 +1,17 @@
 /*
  * Copyright 2015 Follow My Vote, Inc.
  * This file is part of The Follow My Vote Stake-Weighted Voting Application ("SWV").
- * 
+ *
  * SWV is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * SWV is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with SWV.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -154,41 +154,37 @@ kj::Promise<Coin::Reader> StubChainAdaptor::getCoin(QString symbol) const
     return itr->getReader();
 }
 
-QList<Coin::Reader> StubChainAdaptor::listAllCoins() const
+kj::Promise<kj::Array<Coin::Reader>> StubChainAdaptor::listAllCoins() const
 {
-    QList<Coin::Reader> results;
-    std::transform(coins.begin(), coins.end(),
-                   std::back_inserter(results),
-                   [](const capnp::Orphan<Coin>& coin) {
-        return coin.getReader();
-    });
-    return results;
+    kj::ArrayBuilder<Coin::Reader> results = kj::heapArrayBuilder<Coin::Reader>(coins.size());
+    for (const auto& coin : coins)
+        results.add(coin.getReader());
+    return results.finish();
 }
 
-QStringList StubChainAdaptor::getMyAccounts() const
+kj::Promise<kj::Array<QString>> StubChainAdaptor::getMyAccounts() const
 {
-    return {"nathan", "dev.nathanhourt.com"};
+    return kj::heapArray<QString>({"nathan", "dev.nathanhourt.com"});
 }
 
-kj::Maybe<Balance::Reader> StubChainAdaptor::getBalance(QByteArray id) const
+kj::Promise<Balance::Reader> StubChainAdaptor::getBalance(QByteArray id) const
 {
     KJ_IF_MAYBE(balance, getBalanceOrphan(id)) {
         return balance->getReader();
     }
-    return {};
+    return KJ_EXCEPTION(FAILED, "Could not find the specified balance.");
 }
 
-QList<Balance::Reader> StubChainAdaptor::getBalancesForOwner(QString owner) const
+kj::Promise<kj::Array<Balance::Reader>> StubChainAdaptor::getBalancesForOwner(QString owner) const
 {
     if (balances.find(owner) == balances.end())
-        return {};
+        return KJ_EXCEPTION(FAILED, "Could not find the specified owner.");
 
     auto& bals = balances.at(owner);
-    QList<Balance::Reader> results;
-    std::transform(bals.begin(), bals.end(), std::back_inserter(results), [](const capnp::Orphan<Balance>& balance) {
-        return balance.getReader();
-    });
-    return results;
+    auto results = kj::heapArrayBuilder<Balance::Reader>(bals.size());
+    for (const auto& bal : bals)
+        results.add(bal.getReader());
+    return results.finish();
 }
 
 Datagram::Builder StubChainAdaptor::createDatagram()
@@ -208,7 +204,7 @@ kj::Promise<Contest::Reader> StubChainAdaptor::getContest(QByteArray contestId) 
     return contests[contestId[0]].getReader();
 }
 
-void StubChainAdaptor::publishDatagram(QByteArray payerBalance)
+kj::Promise<void> StubChainAdaptor::publishDatagram(QByteArray payerBalance)
 {
     capnp::Orphan<Datagram> dgram = kj::mv(KJ_REQUIRE_NONNULL(pendingDatagram,
                                                               "No datagram exists to be published. Call createDatagram first!"));
@@ -223,8 +219,9 @@ void StubChainAdaptor::publishDatagram(QByteArray payerBalance)
         auto key = payerBalance.append(QByteArray::fromRawData((char*)schema.begin(), schema.size()));
         datagrams[key] = kj::mv(dgram);
     } else {
-        KJ_REQUIRE(false, "Could not find the specified balance.");
+        KJ_FAIL_REQUIRE("Could not find the specified balance.");
     }
+    KJ_UNREACHABLE;
 }
 
 kj::Promise<Datagram::Reader> StubChainAdaptor::getDatagram(QByteArray balanceId, QString schema) const

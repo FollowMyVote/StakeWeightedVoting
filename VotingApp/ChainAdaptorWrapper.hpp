@@ -48,7 +48,7 @@ class ChainAdaptorWrapper : public QObject
     Q_OBJECT
     Q_PROPERTY(bool hasAdaptor READ hasAdaptor NOTIFY hasAdaptorChanged)
 public:
-    explicit ChainAdaptorWrapper(PromiseConverter& promiseWrapper, QObject *parent = 0);
+    explicit ChainAdaptorWrapper(PromiseConverter& promiseConverter, QObject *parent = 0);
     ~ChainAdaptorWrapper() noexcept;
 
     /**
@@ -57,7 +57,14 @@ public:
      *
      * If any other adaptor was set previously, it will be destroyed in favor of the new one.
      */
-    void setAdaptor(kj::Own<BlockchainAdaptorInterface> adaptor);
+    void setAdaptor(kj::Own<BlockchainAdaptorInterface> m_adaptor);
+    /**
+     * @brief Get a non-owning pointer to the blockchain adaptor
+     * @return Pointer to the adaptor, does not confer ownership
+     */
+    BlockchainAdaptorInterface* adaptor() {
+        return m_adaptor.get();
+    }
     /**
      * @brief Extract the blockchain adaptor. The caller takes ownership.
      * @return The blockchain adaptor currently in use
@@ -65,13 +72,13 @@ public:
      * The wrapper relinquishes ownership of the adaptor; after this call, the wrapper will have no adaptor until
      * setAdaptor is called.
      */
-    kj::Own<BlockchainAdaptorInterface> getAdaptor();
+    kj::Own<BlockchainAdaptorInterface> takeAdaptor();
     /**
      * @brief Check if the adaptor is set
      * @return true if adaptor is set; false otherwise.
      */
     bool hasAdaptor() const {
-        return adaptor.get() != nullptr;
+        return m_adaptor.get() != nullptr;
     }
 
     /**
@@ -97,12 +104,12 @@ public:
      * The wrapper maintains ownership of the returned objects. The returned list will be empty if the adaptor is not
      * set.
      */
-    Q_INVOKABLE QList<swv::Coin*> listAllCoins();
+    Q_INVOKABLE Promise* listAllCoins();
 
     /**
      * @brief Get a list of all accounts controlled by this adaptor
      */
-    Q_INVOKABLE QStringList getMyAccounts();
+    Q_INVOKABLE Promise* getMyAccounts();
 
     /**
      * @brief Get a balance by ID
@@ -111,7 +118,7 @@ public:
      *
      * The wrapper maintains ownership of the returned object.
      */
-    Q_INVOKABLE swv::Balance* getBalance(QByteArray id);
+    Q_INVOKABLE Promise* getBalance(QByteArray id);
     /**
      * @brief Get all balances spendable by a specified account
      * @return All balances controlled by the named account
@@ -119,7 +126,7 @@ public:
      * The wrapper maintains ownership of the returned objects. The returned list will be empty if the adaptor is not
      * set.
      */
-    Q_INVOKABLE QList<swv::Balance*> getAccountBalances(QString account);
+    Q_INVOKABLE Promise* getAccountBalances(QString account);
     /**
      * @brief Get all balances belonging to the specified owner
      * @param owner Unambiguous ID of the owner; exact semantics are chain-specific
@@ -131,7 +138,7 @@ public:
      * The wrapper maintains ownership of the returned objects. The returned list will be empty if the adaptor is not
      * set.
      */
-    Q_INVOKABLE QList<swv::Balance*> getBalancesForOwner(QString owner);
+    Q_INVOKABLE Promise* getBalancesForOwner(QString owner);
 
     /**
      * @brief Get the contest with the specified ID
@@ -165,8 +172,8 @@ signals:
 public slots:
 
 private:
-    PromiseConverter& promiseWrapper;
-    kj::Own<BlockchainAdaptorInterface> adaptor;
+    PromiseConverter& promiseConverter;
+    kj::Own<BlockchainAdaptorInterface> m_adaptor;
 };
 
 } // namespace swv

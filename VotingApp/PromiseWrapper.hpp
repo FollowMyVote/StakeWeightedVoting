@@ -71,8 +71,8 @@ Promise* PromiseConverter::wrap(kj::Promise<T> promise, Func TConverter)
     auto result = new Promise(this);
 
     auto responsePromise = promise.then(
-        [result, TConverter](T results) {
-            result->resolve(TConverter(results));
+        [result, TConverter](T&& results) {
+            result->resolve(TConverter(kj::mv(results)));
             QQmlEngine::setObjectOwnership(result, QQmlEngine::JavaScriptOwnership);
         }, [result](kj::Exception&& exception) {
             result->reject({QString::fromStdString(exception.getDescription())});
