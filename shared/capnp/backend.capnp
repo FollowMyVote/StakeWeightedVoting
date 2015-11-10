@@ -22,8 +22,8 @@ interface Backend {
 
     increment @8 (num :UInt8) -> (result :UInt8);
 
-    listContests @0 () -> (results :List(ListedContest));
-    # Get a list of active contests, with total amount of stake which has voted on them
+    getContestGenerator @0 () -> (generator :ContestGenerator);
+    # Get a generator for a feed of contests
     getContestResults @1 (contestId :Data) -> (results :ContestResults);
     # Get the instantaneous live results for the specified contest
 
@@ -41,14 +41,6 @@ interface Backend {
     listAvailableAuditTrails @7 (contestId :Data) -> (reports :List(UInt32));
     # Get a list of timestamps of available audit trails for a given contest
 
-    struct ListedContest {
-        contestId @0 :Data;
-        # Chain-specific contest ID
-        votingStake @1 :Int64;
-        # Total stake voting on the specified contest
-        tracksLiveResults @2 :Bool;
-        # Whether the backend provides live results for this contest or not
-    }
     interface ContestResults {
         results @0 () -> (results :List(TalliedOpinion));
         # Call results() to get the current results
@@ -60,6 +52,38 @@ interface Backend {
             tally @1 :Int64;
         }
     }
+}
+
+interface ContestGenerator {
+    # An API to retrieve an 'infinite stream' of contests a few at a time. This implements a contest feed, where the
+    # client can fetch a few contests to start with, and then fetch more as needed. It also supports feedback on the
+    # returned contests, so that the client can notify the server of engagement on certain contests allowing the server
+    # to select the next contests to be returned to maximize probability of engagement.
+
+    next @0 () -> (nextContest :ListedContest);
+    # Retrieve one more contest
+    nextCount @1 (count :Int32) -> (nextContests :List(ListedContest));
+    # Retrieve count more contests; may return less than count if no more contests are available
+
+    logEngagement @2 (contest :Data, engagementType :EngagementType);
+    # Notify the server of engagement with a particular contest
+
+    enum EngagementType {
+        expanded @0;
+        # User expanded the contest to see more detail
+        voted @1;
+        # User voted on the specified contest
+    }
+
+    struct ListedContest {
+        contestId @0 :Data;
+        # Chain-specific contest ID
+        votingStake @1 :Int64;
+        # Total stake voting on the specified contest
+        tracksLiveResults @2 :Bool;
+        # Whether the backend provides live results for this contest or not
+    }
+
 }
 
 interface Purchase {

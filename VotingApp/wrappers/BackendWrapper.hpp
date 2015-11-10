@@ -47,12 +47,14 @@ public:
     BackendWrapper(Backend::Client backend, PromiseConverter& promiseWrapper, QObject *parent = 0);
     virtual ~BackendWrapper() noexcept {}
 
-    Q_INVOKABLE Promise* increment(qint8 num);
-    Q_INVOKABLE Promise* contestList();
+    Q_INVOKABLE Promise* increment(quint8 num);
+    Q_INVOKABLE Promise* getContest();
+    Q_INVOKABLE Promise* getContests(int count);
 
 private:
     PromiseConverter& promiseWrapper;
     Backend::Client backend;
+    kj::ForkedPromise<ContestGenerator::Client> generatorPromise;
 };
 
 } // namespace swv

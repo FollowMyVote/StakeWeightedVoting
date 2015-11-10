@@ -32,11 +32,12 @@ class BackendServer : public Backend::Server
 {
 public:
     BackendServer();
+    virtual ~BackendServer(){}
 
     // Backend::Server interface
 protected:
     virtual ::kj::Promise<void> increment(IncrementContext context);
-    virtual ::kj::Promise<void> listContests(ListContestsContext context);
+    virtual ::kj::Promise<void> getContestGenerator(GetContestGeneratorContext context);
     virtual ::kj::Promise<void> getContestResults(GetContestResultsContext context);
     virtual ::kj::Promise<void> purchaseResultReport(PurchaseResultReportContext context);
     virtual ::kj::Promise<void> downloadResultReport(DownloadResultReportContext context);
@@ -49,12 +50,37 @@ protected:
     QMap<quint8, QList<QDateTime>> availableAuditTrails;
 };
 
+class ContestGeneratorImpl : public ContestGenerator::Server
+{
+public:
+    ContestGeneratorImpl(){}
+    virtual ~ContestGeneratorImpl(){}
+
+private:
+
+    // ContestGenerator::Server interface
+protected:
+    virtual ::kj::Promise<void> next(NextContext context);
+    virtual ::kj::Promise<void> nextCount(NextCountContext context);
+    virtual ::kj::Promise<void> logEngagement(LogEngagementContext context) {
+        // The stub implementation does nothing
+        (void)context;
+        return kj::READY_NOW;
+    }
+
+private:
+    void populateContest(ContestGenerator::ListedContest::Builder contest);
+
+    int fetched = 0;
+};
+
 class ContestResultsImpl : public Backend::ContestResults::Server
 {
 public:
     ContestResultsImpl(QMap<qint32, qint64> contestResults)
         : contestResults(contestResults)
     {}
+    virtual ~ContestResultsImpl(){}
 
     // Backend::ContestResults::Server interface
 protected:
@@ -77,6 +103,7 @@ public:
         : promosAndPrices(promosAndPrices),
           callback(onPurchasedCallback)
     {}
+    virtual ~PurchaseImpl(){}
 
 protected:
     // Purchase::Server interface

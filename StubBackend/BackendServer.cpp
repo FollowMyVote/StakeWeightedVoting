@@ -32,18 +32,9 @@ BackendServer::BackendServer()
     return kj::READY_NOW;
 }
 
-::kj::Promise<void> BackendServer::listContests(Backend::Server::ListContestsContext context)
+::kj::Promise<void> BackendServer::getContestGenerator(Backend::Server::GetContestGeneratorContext context)
 {
-    auto results = context.getResults();
-    auto contests = results.initResults(2);
-    contests[0].initContestId(1)[0] = 0;
-    contests[0].setVotingStake(10);
-    contests[0].setTracksLiveResults(true);
-
-    contests[1].initContestId(1)[0] = 1;
-    contests[1].setVotingStake(80000000000);
-    contests[1].setTracksLiveResults(false);
-
+    context.getResults().setGenerator(kj::heap<ContestGeneratorImpl>());
     return kj::READY_NOW;
 }
 
@@ -228,5 +219,42 @@ void PurchaseImpl::sendNotification()
 {
     KJ_IF_MAYBE(notifier, completionNotifier) {
         notifier->notifyRequest().send();
+    }
+}
+
+::kj::Promise<void> ContestGeneratorImpl::next(ContestGenerator::Server::NextContext context)
+{
+    auto contest = context.getResults().initNextContest();
+    populateContest(contest);
+
+    return kj::READY_NOW;
+}
+
+::kj::Promise<void> ContestGeneratorImpl::nextCount(ContestGenerator::Server::NextCountContext context)
+{
+    auto contestCount = std::min(context.getParams().getCount(), 2 - fetched);
+    auto contests = context.getResults().initNextContests(static_cast<unsigned>(contestCount));
+
+    for (auto builder : contests)
+        populateContest(builder);
+
+    return kj::READY_NOW;
+}
+
+void ContestGeneratorImpl::populateContest(ContestGenerator::ListedContest::Builder contest)
+{
+    switch(fetched++) {
+    case 0:
+        contest.initContestId(1)[0] = 0;
+        contest.setVotingStake(10);
+        contest.setTracksLiveResults(true);
+        break;
+    case 1:
+        contest.initContestId(1)[0] = 1;
+        contest.setVotingStake(80000000000);
+        contest.setTracksLiveResults(false);
+        break;
+    default:
+        KJ_FAIL_REQUIRE("No more contests are available.");
     }
 }
