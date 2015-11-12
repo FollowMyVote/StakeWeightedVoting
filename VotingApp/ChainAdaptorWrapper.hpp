@@ -42,6 +42,8 @@ class Balance;
  * Because BlockchainAdaptorInterface is designed to be mostly Qt-independent, it (and its implementors) is not friendly
  * to QML (i.e. it returns types that QML can't inspect or manipulate). This class wraps such an adaptor and provides an
  * interface which exposes QML-friendly wrappers and types to manipulate the Cap'n Proto backend types.
+ *
+ * The ChainAdaptorWrapper is also responsible for managing decisions on contests, including their persistence.
  */
 class ChainAdaptorWrapper : public QObject
 {
@@ -144,6 +146,8 @@ public:
      * @brief Get the contest with the specified ID
      * @param contestId ID of the contest to retrieve
      * @return Contest having the provided ID
+     *
+     * The returned contest will have its currentDecision set
      */
     Q_INVOKABLE Promise* getContest(QString contestId);
 
@@ -168,8 +172,7 @@ public:
 
 signals:
     void hasAdaptorChanged(bool);
-
-public slots:
+    void error(QString message);
 
 private:
     PromiseConverter& promiseConverter;

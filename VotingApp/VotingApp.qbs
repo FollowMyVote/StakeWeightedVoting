@@ -39,6 +39,7 @@ QtGuiApplication {
         "wrappers/Datagram.hpp",
         "wrappers/Decision.cpp",
         "wrappers/Decision.hpp",
+        "wrappers/OwningWrapper.cpp",
         "wrappers/OwningWrapper.hpp",
         "wrappers/README.md",
         "qml-promise/src/Promise.cpp",

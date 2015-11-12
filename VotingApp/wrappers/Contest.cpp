@@ -29,7 +29,8 @@ Contest::Contest(UnsignedContest::Reader r, QObject* parent)
 QString Contest::id() const
 {
     auto data = getId();
-    return QByteArray::fromRawData((char*)data.begin(), data.size()).toHex();
+    return QByteArray::fromRawData(reinterpret_cast<const char*>(data.begin()),
+                                   static_cast<signed>(data.size())).toHex();
 }
 
 QJsonObject Contest::tags() const
@@ -53,7 +54,7 @@ QJsonArray Contest::contestants() const
 
 QDateTime Contest::startTime() const
 {
-    return QDateTime::fromMSecsSinceEpoch(getStartTime());
+    return QDateTime::fromMSecsSinceEpoch(static_cast<signed>(getStartTime()));
 }
 
 OwningWrapper<Decision>* Contest::currentDecision() {
@@ -66,7 +67,8 @@ const OwningWrapper<Decision>* Contest::currentDecision() const {
 
 void Contest::setCurrentDecision(OwningWrapper<Decision>* newDecision)
 {
-    m_currentDecision->deleteLater();
+    if (m_currentDecision)
+        m_currentDecision->deleteLater();
     newDecision->setParent(this);
     m_currentDecision = newDecision;
     emit currentDecisionChanged();

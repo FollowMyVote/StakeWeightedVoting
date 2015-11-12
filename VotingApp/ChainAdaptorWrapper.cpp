@@ -28,6 +28,8 @@
 
 namespace swv {
 
+const static QString PERSISTENT_DECISION_KEY = QStringLiteral("persistedDecisions/%1");
+
 ChainAdaptorWrapper::ChainAdaptorWrapper(PromiseConverter& promiseWrapper, QObject *parent)
     : QObject(parent),
       promiseConverter(promiseWrapper)
@@ -139,7 +141,35 @@ Promise* ChainAdaptorWrapper::getContest(QString contestId)
         return promiseConverter.wrap(m_adaptor->getContest(realContestId),
                                    [this](::Contest::Reader r) -> QVariantList {
             //TODO: Check signature
-            return {QVariant::fromValue<QObject*>(new Contest(r.getContest(), this))};
+            auto contest = new Contest(r.getContest(), this);
+            auto decision = new OwningWrapper<Decision>(contest);
+
+            // Defer persistence concerns until later; the contest doesn't know about the QML engine yet so we can't
+            // manipulate the QJSValue properties
+            QTimer::singleShot(0, [this, contest, decision]() mutable {
+                QSettings settings;
+                auto key = PERSISTENT_DECISION_KEY.arg(contest->id());
+                if (settings.contains(key)) {
+                    try {
+                        auto bytes = settings.value(key, QByteArray()).toByteArray();
+                        decision = OwningWrapper<Decision>::deserialize(bytes, contest);
+                        contest->setCurrentDecision(decision);
+                    } catch (kj::Exception e) {
+                        emit error(tr("Error when recovering decision: %1")
+                                   .arg(QString::fromStdString(e.getDescription())));
+                    }
+                }
+                auto persist = [key, decision] {
+                    QSettings settings;
+                    auto bytes = decision->serialize();
+                    settings.setValue(key, bytes);
+                };
+                connect(decision, &OwningWrapper<Decision>::opinionsChanged, persist);
+                connect(decision, &OwningWrapper<Decision>::writeInsChanged, persist);
+            });
+            contest->setCurrentDecision(decision);
+
+            return {QVariant::fromValue<QObject*>(contest)};
         });
     return nullptr;
 }

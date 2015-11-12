@@ -30,7 +30,7 @@ namespace _ {
 // OwningWrapper directly, as it must be constructed prior to calling Wrapper's constructor.
 class MessageStorage {
 protected:
-    virtual ~MessageStorage(){}
+    virtual ~MessageStorage();
     capnp::MallocMessageBuilder m_message;
 };
 }
@@ -52,7 +52,7 @@ public:
         : Wrapper(m_message.initRoot<typename Wrapper::WrappedType>(), parent) {}
     OwningWrapper(capnp::ReaderFor<typename Wrapper::WrappedType> r, QObject* parent = nullptr)
         : Wrapper(copyData(r), parent) {}
-    virtual ~OwningWrapper() throw() {}
+    virtual ~OwningWrapper() noexcept {}
 
     QByteArray serialize()
     {
@@ -60,9 +60,18 @@ public:
         // Right now we allocate enough space for an unpacked message, then write a packed message and shrink to fit
         // When I figure out how to predict the size of a packed message before writing it, I'll fix this
         QByteArray buffer(capnp::computeSerializedSizeInWords(m_message) * capnp::BYTES_PER_WORD, 0);
-        kj::ArrayOutputStream arrayStream(kj::ArrayPtr<kj::byte>((unsigned char*)buffer.data(), buffer.size()));
+        kj::ArrayOutputStream arrayStream(kj::ArrayPtr<kj::byte>(reinterpret_cast<unsigned char*>(buffer.data()),
+                                                                 static_cast<unsigned>(buffer.size())));
         capnp::writePackedMessage(arrayStream, m_message);
         buffer.resize(arrayStream.getArray().size());
         return buffer;
+    }
+
+    static OwningWrapper* deserialize(QByteArray serial, QObject* parent = nullptr)
+    {
+        kj::ArrayInputStream arrayStream(kj::ArrayPtr<kj::byte>(reinterpret_cast<unsigned char*>(serial.data()),
+                                                                static_cast<unsigned>(serial.size())));
+        capnp::PackedMessageReader reader(arrayStream);
+        return new OwningWrapper(reader.getRoot<typename Wrapper::WrappedType>(), parent);
     }
 };

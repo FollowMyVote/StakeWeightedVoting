@@ -61,7 +61,7 @@ public:
     Q_PROPERTY(State state READ state WRITE setState NOTIFY stateChanged)
 
     Decision(WrappedType::Builder b, QObject* parent = nullptr);
-    ~Decision() throw();
+    ~Decision() noexcept;
 
     QString id() const;
     QString contestId() const;

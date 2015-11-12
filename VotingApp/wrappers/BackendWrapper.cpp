@@ -78,13 +78,16 @@ Promise* BackendWrapper::getContest()
 
 Promise* BackendWrapper::getContests(int count)
 {
+    qDebug() << "a";
     auto promiseForContest = generatorPromise.addBranch().then([count](ContestGenerator::Client generator) {
+        qDebug() << "b";
         auto request = generator.nextCountRequest();
         request.setCount(count);
         return request.send().then(+[](ContestGenerator::NextCountResults::Reader r) { return r; });
     });
     return promiseWrapper.wrap(kj::mv(promiseForContest),
                                [](ContestGenerator::NextCountResults::Reader r) -> QVariantList {
+        qDebug() << "c";
         QJsonArray contests;
         for (auto contest : r.getNextContests())
             contests.append(convert(contest));

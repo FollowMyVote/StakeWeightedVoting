@@ -129,6 +129,9 @@ VotingSystem::VotingSystem(QObject *parent)
     connect(this, &VotingSystem::backendConnectedChanged, this, &VotingSystem::isReadyChanged);
     connect(this, &VotingSystem::adaptorReadyChanged, this, &VotingSystem::isReadyChanged);
     connect(d->adaptor, &ChainAdaptorWrapper::hasAdaptorChanged, this, &VotingSystem::adaptorReadyChanged);
+    connect(d->adaptor, &ChainAdaptorWrapper::error, this, [this](QString error) {
+        setLastError(error);
+    });
 }
 
 VotingSystem::~VotingSystem() noexcept

@@ -37,7 +37,7 @@ Decision::Decision(WrappedType::Builder b, QObject* parent)
       m_decision(b)
 {}
 
-Decision::~Decision() throw()
+Decision::~Decision() noexcept
 {}
 
 QString Decision::id() const
