@@ -48,7 +48,22 @@ public:
     virtual ~BackendWrapper() noexcept {}
 
     Q_INVOKABLE Promise* increment(quint8 num);
+    /**
+     * @brief Get a contest for the feed from the backend
+     *
+     * The returned promise resolves to an object of the form:
+     * {
+     *     "contestId" : <contest ID>,
+     *     "votingStake" : <total stake which has voted on this contest>,
+     *     "tracksLiveResults" : <whether the server has live results for this contest or not>
+     * }
+     */
     Q_INVOKABLE Promise* getContest();
+    /**
+     * @brief Get count contests for the feed from the backend
+     *
+     * The returned promise resolves to an array of objects of the form returned by @ref getFeedContest
+     */
     Q_INVOKABLE Promise* getContests(int count);
 
 private:

@@ -31,12 +31,12 @@
 namespace swv {
 
 QByteArray convert(capnp::Data::Reader data) {
-    return QByteArray((const char*)data.begin(), data.size());
+    return QByteArray(reinterpret_cast<const char*>(data.begin()), static_cast<signed>(data.size()));
 }
 QJsonObject convert(ContestGenerator::ListedContest::Reader contest) {
     return {{"contestId", QString(convert(contest.getContestId()).toHex())},
-                         {"votingStake", qint64(contest.getVotingStake())},
-                         {"tracksLiveResults", contest.getTracksLiveResults()}};
+            {"votingStake", qint64(contest.getVotingStake())},
+            {"tracksLiveResults", contest.getTracksLiveResults()}};
 }
 
 kj::ForkedPromise<ContestGenerator::Client> makeGeneratorPromise(Backend::Client backend) {
