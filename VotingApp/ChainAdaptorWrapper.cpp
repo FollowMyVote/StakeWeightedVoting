@@ -21,14 +21,18 @@
 #include "wrappers/Balance.hpp"
 #include "wrappers/Datagram.hpp"
 #include "wrappers/OwningWrapper.hpp"
+#include "wrappers/Converters.hpp"
 #include "Promise.hpp"
 #include "PromiseWrapper.hpp"
 
 #include "BlockchainAdaptorInterface.hpp"
 
+#include <kj/debug.h>
+
 namespace swv {
 
 const static QString PERSISTENT_DECISION_KEY = QStringLiteral("persistedDecisions/%1");
+const static QString DECISION_SCHEMA = QStringLiteral("00%1");
 
 ChainAdaptorWrapper::ChainAdaptorWrapper(PromiseConverter& promiseWrapper, QObject *parent)
     : QObject(parent),
@@ -82,6 +86,92 @@ Promise* ChainAdaptorWrapper::listAllCoins()
         });
     }
     return nullptr;
+}
+
+Promise* ChainAdaptorWrapper::getDecision(QString owner, QString contestId)
+{
+    if (!hasAdaptor()) return nullptr;
+
+    auto balances = m_adaptor->getBalancesForOwner(owner);
+    using Reader = ::Balance::Reader;
+    auto promise = balances.then([=](kj::Array<Reader> balances) {
+        KJ_REQUIRE(balances.size() > 0, "No balances found in the contest's asset, so no decision exists.");
+
+        // This struct is basically a lambda on steroids. I'm using it to transform the array of balances into an array
+        // of datagrams containing the decision I want on each of those balances. Also, make sure the newest balance's
+        // decision is in the front (I don't care about preserving order)
+        struct {
+            // Capture this
+            ChainAdaptorWrapper* wrapper;
+            // Capture contestId
+            QString contestId;
+            // For each balance, look up the datagram containing the relevant decision. Store the promises in this array
+            kj::ArrayBuilder<kj::Promise<kj::Maybe<::Datagram::Reader>>> datagramPromises;
+
+            Reader newestBalance;
+            void operator() (Reader balance) {
+                if (datagramPromises.size() == 0) {
+                    // First balance. Nothing to compare.
+                    newestBalance = balance;
+                }
+
+                // Start a lookup for the datagram and store the promise.
+                auto promise = wrapper->m_adaptor->getDatagram(convertBlob(balance.getId()),
+                                                               DECISION_SCHEMA.arg(contestId));
+                datagramPromises.add(promise.then([](::Datagram::Reader r) -> kj::Maybe<::Datagram::Reader> {
+                        return r;
+                    }, [](kj::Exception e) -> kj::Maybe<::Datagram::Reader> {
+                        qInfo() << "Got exception when fetching datagram on balance:" << e.getDescription().cStr();
+                        return {};
+                    })
+                );
+
+                // If this balance is newer than the previous newest, move its promise to the front
+                if (balance.getCreationOrder() > newestBalance.getCreationOrder()) {
+                    newestBalance = balance;
+                    std::swap(datagramPromises.front(), datagramPromises.back());
+                }
+            }
+        } accumulator{this, contestId, kj::heapArrayBuilder<kj::Promise<kj::Maybe<::Datagram::Reader>>>(balances.size())};
+
+        // Process all of the balances. Fetch the appropriate decision for each.
+        accumulator = std::for_each(balances.begin(), balances.end(), kj::mv(accumulator));
+
+        return kj::joinPromises(accumulator.datagramPromises.finish());
+    }).then([=](kj::Array<kj::Maybe<::Datagram::Reader>> datagrams) {
+        std::unique_ptr<OwningWrapper<swv::Decision>> decision;
+        for (size_t i = 0; i < datagrams.size(); ++i) {
+            KJ_IF_MAYBE(datagram, datagrams[i]) {
+                decision.reset(OwningWrapper<Decision>::deserialize(convertBlob(datagram->getContent())));
+                break;
+            }
+        }
+        KJ_REQUIRE(decision.get() != nullptr,
+                   "No decision found on chain for the requested contest and owner",
+                   contestId.toStdString(),
+                   owner.toStdString());
+        decision->setState(swv::Decision::Cast);
+
+        // Search for non-matching or missing decisions, which would mean the decision is stale.
+        for (auto maybeReader : datagrams) {
+            KJ_IF_MAYBE(reader, maybeReader) {
+                std::unique_ptr<OwningWrapper<swv::Decision>> otherDecision(
+                            OwningWrapper<swv::Decision>::deserialize(convertBlob(reader->getContent())));
+                if (*otherDecision != *decision) {
+                    decision->setState(swv::Decision::Stale);
+                    break;
+                }
+            } else {
+                decision->setState(swv::Decision::Stale);
+                break;
+            }
+        }
+        return decision.release();
+    });
+
+    return promiseConverter.wrap(kj::mv(promise), [](OwningWrapper<swv::Decision>* d) -> QVariantList {
+        return {QVariant::fromValue<QObject*>(d)};
+    });
 }
 
 Promise* ChainAdaptorWrapper::getMyAccounts() {
@@ -187,10 +277,10 @@ void ChainAdaptorWrapper::publishDatagram(QByteArray payerBalanceId)
         m_adaptor->publishDatagram(payerBalanceId);
 }
 
-Promise* ChainAdaptorWrapper::getDatagram(QByteArray balanceId, QString schema)
+Promise* ChainAdaptorWrapper::getDatagram(QString balanceId, QString schema)
 {
     if (hasAdaptor()) {
-        return promiseConverter.wrap(m_adaptor->getDatagram(balanceId, schema),
+        return promiseConverter.wrap(m_adaptor->getDatagram(QByteArray::fromHex(balanceId.toLocal8Bit()), schema),
                                    [this](::Datagram::Reader r) -> QVariantList {
             return {QVariant::fromValue<QObject*>(new OwningWrapper<Datagram>(r, this))};
         });

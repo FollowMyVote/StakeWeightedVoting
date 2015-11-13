@@ -51,7 +51,7 @@ class Contest : public QObject, public ::UnsignedContest::Reader
     Q_PROPERTY(QJsonArray contestants READ contestants CONSTANT)
     Q_PROPERTY(quint64 coin READ getCoin CONSTANT)
     Q_PROPERTY(QDateTime startTime READ startTime CONSTANT)
-    Q_PROPERTY(swv::Decision* currentDecision READ currentDecision NOTIFY currentDecisionChanged)
+    Q_PROPERTY(swv::Decision* currentDecision READ currentDecision WRITE setCurrentDecision NOTIFY currentDecisionChanged)
 
 public:
     Contest(::UnsignedContest::Reader r, QObject* parent = nullptr);
@@ -73,6 +73,9 @@ public:
 
     // Set the current decision. Destroys the old current decision and takes ownership of the new one.
     void setCurrentDecision(OwningWrapper<Decision>* newDecision);
+    // Overload of setCurrentDecision. If argument is an OwningWrapper, it casts and calls the other overload.
+    // Otherwise, it copies newDecision into a new OwningWrapper<Decision> and calls the other overload.
+    void setCurrentDecision(Decision* newDecision);
 
 signals:
     void currentDecisionChanged();

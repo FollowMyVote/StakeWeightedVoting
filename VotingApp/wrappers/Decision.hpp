@@ -78,6 +78,17 @@ public:
         return m_decision;
     }
 
+    /// @brief Compare two decisions. Decisions are equal if they apply to the same contest and have the same opinions
+    /// and write-ins. The IDs are not relevant to equality.
+    bool operator== (const Decision& other) {
+        return contestId() == other.contestId() &&
+                opinions().strictlyEquals(other.opinions()) &&
+                writeIns().strictlyEquals(other.writeIns());
+    }
+    bool operator!= (const Decision& other) {
+        return !(*this == other);
+    }
+
 public slots:
     void setOpinions(QJSValue newOpinions);
     void setWriteIns(QJSValue newWriteIns);

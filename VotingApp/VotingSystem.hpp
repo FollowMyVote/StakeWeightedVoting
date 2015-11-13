@@ -103,18 +103,6 @@ public slots:
     void configureChainAdaptor();
 
     /**
-     * @brief Reset the current decision for a given contest
-     * @param contest The contest to reset the decision for
-     *
-     * If the current decision is in the Cast or Casting state, this function has no effect. If the current decision is
-     * Pending, the pending decision is reset to the decision currently on-chain (meaning the current decision will
-     * have Cast or Stale state), or an empty decision (meaning the current decision will have Pending state, but no
-     * opinions).
-     *
-     * See also @ref castCurrentDecision
-     */
-    void resetCurrentDecision(swv::Contest* contest);
-    /**
      * @brief Cast the current decision for the given contest
      * @param contest The contest to cast a decision for
      *

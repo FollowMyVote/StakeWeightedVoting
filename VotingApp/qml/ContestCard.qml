@@ -227,7 +227,14 @@ Card {
             Button {
                 text: qsTr("Cancel")
                 onClicked: {
-                    votingSystem.clearPendingDecision(contestId)
+                    votingSystem.adaptor.getDecision(votingSystem.currentAccount, contestId).then(function(decision) {
+                        displayContest.currentDecision = decision
+                    }, function() {
+                        console.log("No decision found, resetting opinions instead. " +
+                                    "The following error can be ignored.")
+                        displayContest.currentDecision.opinions = []
+                        displayContest.currentDecision.state = Decision.Pending
+                    })
                 }
             }
             Item { height: 1; Layout.fillWidth: true }

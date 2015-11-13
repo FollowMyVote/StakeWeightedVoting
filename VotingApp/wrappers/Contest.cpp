@@ -19,6 +19,8 @@
 #include "Contest.hpp"
 #include "Decision.hpp"
 
+#include <QDebug>
+
 namespace swv {
 
 Contest::Contest(UnsignedContest::Reader r, QObject* parent)
@@ -67,11 +69,29 @@ const OwningWrapper<Decision>* Contest::currentDecision() const {
 
 void Contest::setCurrentDecision(OwningWrapper<Decision>* newDecision)
 {
+    if (newDecision == nullptr) {
+        qDebug() << "Ignoring setCurrentDecision(nullptr)";
+        return;
+    }
+
     if (m_currentDecision)
         m_currentDecision->deleteLater();
     newDecision->setParent(this);
     m_currentDecision = newDecision;
     emit currentDecisionChanged();
+}
+
+void Contest::setCurrentDecision(Decision* newDecision)
+{
+    if (newDecision == nullptr) {
+        qDebug() << "Ignoring setCurrentDecision(nullptr)";
+        return;
+    }
+
+    OwningWrapper<Decision>* decision = dynamic_cast<OwningWrapper<Decision>*>(newDecision);
+    if (decision == nullptr)
+        decision = new OwningWrapper<Decision>(newDecision->reader(), this);
+    setCurrentDecision(decision);
 }
 
 } // namespace swv

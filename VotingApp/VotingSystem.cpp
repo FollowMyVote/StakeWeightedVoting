@@ -203,11 +203,6 @@ void VotingSystem::configureChainAdaptor()
     d->adaptor->setAdaptor(kj::mv(adaptor));
 }
 
-void VotingSystem::resetCurrentDecision(Contest* contest)
-{
-    //TODO: implement me
-}
-
 void VotingSystem::castCurrentDecision(swv::Contest* contest)
 {
     Q_D(VotingSystem);

@@ -152,6 +152,22 @@ public:
     Q_INVOKABLE Promise* getContest(QString contestId);
 
     /**
+     * @brief Get the on-chain decision for the specified owner and contest
+     * @param owner Unambiguous ID of the owner; exact semantics are chain-specific
+     * @param contestId ID of the contest to get a decision for
+     * @return Promise for the decision currently on chain for the specified owner and contest. If no decision is found
+     * the promise will be broken
+     *
+     * This will query all balances in the contest's asset for the given owner and return the newest decision found on
+     * any of those balances. If any balance queried has a different decision than the newest, or has no decision, the
+     * returned decision will be marked as stale.
+     *
+     * Avoid calling this function frequently for the same decision as it does not implement any cacheing, so it may be
+     * slow and will construct a new Decision on each call.
+     */
+    Q_INVOKABLE Promise* getDecision(QString owner, QString contestId);
+
+    /**
      * @brief Get a new datagram
      * @return A wrapped datagram, suitable for populating and passing to @ref publishDatagram
      */
@@ -163,12 +179,12 @@ public:
     Q_INVOKABLE void publishDatagram(QByteArray payerBalanceId);
     /**
      * @brief Get datagram with specified schema belonging to specified balance
-     * @param balanceId ID of the balance to get datagram for
+     * @param balanceId Hex-encoded ID of the balance to get datagram for
      * @param schema Schema of the datagram to retrieve
      * @return Promise for the requested datagram or nullptr if adaptor is not ready. Promise will be broken if
      * datagram is not found.
      */
-    Q_INVOKABLE Promise* getDatagram(QByteArray balanceId, QString schema = QString::null);
+    Q_INVOKABLE Promise* getDatagram(QString balanceId, QString schema = QString::null);
 
 signals:
     void hasAdaptorChanged(bool);
