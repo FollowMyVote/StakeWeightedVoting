@@ -21,7 +21,7 @@ Lifetime of these wrappers must be handled carefully, as sometimes they are crea
 > ###### Implementation Note:
 > When the C++ classes return a `Promise`, the C++ retains ownership of the promise until the promise resolves or breaks. At that point, ownership transfers to QML. Unless otherwise documented, any objects the promise resolves to are owned by QML immediately.
 
-The `ChainAdaptorWrapper` wraps some implementor of `BlockchainAdaptorInterface` and exposes blockchain functionality to callers. In some cases, it is called from QML directly, but in cases requiring extra processing, the QML calls `VotingSystem` which handles the extra processing, then calls the adaptor. For example, when broadcasting decisions, the QML retrieves a decision from the `VotingSystem`, populates it, and calls the `VotingSystem` to broadcast the decision. The `VotingSystem` then inserts the decision into one `Datagram` for each balance in the appropriate coin and passes those `Datagram`s down to the wrapper for broadcast.
+The `ChainAdaptorWrapper` wraps some implementor of `BlockchainAdaptorInterface` and exposes blockchain functionality to callers. The `ChainAdaptorWrapper` is also responsible for managing decisions, including persisting pending decisions.
 
 ## GUI Architecture
 The GUI is written with the [QML Material](https://github.com/papyros/qml-material) library, which provides various Material Design components and generally simplifies the process of making an application look good on many different devices. In this document, types defined by the Material library are referenced as `Material.Type` to avoid confusion.
