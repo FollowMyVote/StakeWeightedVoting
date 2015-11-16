@@ -13,6 +13,8 @@ In this repo are 4 components:
 - The `StubBackend` folder contains a dummy server daemon which the application will connect to. This daemon should be running before launching the application
 - The `VotingApp` folder contains the voting application itself
 
+See [Architecture](Architecture.md) for more information on how the components interact.
+
 ## Build Instructions
 ### Dependencies:
 - [Cap'n Proto](https://capnproto.org) 0.5.3+
