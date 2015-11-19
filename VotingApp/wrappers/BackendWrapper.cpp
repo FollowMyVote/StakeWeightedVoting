@@ -44,7 +44,7 @@ kj::ForkedPromise<ContestGenerator::Client> makeGeneratorPromise(Backend::Client
     // can't figure out whether to call the lambda directly or cast it to a function pointer and call that. Obviously
     // it should just call them lambda, but I can't figure out a way to explicitly state "do the obviously correct
     // thing," so for now I'm explicitly stating "do the obviously incorrect thing that works anyways, but slower."
-    return backend.getContestGeneratorRequest().send().then(+[](Backend::GetContestGeneratorResults::Reader r) {
+    return backend.getContestGeneratorRequest().send().then([](capnp::Response<Backend::GetContestGeneratorResults> r) {
         return r.getGenerator();
     }).fork();
 }
@@ -82,19 +82,14 @@ Promise* BackendWrapper::getContests(int count)
     auto promiseForContest = generatorPromise.addBranch().then([count](ContestGenerator::Client generator) {
         auto request = generator.nextCountRequest();
         request.setCount(count);
-        return request.send().then(+[](ContestGenerator::NextCountResults::Reader r) { return r; });
+        return request.send().then([](capnp::Response<ContestGenerator::NextCountResults> r) { return r; });
     });
     return promiseWrapper.wrap(kj::mv(promiseForContest),
-                               [](ContestGenerator::NextCountResults::Reader r) -> QVariantList {
+                               [](capnp::Response<ContestGenerator::NextCountResults> r) -> QVariantList {
         qDebug() << "Got" << r.getNextContests().size() << "contests";
         QJsonArray contests;
-        try {
             for (auto contest : r.getNextContests())
                 contests.append(convert(contest));
-        } catch (kj::Exception e) {
-            KJ_LOG(ERROR, "Exception when parsing a listed contest from the server (CapnP bug?) -- "
-                          "not returning anymore contests", e, contests.size());
-        }
         return {contests};
     });
 }
