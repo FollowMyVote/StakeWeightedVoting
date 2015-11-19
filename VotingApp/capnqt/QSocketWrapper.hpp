@@ -56,13 +56,13 @@ private:
     bool eof = false;
 
     struct ReadContext {
-        ReadContext(size_t bytesRead, size_t minBytes, size_t maxBytes, char* buffer,
+        ReadContext(size_t bytesRead, size_t minBytes, size_t maxBytes, void* buffer,
                     kj::Own<kj::PromiseFulfiller<size_t>> fulfiller, bool truncateForEof);
 
         size_t bytesRead = 0;
         size_t minBytes = 0;
         size_t maxBytes = 0;
-        char* buffer = nullptr;
+        void* buffer = nullptr;
         kj::Own<kj::PromiseFulfiller<size_t>> fulfiller;
         bool truncateForEof = false;
     };
@@ -72,7 +72,7 @@ private:
 
     kj::Promise<size_t> readImpl(void* buffer, size_t minBytes, size_t maxBytes, bool truncateForEof);
     /// @brief Attempt to read at least minBytes and at most maxBytes. Does nothing if at least minBytes are not ready.
-    size_t attemptRead(char* buffer, size_t minBytes, size_t maxBytes, bool truncateForEof);
+    size_t attemptRead(void* buffer, size_t minBytes, size_t maxBytes, bool truncateForEof);
     /// @return true if context was satisfied; false otherwise
     bool fulfillReadRequest(ReadContext& context);
 };

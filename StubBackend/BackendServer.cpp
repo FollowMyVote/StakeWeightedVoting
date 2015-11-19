@@ -232,7 +232,8 @@ void PurchaseImpl::sendNotification()
 
 ::kj::Promise<void> ContestGeneratorImpl::nextCount(ContestGenerator::Server::NextCountContext context)
 {
-    auto contestCount = std::min(context.getParams().getCount(), 10 - fetched);
+    auto contestCount = std::min(context.getParams().getCount(), std::max(0, 10 - fetched));
+    KJ_LOG(DBG, "Generating contests", contestCount);
     auto contests = context.getResults().initNextContests(static_cast<unsigned>(contestCount));
 
     for (auto builder : contests)
@@ -251,7 +252,7 @@ void ContestGeneratorImpl::populateContest(ContestGenerator::ListedContest::Buil
         break;
     default:
         KJ_REQUIRE(fetched <= 10, "No more contests are available.");
-        contest.initContestId(1)[0] = fetched;
+        contest.initContestId(1)[0] = static_cast<unsigned char>(fetched);
         contest.setVotingStake(80000000000);
         contest.setTracksLiveResults(false);
         break;

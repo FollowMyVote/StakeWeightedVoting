@@ -88,14 +88,12 @@ Promise* BackendWrapper::getContests(int count)
                                [](ContestGenerator::NextCountResults::Reader r) -> QVariantList {
         qDebug() << "Got" << r.getNextContests().size() << "contests";
         QJsonArray contests;
-        for (auto contest : r.getNextContests()) {
-            try {
+        try {
+            for (auto contest : r.getNextContests())
                 contests.append(convert(contest));
-            } catch (kj::Exception e) {
-                KJ_LOG(ERROR, "Exception when parsing a listed contest from the server (CapnP bug?) -- "
-                       "not returning anymore contests", e, contests.size());
-                break;
-            }
+        } catch (kj::Exception e) {
+            KJ_LOG(ERROR, "Exception when parsing a listed contest from the server (CapnP bug?) -- "
+                          "not returning anymore contests", e, contests.size());
         }
         return {contests};
     });
