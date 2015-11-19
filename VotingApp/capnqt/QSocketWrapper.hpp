@@ -22,6 +22,8 @@
 #ifndef QSOCKETWRAPPER
 #define QSOCKETWRAPPER
 
+#include <queue>
+
 #include <QObject>
 
 #include <kj/async-io.h>
@@ -33,7 +35,7 @@ class QSocketWrapper : public QObject, public kj::AsyncIoStream
     Q_OBJECT
 public:
     QSocketWrapper(QAbstractSocket& stream, QObject* parent = nullptr);
-    virtual ~QSocketWrapper() throw();
+    virtual ~QSocketWrapper() noexcept;
 
     // AsyncOutputStream interface
     virtual kj::Promise<void> write(const void* buffer, size_t size);
@@ -51,22 +53,28 @@ public:
 
 private:
     QAbstractSocket& stream;
-    kj::Maybe<kj::Own<kj::PromiseFulfiller<size_t>>> pendingFulfiller;
     bool eof = false;
 
-    struct {
+    struct ReadContext {
+        ReadContext(size_t bytesRead, size_t minBytes, size_t maxBytes, char* buffer,
+                    kj::Own<kj::PromiseFulfiller<size_t>> fulfiller, bool truncateForEof);
+
         size_t bytesRead = 0;
         size_t minBytes = 0;
         size_t maxBytes = 0;
-        char* buffer;
+        char* buffer = nullptr;
+        kj::Own<kj::PromiseFulfiller<size_t>> fulfiller;
         bool truncateForEof = false;
-    } readContext;
+    };
+    std::queue<ReadContext> pendingReads;
 
     bool atEof();
 
     kj::Promise<size_t> readImpl(void* buffer, size_t minBytes, size_t maxBytes, bool truncateForEof);
+    /// @brief Attempt to read at least minBytes and at most maxBytes. Does nothing if at least minBytes are not ready.
     size_t attemptRead(char* buffer, size_t minBytes, size_t maxBytes, bool truncateForEof);
-    size_t bytesIn(char* buffer, size_t minBytes, size_t maxBytes, bool truncateForEof);
+    /// @return true if context was satisfied; false otherwise
+    bool fulfillReadRequest(ReadContext& context);
 };
 
 #endif // QSOCKETWRAPPER

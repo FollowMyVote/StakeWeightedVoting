@@ -31,12 +31,14 @@ QSocketWrapper::QSocketWrapper(QAbstractSocket& stream, QObject* parent)
     QObject::connect(&stream, &QAbstractSocket::disconnected, [this]{eof = true;});
 }
 
-QSocketWrapper::~QSocketWrapper() throw() {
-    KJ_IF_MAYBE(fulfiller, pendingFulfiller) {
+QSocketWrapper::~QSocketWrapper() noexcept {
+    while (!pendingReads.empty()) {
+        auto& readContext = pendingReads.front();
         if (readContext.truncateForEof)
-            (*fulfiller)->fulfill(kj::mv(readContext.bytesRead));
+            readContext.fulfiller->fulfill(kj::mv(readContext.bytesRead));
         else
-            (*fulfiller)->reject(KJ_EXCEPTION(DISCONNECTED, "Socket was disconnected before read completed."));
+            readContext.fulfiller->reject(KJ_EXCEPTION(DISCONNECTED, "Socket was disconnected before read completed."));
+        pendingReads.pop();
     }
 
     if (stream.state() != QAbstractSocket::UnconnectedState && stream.state() != QAbstractSocket::ClosingState)
@@ -44,13 +46,13 @@ QSocketWrapper::~QSocketWrapper() throw() {
 }
 
 kj::Promise<void> QSocketWrapper::write(const void* buffer, size_t size) {
-    stream.write((const char*)buffer, size);
+    stream.write(static_cast<const char*>(buffer), static_cast<signed>(size));
     return kj::READY_NOW;
 }
 
 kj::Promise<void> QSocketWrapper::write(kj::ArrayPtr<const kj::ArrayPtr<const kj::byte> > pieces) {
     for (const kj::ArrayPtr<const kj::byte> piece : pieces)
-        stream.write((const char*)piece.begin(), piece.size());
+        stream.write(reinterpret_cast<const char*>(piece.begin()), static_cast<signed>(piece.size()));
     return kj::READY_NOW;
 }
 
@@ -71,36 +73,34 @@ bool QSocketWrapper::atEof() {
 }
 
 kj::Promise<size_t> QSocketWrapper::readImpl(void* buffer, size_t minBytes, size_t maxBytes, bool truncateForEof) {
-    // Several possibilities here:
+    // Three possibilities here:
     // - maxBytes are available now, so we return all of them immediately.
     // - Less than maxBytes are available now, but more than minBytes, so we return all of them immediately.
     // - Less than minBytes are available, so we construct a promise and wait for more data
 
     // In the first two cases, we can read immediately, so attemptRead will succeed.
-    auto bytesRead = attemptRead((char*)buffer, minBytes, maxBytes, truncateForEof);
-    if (bytesRead)
+    auto bytesRead = attemptRead(static_cast<char*>(buffer), minBytes, maxBytes, truncateForEof);
+    if (bytesRead) {
         return bytesRead;
+    }
     // No point in making a promise if we already know we'll have to break it.
-    if (atEof())
-        return KJ_EXCEPTION(DISCONNECTED, "Stream disconnected with less than minBytes readable.", minBytes);
+    if (atEof()) {
+        KJ_LOG(ERROR, "Failed read request", buffer, minBytes, stream.bytesAvailable());
+        return KJ_EXCEPTION(DISCONNECTED, "Stream disconnected with less than minBytes readable.",
+                            minBytes, stream.bytesAvailable());
+    }
 
     // Third option: make a promise
     auto paf = kj::newPromiseAndFulfiller<size_t>();
-    pendingFulfiller = kj::mv(paf.fulfiller);
-    readContext.bytesRead = 0;
-    readContext.minBytes = minBytes;
-    readContext.maxBytes = maxBytes;
-    readContext.buffer = (char*)buffer;
-    readContext.truncateForEof = truncateForEof;
+    pendingReads.emplace(0, minBytes, maxBytes, static_cast<char*>(buffer), kj::mv(paf.fulfiller), truncateForEof);
     QObject::connect(&stream, &QAbstractSocket::readyRead, this, [this] {
-        if (readContext.maxBytes > 0) {
-            auto bytesRead = bytesIn(readContext.buffer,
-                                     readContext.minBytes,
-                                     readContext.maxBytes,
-                                     readContext.truncateForEof);
-            readContext.bytesRead += bytesRead;
-            readContext.minBytes -= bytesRead;
-            readContext.maxBytes -= bytesRead;
+        while (!pendingReads.empty() && stream.bytesAvailable()) {
+            if (fulfillReadRequest(pendingReads.front()))
+                // The current read context was satisfied.
+                pendingReads.pop();
+            else
+                // Not enough bytes to satisfy the next context are available. Wait for more bytes before continuing.
+                break;
         }
     });
 
@@ -108,39 +108,50 @@ kj::Promise<size_t> QSocketWrapper::readImpl(void* buffer, size_t minBytes, size
 }
 
 size_t QSocketWrapper::attemptRead(char* buffer, size_t minBytes, size_t maxBytes, bool truncateForEof) {
-    size_t availableNow = stream.bytesAvailable();
+    size_t availableNow = static_cast<unsigned>(stream.bytesAvailable());
     if (availableNow >= maxBytes) {
         // First option: return all maxBytes now
-        stream.read((char*)buffer, maxBytes);
+        stream.read(static_cast<char*>(buffer), static_cast<signed>(maxBytes));
         return maxBytes;
     }
     if (availableNow >= minBytes || (truncateForEof && atEof())) {
         // Second option: return what's available now
-        stream.read((char*)buffer, availableNow);
+        stream.read(static_cast<char*>(buffer), static_cast<signed>(availableNow));
         return availableNow;
     }
     return 0;
 }
 
-size_t QSocketWrapper::bytesIn(char* buffer, size_t minBytes, size_t maxBytes, bool truncateForEof) {
-    KJ_IF_MAYBE(fulfiller, pendingFulfiller) {
-        // If we now have enough bytes, attemptRead succeeds and we're done
-        auto bytesRead = attemptRead(buffer, minBytes, maxBytes, truncateForEof);
-        if (bytesRead) {
-            auto copy = bytesRead;
-            (*fulfiller)->fulfill(kj::mv(copy));
-            fulfiller = nullptr;
-            return bytesRead;
-        }
-        if (atEof())
-            (*fulfiller)->reject(KJ_EXCEPTION(DISCONNECTED,
-                                              "Stream disconnected with less than minBytes readable.",
-                                              minBytes));
-        // Not enough bytes yet. Keep waiting.
-        return 0;
-    }
+bool QSocketWrapper::fulfillReadRequest(ReadContext& context) {
+    KJ_REQUIRE(context.maxBytes > 0, "Asked to fill buffer in an empty context. Unable to fulfill request.");
 
-    // There's no request to read... Read nothing.
-    // In practice, this probably never happens, but it's still possible.
-    return 0;
+    // If we now have enough bytes, attemptRead succeeds and we're done
+    if (auto bytesRead = attemptRead(context.buffer, context.minBytes, context.maxBytes, context.truncateForEof)) {
+        context.fulfiller->fulfill(kj::mv(bytesRead));
+        context.bytesRead += bytesRead;
+        context.maxBytes -= bytesRead;
+        context.minBytes = 0;
+        return true;
+    }
+    if (atEof()) {
+        KJ_LOG(ERROR, "Failed read request", static_cast<void*>(context.buffer), context.minBytes,
+               context.maxBytes, context.truncateForEof, stream.bytesAvailable());
+        context.fulfiller->reject(KJ_EXCEPTION(DISCONNECTED,
+                                               "Stream disconnected with less than minBytes readable.",
+                                               stream.bytesAvailable(),
+                                               context.minBytes));
+        return true;
+    }
+    // Not enough bytes yet. Keep waiting.
+    return false;
 }
+
+QSocketWrapper::ReadContext::ReadContext(size_t bytesRead, size_t minBytes, size_t maxBytes, char* buffer,
+                                         kj::Own<kj::PromiseFulfiller<size_t> > fulfiller, bool truncateForEof)
+    : bytesRead(bytesRead),
+      minBytes(minBytes),
+      maxBytes(maxBytes),
+      buffer(buffer),
+      fulfiller(kj::mv(fulfiller)),
+      truncateForEof(truncateForEof)
+{}
