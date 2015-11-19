@@ -69,8 +69,8 @@ Page {
 
         function reload() {
             contestList.clear()
-            // TODO: Fix hard-coded 2, and fetch contests to fill screen, handling out of contests case
-            votingSystem.backend.getContests(2).then(function (contests) {
+            // TODO: Fix hard-coded 10, and fetch contests to fill screen, handling out of contests case
+            votingSystem.backend.getContests(10).then(function (contests) {
                 contests.forEach(function(contest) {
                     contestList.append(Object(contest))
                 })

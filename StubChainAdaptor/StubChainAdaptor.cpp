@@ -135,6 +135,24 @@ StubChainAdaptor::StubChainAdaptor(QObject* parent)
     contestants[1].setName("No");
     contestants[1].setDescription("Reject the upgrade, and continue using BitShares 0.9.x");
     contests.emplace_back(kj::mv(contestOrphan));
+
+    // Total of 10 contests
+    contests.emplace_back(orphanage.newOrphanCopy(contests.back().getReader()));
+    contests.back().get().getContest().getId()[0] = 2;
+    contests.emplace_back(orphanage.newOrphanCopy(contests.back().getReader()));
+    contests.back().get().getContest().getId()[0] = 3;
+    contests.emplace_back(orphanage.newOrphanCopy(contests.back().getReader()));
+    contests.back().get().getContest().getId()[0] = 4;
+    contests.emplace_back(orphanage.newOrphanCopy(contests.back().getReader()));
+    contests.back().get().getContest().getId()[0] = 5;
+    contests.emplace_back(orphanage.newOrphanCopy(contests.back().getReader()));
+    contests.back().get().getContest().getId()[0] = 6;
+    contests.emplace_back(orphanage.newOrphanCopy(contests.back().getReader()));
+    contests.back().get().getContest().getId()[0] = 7;
+    contests.emplace_back(orphanage.newOrphanCopy(contests.back().getReader()));
+    contests.back().get().getContest().getId()[0] = 8;
+    contests.emplace_back(orphanage.newOrphanCopy(contests.back().getReader()));
+    contests.back().get().getContest().getId()[0] = 9;
 }
 
 StubChainAdaptor::~StubChainAdaptor() noexcept {}
@@ -142,7 +160,7 @@ StubChainAdaptor::~StubChainAdaptor() noexcept {}
 kj::Promise<Coin::Reader> StubChainAdaptor::getCoin(quint64 id) const
 {
     if (id >= coins.size())
-        return KJ_EXCEPTION(FAILED, "Could not find the specified coin.");
+        return KJ_EXCEPTION(FAILED, "Could not find the specified coin.", id);
 
     return coins[id].getReader();
 }
@@ -153,7 +171,7 @@ kj::Promise<Coin::Reader> StubChainAdaptor::getCoin(QString symbol) const
         return coin.getReader().getName() == symbol.toStdString();
     });
     if (itr == coins.end())
-        return KJ_EXCEPTION(FAILED, "Could not find the specified coin.");
+        return KJ_EXCEPTION(FAILED, "Could not find the specified coin.", symbol.toStdString());
     return itr->getReader();
 }
 
@@ -175,13 +193,13 @@ kj::Promise<Balance::Reader> StubChainAdaptor::getBalance(QByteArray id) const
     KJ_IF_MAYBE(balance, getBalanceOrphan(id)) {
         return balance->getReader();
     }
-    return KJ_EXCEPTION(FAILED, "Could not find the specified balance.");
+    return KJ_EXCEPTION(FAILED, "Could not find the specified balance.", id.toHex().toStdString());
 }
 
 kj::Promise<kj::Array<Balance::Reader>> StubChainAdaptor::getBalancesForOwner(QString owner) const
 {
     if (balances.find(owner) == balances.end())
-        return KJ_EXCEPTION(FAILED, "Could not find the specified owner.");
+        return KJ_EXCEPTION(FAILED, "Could not find the specified owner.", owner.toStdString());
 
     auto& bals = balances.at(owner);
     auto results = kj::heapArrayBuilder<Balance::Reader>(bals.size());
@@ -202,15 +220,16 @@ Datagram::Builder StubChainAdaptor::createDatagram()
 
 kj::Promise<Contest::Reader> StubChainAdaptor::getContest(QByteArray contestId) const
 {
-    if (contestId.size() != 1 || char(contestId[0]) < 0 || char(contestId[0]) > 2)
-        return KJ_EXCEPTION(FAILED, "Could not find the specified contest.");
+    if (contestId.size() != 1 || char(contestId[0]) < 0 || char(contestId[0]) > 10)
+        return KJ_EXCEPTION(FAILED, "Could not find the specified contest.", contestId.toHex().toStdString());
     return contests[static_cast<size_t>(contestId[0])].getReader();
 }
 
 kj::Promise<void> StubChainAdaptor::publishDatagram(QByteArray payerBalance)
 {
     capnp::Orphan<Datagram> dgram = kj::mv(KJ_REQUIRE_NONNULL(pendingDatagram,
-                                                              "No datagram exists to be published. Call createDatagram first!"));
+                                                              "No datagram exists to be published. "
+                                                              "Call createDatagram first!"));
     Datagram::Reader reader = dgram.getReader();
     auto balanceM = getBalanceOrphan(payerBalance);
     KJ_IF_MAYBE(balance, balanceM) {

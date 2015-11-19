@@ -78,6 +78,7 @@ Promise* BackendWrapper::getContest()
 
 Promise* BackendWrapper::getContests(int count)
 {
+    qDebug() << "Requesting" << count << "contests";
     auto promiseForContest = generatorPromise.addBranch().then([count](ContestGenerator::Client generator) {
         auto request = generator.nextCountRequest();
         request.setCount(count);
@@ -85,9 +86,17 @@ Promise* BackendWrapper::getContests(int count)
     });
     return promiseWrapper.wrap(kj::mv(promiseForContest),
                                [](ContestGenerator::NextCountResults::Reader r) -> QVariantList {
+        qDebug() << "Got" << r.getNextContests().size() << "contests";
         QJsonArray contests;
-        for (auto contest : r.getNextContests())
-            contests.append(convert(contest));
+        for (auto contest : r.getNextContests()) {
+            try {
+                contests.append(convert(contest));
+            } catch (kj::Exception e) {
+                KJ_LOG(ERROR, "Exception when parsing a listed contest from the server (CapnP bug?) -- "
+                       "not returning anymore contests", e, contests.size());
+                break;
+            }
+        }
         return {contests};
     });
 }

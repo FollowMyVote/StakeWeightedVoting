@@ -232,7 +232,7 @@ void PurchaseImpl::sendNotification()
 
 ::kj::Promise<void> ContestGeneratorImpl::nextCount(ContestGenerator::Server::NextCountContext context)
 {
-    auto contestCount = std::min(context.getParams().getCount(), 2 - fetched);
+    auto contestCount = std::min(context.getParams().getCount(), 10 - fetched);
     auto contests = context.getResults().initNextContests(static_cast<unsigned>(contestCount));
 
     for (auto builder : contests)
@@ -249,12 +249,11 @@ void ContestGeneratorImpl::populateContest(ContestGenerator::ListedContest::Buil
         contest.setVotingStake(10);
         contest.setTracksLiveResults(true);
         break;
-    case 1:
-        contest.initContestId(1)[0] = 1;
+    default:
+        KJ_REQUIRE(fetched <= 10, "No more contests are available.");
+        contest.initContestId(1)[0] = fetched;
         contest.setVotingStake(80000000000);
         contest.setTracksLiveResults(false);
         break;
-    default:
-        KJ_FAIL_REQUIRE("No more contests are available.");
     }
 }

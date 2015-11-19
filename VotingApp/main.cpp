@@ -44,6 +44,10 @@ int main(int argc, char *argv[])
     app.setOrganizationName(QStringLiteral("Follow My Vote"));
     app.setOrganizationDomain(QStringLiteral("followmyvote.com"));
 
+#ifndef NDEBUG
+    QQmlDebuggingEnabler debugEnabler;
+#endif
+
     qmlRegisterUncreatableType<swv::Balance>("FollowMyVote.StakeWeightedVoting", 1, 0, "Balance",
                                              QStringLiteral("Balances cannot be created from QML."));
     qmlRegisterUncreatableType<swv::Contest>("FollowMyVote.StakeWeightedVoting", 1, 0, "Contest",
