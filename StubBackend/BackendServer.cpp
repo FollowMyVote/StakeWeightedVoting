@@ -251,7 +251,7 @@ void ContestGeneratorImpl::populateContest(ContestGenerator::ListedContest::Buil
         break;
     default:
         KJ_REQUIRE(fetched <= 10, "No more contests are available.");
-        contest.initContestId(1)[0] = static_cast<unsigned char>(fetched);
+        contest.initContestId(1)[0] = static_cast<unsigned char>(fetched - 1);
         contest.setVotingStake(80000000000);
         contest.setTracksLiveResults(false);
         break;

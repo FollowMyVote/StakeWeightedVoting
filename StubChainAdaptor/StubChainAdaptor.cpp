@@ -220,7 +220,7 @@ Datagram::Builder StubChainAdaptor::createDatagram()
 
 kj::Promise<Contest::Reader> StubChainAdaptor::getContest(QByteArray contestId) const
 {
-    if (contestId.size() != 1 || char(contestId[0]) < 0 || char(contestId[0]) > 10)
+    if (contestId.size() != 1 || char(contestId[0]) < 0 || char(contestId[0]) > 9)
         return KJ_EXCEPTION(FAILED, "Could not find the specified contest.", contestId.toHex().toStdString());
     return contests[static_cast<size_t>(contestId[0])].getReader();
 }
