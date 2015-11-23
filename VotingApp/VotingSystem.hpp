@@ -114,7 +114,7 @@ public slots:
      *
      * See also @ref resetCurrentDecision
      */
-    void castCurrentDecision(swv::Contest* contest);
+    Promise* castCurrentDecision(swv::Contest* contest);
 
     void setCurrentAccount(QString currentAccount);
 

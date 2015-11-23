@@ -221,7 +221,7 @@ Datagram::Builder StubChainAdaptor::createDatagram()
 kj::Promise<Contest::Reader> StubChainAdaptor::getContest(QByteArray contestId) const
 {
     if (contestId.size() != 1 || char(contestId[0]) < 0 || char(contestId[0]) > 9)
-        return KJ_EXCEPTION(FAILED, "Could not find the specified contest.", contestId.toHex().toStdString());
+        return KJ_EXCEPTION(FAILED, "Could not find the specified contest", contestId.toHex().toStdString());
     return contests[static_cast<size_t>(contestId[0])].getReader();
 }
 
@@ -230,19 +230,22 @@ kj::Promise<void> StubChainAdaptor::publishDatagram(QByteArray payerBalance)
     capnp::Orphan<Datagram> dgram = kj::mv(KJ_REQUIRE_NONNULL(pendingDatagram,
                                                               "No datagram exists to be published. "
                                                               "Call createDatagram first!"));
+    pendingDatagram = nullptr;
+
     Datagram::Reader reader = dgram.getReader();
     auto balanceM = getBalanceOrphan(payerBalance);
     KJ_IF_MAYBE(balance, balanceM) {
         Balance::Builder builder = balance->get();
-        KJ_REQUIRE(builder.getAmount() >= 10, "The specified balance cannot pay the fee.");
+        KJ_REQUIRE(builder.getAmount() >= 10, "The specified balance cannot pay the fee");
         builder.setAmount(builder.getAmount() - 10);
 
         auto schema = reader.getSchema();
         auto key = payerBalance.append(QByteArray::fromRawData(reinterpret_cast<const char*>(schema.begin()),
                                                                static_cast<int>(schema.size())));
         datagrams[key] = kj::mv(dgram);
+        return kj::READY_NOW;
     } else {
-        KJ_FAIL_REQUIRE("Could not find the specified balance.");
+        KJ_FAIL_REQUIRE("Could not find the specified balance");
     }
     KJ_UNREACHABLE;
 }

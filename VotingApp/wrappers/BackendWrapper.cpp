@@ -17,7 +17,7 @@
  */
 
 #include "BackendWrapper.hpp"
-#include "PromiseWrapper.hpp"
+#include "PromiseConverter.hpp"
 
 #include <Promise.hpp>
 

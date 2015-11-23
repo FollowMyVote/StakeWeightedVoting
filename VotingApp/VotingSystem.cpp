@@ -29,10 +29,11 @@
 #include "wrappers/Datagram.hpp"
 #include "wrappers/BackendWrapper.hpp"
 #include "wrappers/OwningWrapper.hpp"
+#include "wrappers/Converters.hpp"
 #include "VotingSystem.hpp"
 #include "ChainAdaptorWrapper.hpp"
 #include "Promise.hpp"
-#include "PromiseWrapper.hpp"
+#include "PromiseConverter.hpp"
 #include "TwoPartyClient.hpp"
 
 #include "capnqt/QtEventPort.hpp"
@@ -203,30 +204,30 @@ void VotingSystem::configureChainAdaptor()
     d->adaptor->setAdaptor(kj::mv(adaptor));
 }
 
-void VotingSystem::castCurrentDecision(swv::Contest* contest)
+Promise* VotingSystem::castCurrentDecision(swv::Contest* contest)
 {
     Q_D(VotingSystem);
 
     if (contest == nullptr) {
         setLastError(tr("Oops! A bug is preventing your vote from being cast. "
                         "(Attempted to cast vote on null contest)"));
-        return;
+        return nullptr;
     }
 
     auto decision = contest->currentDecision();
     if (decision == nullptr) {
         setLastError(tr("Unable to cast vote because no decision was found."));
-        return;
+        return nullptr;
     }
-    if (decision->state() == Decision::Cast) {
+    if (decision->state() == Decision::Cast || decision->state() == Decision::Casting) {
         setLastError(tr("Unable to cast vote because it has not been changed since it was last cast."));
-        return;
+        return nullptr;
     }
 
     auto chain = adaptor();
     if (chain == nullptr) {
         setLastError(tr("Oops! A bug is preventing your vote from being cast. (Chain adaptor is not ready)"));
-        return;
+        return nullptr;
     }
 
     decision->setState(Decision::Casting);
@@ -247,23 +248,26 @@ void VotingSystem::castCurrentDecision(swv::Contest* contest)
 
             setLastError(tr("Unable to cast vote because the current account, %1, has no %2.")
                          .arg(d->currentAccount).arg(results.first().value<swv::Coin*>()->name()));
+            KJ_FAIL_REQUIRE("Couldn't cast vote because voting account has no balances in the coin");
         }
 
         QString serialDecision = decision->serialize().toHex();
+        auto promises = kj::heapArrayBuilder<kj::Promise<void>>(balances.size());
         for (auto balance : balances) {
             auto dgram = chain->getDatagram();
             dgram->setSchema(DECISION_SCHEMA + contest->id());
             dgram->setContent(serialDecision);
 
-            chain->publishDatagram(QByteArray::fromHex(QByteArray(reinterpret_cast<const char*>(balance.getId().begin()))));
+            promises.add(chain->adaptor()->publishDatagram(convertBlob(balance.getId())));
         }
 
-        // TODO: detect transaction confirmation and set decision state to Cast
+        return kj::joinPromises(promises.finish());
+    }).then([decision] {
+        if (decision->state() == Decision::Casting)
+            decision->setState(Decision::Cast);
     });
 
-    finishPromise.detach([this] (kj::Exception e) {
-        setLastError(QString::fromStdString(e.getDescription()));
-    });
+    return d->promiseConverter->wrap(kj::mv(finishPromise));
 }
 
 void VotingSystem::setCurrentAccount(QString currentAccount)

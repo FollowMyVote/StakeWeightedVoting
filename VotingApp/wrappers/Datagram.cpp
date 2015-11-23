@@ -47,20 +47,20 @@ QString Datagram::content() const
     return m_datagram;
 }
 
-#define ASSIGN(dataBuilder, hexString) \
+#define ASSIGN(dataBuilder, hexString, fieldName) \
     QByteArray bin = QByteArray::fromHex(hexString.toLocal8Bit()); \
-    auto target = dataBuilder.initSchema(bin.size()); \
+    auto target = dataBuilder.init ## fieldName(bin.size()); \
     memcpy(target.begin(), bin.data(), target.size())
 
 void Datagram::setSchema(QString schema)
 {
-    ASSIGN(m_datagram, schema);
+    ASSIGN(m_datagram, schema, Schema);
     emit schemaChanged(schema);
 }
 
 void Datagram::setContent(QString content)
 {
-    ASSIGN(m_datagram, content);
+    ASSIGN(m_datagram, content, Content);
     emit contentChanged(content);
 }
 

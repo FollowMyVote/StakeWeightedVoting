@@ -224,8 +224,7 @@ Card {
             Button {
                 text: qsTr("Cast Vote")
                 onClicked: {
-                    if (votingSystem.castPendingDecision(displayContest)) {
-                    }
+                    votingSystem.castCurrentDecision(displayContest)
                 }
             }
             Button {

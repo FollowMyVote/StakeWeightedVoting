@@ -114,6 +114,7 @@ void Decision::setOpinions(QJSValue newOpinions)
     }
 
     emit opinionsChanged();
+    setState(Pending);
 }
 
 void Decision::setWriteIns(QJSValue newWriteIns)
@@ -134,6 +135,7 @@ void Decision::setWriteIns(QJSValue newWriteIns)
     }
 
     emit writeInsChanged();
+    setState(Pending);
 }
 
 } // namespace swv

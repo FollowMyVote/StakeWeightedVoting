@@ -16,7 +16,7 @@
  * along with SWV.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "PromiseWrapper.hpp"
+#include "PromiseConverter.hpp"
 
 PromiseConverter::PromiseConverter(QObject* parent)
     : QObject(parent),
@@ -26,4 +26,22 @@ PromiseConverter::PromiseConverter(QObject* parent)
 void PromiseConverter::taskFailed(kj::Exception&& exception)
 {
     KJ_LOG(ERROR, exception);
+}
+
+Promise* PromiseConverter::wrap(kj::Promise<void> promise)
+{
+    auto result = new Promise(this);
+
+    auto responsePromise = promise.then(
+                               [result]() {
+        result->resolve({});
+        QQmlEngine::setObjectOwnership(result, QQmlEngine::JavaScriptOwnership);
+    }, [result](kj::Exception&& exception) {
+        result->reject({QString::fromStdString(exception.getDescription())});
+        QQmlEngine::setObjectOwnership(result, QQmlEngine::JavaScriptOwnership);
+        throw exception;
+    });
+    tasks.add(kj::mv(responsePromise));
+
+    return result;
 }

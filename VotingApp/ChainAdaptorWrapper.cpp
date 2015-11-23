@@ -23,7 +23,7 @@
 #include "wrappers/OwningWrapper.hpp"
 #include "wrappers/Converters.hpp"
 #include "Promise.hpp"
-#include "PromiseWrapper.hpp"
+#include "PromiseConverter.hpp"
 
 #include "BlockchainAdaptorInterface.hpp"
 
@@ -92,10 +92,19 @@ Promise* ChainAdaptorWrapper::getDecision(QString owner, QString contestId)
 {
     if (!hasAdaptor()) return nullptr;
 
-    auto balances = m_adaptor->getBalancesForOwner(owner);
     using Reader = ::Balance::Reader;
-    auto promise = balances.then([=](kj::Array<Reader> balances) {
-        KJ_REQUIRE(balances.size() > 0, "No balances found in the contest's asset, so no decision exists.");
+    auto promise = m_adaptor->getContest(QByteArray::fromHex(contestId.toLocal8Bit())).then([=](::Contest::Reader c) {
+        return m_adaptor->getBalancesForOwner(owner).then([c](kj::Array<Reader> balances) {
+            return std::make_pair(c, kj::mv(balances));
+        });
+    }).then([=](std::pair<::Contest::Reader, kj::Array<Reader>> pair) {
+        auto contest = kj::mv(pair.first);
+        auto balances = kj::mv(pair.second);
+
+        auto newEnd = std::remove_if(balances.begin(), balances.end(), [contest](Reader balance) {
+            return balance.getType() != contest.getContest().getCoin();
+        });
+        KJ_REQUIRE(newEnd - balances.begin() > 0, "No balances found in the contest's coin, so no decision exists.");
 
         // This struct is basically a lambda on steroids. I'm using it to transform the array of balances into an array
         // of datagrams containing the decision I want on each of those balances. Also, make sure the newest balance's
@@ -132,16 +141,18 @@ Promise* ChainAdaptorWrapper::getDecision(QString owner, QString contestId)
                     std::swap(datagramPromises.front(), datagramPromises.back());
                 }
             }
-        } accumulator{this, contestId, kj::heapArrayBuilder<kj::Promise<kj::Maybe<::Datagram::Reader>>>(balances.size())};
+        } accumulator{this, contestId,
+                    kj::heapArrayBuilder<kj::Promise<kj::Maybe<::Datagram::Reader>>>(newEnd - balances.begin())};
 
         // Process all of the balances. Fetch the appropriate decision for each.
-        accumulator = std::for_each(balances.begin(), balances.end(), kj::mv(accumulator));
+        qDebug() << "Looking for decisions on" << newEnd - balances.begin() << "balances.";
+        accumulator = std::for_each(balances.begin(), newEnd, kj::mv(accumulator));
 
         return kj::joinPromises(accumulator.datagramPromises.finish());
     }).then([=](kj::Array<kj::Maybe<::Datagram::Reader>> datagrams) {
         std::unique_ptr<OwningWrapper<swv::Decision>> decision;
-        for (size_t i = 0; i < datagrams.size(); ++i) {
-            KJ_IF_MAYBE(datagram, datagrams[i]) {
+        for (auto datagramMaybe : datagrams) {
+            KJ_IF_MAYBE(datagram, datagramMaybe) {
                 decision.reset(OwningWrapper<Decision>::deserialize(convertBlob(datagram->getContent())));
                 break;
             }
@@ -271,10 +282,11 @@ Datagram* ChainAdaptorWrapper::getDatagram()
     return nullptr;
 }
 
-void ChainAdaptorWrapper::publishDatagram(QByteArray payerBalanceId)
+Promise* ChainAdaptorWrapper::publishDatagram(QByteArray payerBalanceId)
 {
     if (hasAdaptor())
-        m_adaptor->publishDatagram(payerBalanceId);
+        return promiseConverter.wrap(m_adaptor->publishDatagram(payerBalanceId));
+    return nullptr;
 }
 
 Promise* ChainAdaptorWrapper::getDatagram(QString balanceId, QString schema)

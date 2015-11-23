@@ -42,7 +42,6 @@ public:
     explicit PromiseConverter(QObject *parent = 0);
     virtual ~PromiseConverter() noexcept {}
 
-    template<typename PromisedType, typename Func>
     /**
      * @brief Convert a kj promise to a QML-friendly promise
      * @param promise The promise to convert
@@ -56,7 +55,9 @@ public:
      * The TConverter is necessary because the T returned by promise must be converted to a list of QVariants in order
      * for it to be meaningful to QML. TConverter effects this conversion.
      */
+    template<typename PromisedType, typename Func>
     Promise* wrap(kj::Promise<PromisedType> promise, Func TConverter);
+    Promise* wrap(kj::Promise<void> promise);
 
 private:
     // ErrorHandler interface
