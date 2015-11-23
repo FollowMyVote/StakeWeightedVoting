@@ -98,7 +98,7 @@ Card {
                         id: coinImage
                         width: Units.dp(40)
                         height: Units.dp(40)
-                        source: "https://followmyvote.com/wp-content/uploads/2014/02/Follow-My-Vote-Logo.png"
+                        source: "res/Follow-My-Vote-Logo.png"
                         fillMode: Image.PreserveAspectCrop
                     }
                     Column {

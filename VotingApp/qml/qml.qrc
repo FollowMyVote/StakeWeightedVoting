@@ -6,5 +6,6 @@
         <file>ContestCard.qml</file>
         <file>PullToRefresh.qml</file>
         <file>NavigationPanel.qml</file>
+        <file>res/Follow-My-Vote-Logo.png</file>
     </qresource>
 </RCC>
