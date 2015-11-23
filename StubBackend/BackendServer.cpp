@@ -233,7 +233,6 @@ void PurchaseImpl::sendNotification()
 ::kj::Promise<void> ContestGeneratorImpl::nextCount(ContestGenerator::Server::NextCountContext context)
 {
     auto contestCount = std::min(context.getParams().getCount(), std::max(0, 10 - fetched));
-    KJ_LOG(DBG, "Generating contests", contestCount);
     auto contests = context.getResults().initNextContests(static_cast<unsigned>(contestCount));
 
     for (auto builder : contests)
