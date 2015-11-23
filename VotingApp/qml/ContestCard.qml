@@ -50,6 +50,10 @@ Card {
 
     Component.onCompleted: votingSystem.adaptor.getContest(contestId).then(function(contest) {
         displayContest = contest
+    }, function(message) {
+        console.log("Failed to load contest: " + message)
+        height = 0
+        visible = false
     })
 
     Column {
