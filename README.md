@@ -19,7 +19,7 @@ See [Architecture](Architecture.md) for more information on how the components i
 ### Dependencies:
 - [Cap'n Proto](https://capnproto.org) 0.5.3+
 - [Qt](https://qt.io) 5.5+ including QBS
-- Nathan Hourt's [QML Material](https://github.com/nathanhourt/qml-material) fork
+- [QML Material](https://github.com/papyros/qml-material)
 
 Once the dependencies are installed, building the application is as simple as running `qbs` in the top-level directory. If this doesn't work, probably qbs is not configured yet or Cap'n Proto is not in PATH. If you use the QtCreator IDE, you can skip configuring qbs manually as QtCreator does this automatically. QtCreator also allows you to customize PATH (and other environment variables) in the Projects pane.
 
