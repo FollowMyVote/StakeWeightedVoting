@@ -265,6 +265,9 @@ Promise* VotingSystem::castCurrentDecision(swv::Contest* contest)
     }).then([decision] {
         if (decision->state() == Decision::Casting)
             decision->setState(Decision::Cast);
+    }, [this, decision](kj::Exception e) {
+        setLastError(e.getDescription().cStr());
+        decision->setState(Decision::Pending);
     });
 
     return d->promiseConverter->wrap(kj::mv(finishPromise));
