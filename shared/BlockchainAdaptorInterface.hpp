@@ -23,6 +23,7 @@
 
 #include <kj/async.h>
 #include <kj/common.h>
+#include <kj/debug.h>
 
 #include "balance.capnp.h"
 #include "coin.capnp.h"
@@ -99,7 +100,8 @@ public:
     virtual Datagram::Builder createDatagram() = 0;
     /**
      * @brief Publish a datagram to the blockchain
-     * @param payer Balance which will be used to pay for the publication
+     * @param payerBalance Balance which will be used to pay for the publication
+     * @param publisherBalance Balance which the datagram will be stored on
      * @return A promise which will resolve when the datagram is successfully broadcast (not yet confirmed), or broken
      * in case of an error broadcasting the transaction
      *
@@ -109,7 +111,13 @@ public:
      * This datagram will replace any datagram with the same schema which is already owned by the specified balance.
      * Datagrams owned by the balance with different schemas will be preserved.
      */
-    virtual kj::Promise<void> publishDatagram(QByteArray payerBalance) = 0;
+    virtual kj::Promise<void> publishDatagram(QByteArray payerBalance, QByteArray publisherBalance) = 0;
+    [[deprecated("Issue #6: Replaced by overload which distinguishes between payer and publisher balances")]]
+    virtual kj::Promise<void> publishDatagram(QByteArray payerBalanceId) {
+        KJ_LOG(DBG, "Call to deprecated overload of publishDatagram");
+        return publishDatagram(payerBalanceId, payerBalanceId);
+    }
+
     /**
      * @brief Get the datagram with the specified schema belonging to the specified balance
      * @param balanceId ID of the balance owning the requested datagram

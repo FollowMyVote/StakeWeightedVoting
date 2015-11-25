@@ -49,7 +49,7 @@ public:
     virtual kj::Promise<::Contest::Reader> getContest(QByteArray contestId) const;
 
     virtual ::Datagram::Builder createDatagram();
-    virtual kj::Promise<void> publishDatagram(QByteArray payerBalance);
+    virtual kj::Promise<void> publishDatagram(QByteArray payerBalanceId, QByteArray publisherBalanceId);
     virtual kj::Promise<::Datagram::Reader> getDatagram(QByteArray balanceId, QString schema) const;
 
 protected:

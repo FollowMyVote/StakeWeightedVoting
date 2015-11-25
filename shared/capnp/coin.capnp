@@ -20,4 +20,5 @@ struct Coin {
     id @0 :UInt64;
     name @1 :Text;
     precision @2 :Int32;
+    canPayFees @3 :Bool;
 }

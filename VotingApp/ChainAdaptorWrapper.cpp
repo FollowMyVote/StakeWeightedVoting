@@ -142,7 +142,7 @@ Promise* ChainAdaptorWrapper::getDecision(QString owner, QString contestId)
                 }
             }
         } accumulator{this, contestId,
-                    kj::heapArrayBuilder<kj::Promise<kj::Maybe<::Datagram::Reader>>>(newEnd - balances.begin())};
+                    kj::heapArrayBuilder<kj::Promise<kj::Maybe<::Datagram::Reader>>>(newEnd - balances.begin()), {}};
 
         // Process all of the balances. Fetch the appropriate decision for each.
         qDebug() << "Looking for decisions on" << newEnd - balances.begin() << "balances.";
@@ -282,10 +282,10 @@ Datagram* ChainAdaptorWrapper::getDatagram()
     return nullptr;
 }
 
-Promise* ChainAdaptorWrapper::publishDatagram(QByteArray payerBalanceId)
+Promise* ChainAdaptorWrapper::publishDatagram(QByteArray payerBalanceId, QByteArray publisherBalanceId)
 {
     if (hasAdaptor())
-        return promiseConverter.wrap(m_adaptor->publishDatagram(payerBalanceId));
+        return promiseConverter.wrap(m_adaptor->publishDatagram(payerBalanceId, publisherBalanceId));
     return nullptr;
 }
 

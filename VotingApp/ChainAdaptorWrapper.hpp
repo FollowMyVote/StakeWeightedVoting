@@ -178,7 +178,7 @@ public:
      * @return A promise which resolves when the datagram has been submitted to the chain (this does not mean it will
      * be confirmed or included!)
      */
-    Q_INVOKABLE Promise* publishDatagram(QByteArray payerBalanceId);
+    Promise* publishDatagram(QByteArray payerBalanceId, QByteArray publisherBalanceId);
     /**
      * @brief Get datagram with specified schema belonging to specified balance
      * @param balanceId Hex-encoded ID of the balance to get datagram for

@@ -34,6 +34,7 @@ class Coin : public QObject, public ::Coin::Reader
     Q_PROPERTY(quint64 id READ getId CONSTANT)
     Q_PROPERTY(QString name READ name CONSTANT)
     Q_PROPERTY(qint32 precision READ getPrecision CONSTANT)
+    Q_PROPERTY(bool canPayFees READ getCanPayFees CONSTANT)
 public:
     Coin(::Coin::Reader r, QObject* parent = nullptr);
 

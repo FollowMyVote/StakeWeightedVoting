@@ -37,6 +37,7 @@ StubChainAdaptor::StubChainAdaptor(QObject* parent)
     coin.setName("BTS");
     coin.setId(0);
     coin.setPrecision(5);
+    coin.setCanPayFees(true);
     coins.emplace_back(kj::mv(coinOrphan));
 
     coinOrphan = orphanage.newOrphan<Coin>();
@@ -44,6 +45,7 @@ StubChainAdaptor::StubChainAdaptor(QObject* parent)
     coin.setName("FMV");
     coin.setId(1);
     coin.setPrecision(0);
+    coin.setCanPayFees(false);
     coins.emplace_back(kj::mv(coinOrphan));
 
     coinOrphan = orphanage.newOrphan<Coin>();
@@ -51,6 +53,7 @@ StubChainAdaptor::StubChainAdaptor(QObject* parent)
     coin.setName("USD");
     coin.setId(2);
     coin.setPrecision(2);
+    coin.setCanPayFees(true);
     coins.emplace_back(kj::mv(coinOrphan));
 
     std::reference_wrapper<std::vector<capnp::Orphan<Balance>>> bals = balances["nathan"];
@@ -225,7 +228,7 @@ kj::Promise<Contest::Reader> StubChainAdaptor::getContest(QByteArray contestId) 
     return contests[static_cast<size_t>(contestId[0])].getReader();
 }
 
-kj::Promise<void> StubChainAdaptor::publishDatagram(QByteArray payerBalance)
+kj::Promise<void> StubChainAdaptor::publishDatagram(QByteArray payerBalanceId, QByteArray publisherBalanceId)
 {
     capnp::Orphan<Datagram> dgram = kj::mv(KJ_REQUIRE_NONNULL(pendingDatagram,
                                                               "No datagram exists to be published. "
@@ -233,19 +236,25 @@ kj::Promise<void> StubChainAdaptor::publishDatagram(QByteArray payerBalance)
     pendingDatagram = nullptr;
 
     Datagram::Reader reader = dgram.getReader();
-    auto balanceM = getBalanceOrphan(payerBalance);
-    KJ_IF_MAYBE(balance, balanceM) {
-        Balance::Builder builder = balance->get();
-        KJ_REQUIRE(builder.getAmount() >= 10, "The specified balance cannot pay the fee");
-        builder.setAmount(builder.getAmount() - 10);
+    auto maybePayerBalance = getBalanceOrphan(payerBalanceId);
+    auto maybePublisherBalance = getBalanceOrphan(publisherBalanceId);
+    KJ_IF_MAYBE(payerBalance, maybePayerBalance) {
+        KJ_IF_MAYBE(publisherBalance, maybePublisherBalance) {
+            (void)publisherBalance;
+            Balance::Builder builder = payerBalance->get();
+            KJ_REQUIRE(builder.getAmount() >= 10, "The specified balance cannot pay the fee");
+            builder.setAmount(builder.getAmount() - 10);
 
-        auto schema = reader.getSchema();
-        auto key = payerBalance.append(QByteArray::fromRawData(reinterpret_cast<const char*>(schema.begin()),
-                                                               static_cast<int>(schema.size())));
-        datagrams[key] = kj::mv(dgram);
-        return kj::READY_NOW;
+            auto schema = reader.getSchema();
+            auto key = publisherBalanceId.append(QByteArray::fromRawData(reinterpret_cast<const char*>(schema.begin()),
+                                                                         static_cast<int>(schema.size())));
+            datagrams[key] = kj::mv(dgram);
+            return kj::READY_NOW;
+        } else {
+            KJ_FAIL_REQUIRE("Could not find the publisher balance");
+        }
     } else {
-        KJ_FAIL_REQUIRE("Could not find the specified balance");
+        KJ_FAIL_REQUIRE("Could not find the payer balance");
     }
     KJ_UNREACHABLE;
 }
