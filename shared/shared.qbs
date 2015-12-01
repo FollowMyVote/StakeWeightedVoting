@@ -1,4 +1,5 @@
 import qbs
+import qbs.Probes
 
 StaticLibrary {
     name: "shared"
@@ -7,9 +8,21 @@ StaticLibrary {
     cpp.includePaths: ["capnp"]
     cpp.cxxLanguageVersion: "c++14"
     cpp.cxxStandardLibrary: "libc++"
-    cpp.dynamicLibraries: ["kj", "kj-async", "capnp", "capnp-rpc"]
-    Depends { name: "capnp" }
     Depends { name: "Qt"; submodules: ["qml"] }
+    Depends { name: "capnp" }
+
+    Probes.PkgConfigProbe {
+        id: capnpProbe
+        name: "capnp-rpc"
+    }
+    property bool foundCapnp: {
+        if (!capnpProbe.found)
+            throw "Unable to find capnp. Try setting PATH and PKG_CONFIG_PATH to ensure capnp can be found."
+        return true
+    }
+
+    cpp.cxxFlags: capnpProbe.cflags
+    cpp.linkerFlags: capnpProbe.libs
 
     files: [
         "BlockchainAdaptorInterface.hpp",
@@ -21,6 +34,7 @@ StaticLibrary {
         cpp.includePaths: [".", "capnp"]
         cpp.cxxLanguageVersion: "c++14"
         cpp.cxxStandardLibrary: "libc++"
-        cpp.dynamicLibraries: ["kj", "kj-async", "capnp", "capnp-rpc"]
+        cpp.cxxFlags: capnpProbe.cflags
+        cpp.linkerFlags: capnpProbe.libs
     }
 }

@@ -5,22 +5,24 @@ import qbs.ModUtils
 
 Module {
     // Inputs
-    property string capnpPath: ""
+    property string capnpPath: qbs.hostOS.contains("osx")? "/usr/local/bin" : "/usr/bin"
 
     PropertyOptions {
         name: "capnpPath"
-        description: "Path to the capnp executables, if they are not in PATH."
+        description: "Path to the capnp executables"
     }
 
     validate: {
         // Check if an absolute path to capnp was provided
         if (FileInfo.isAbsolutePath(capnpPath) && File.exists(capnpPath) + "/capnp" &&
-                File.exists(FileInfo.path(capnpCompilerPath) + "/capnpc-c++")) {
+                File.exists(FileInfo.path(capnpPath) + "/capnpc-c++")) {
             return
         }
 
         var delimiter = qbs.hostOS.contains("windows")? ";" : ":"
         var paths = qbs.getEnv("PATH").split(delimiter)
+        if (qbs.hostOS === "osx")
+            paths.push("/usr/local/bin")
 
         // Check if capnp is in PATH
         for (var i = 0; i < paths.length; ++i)
