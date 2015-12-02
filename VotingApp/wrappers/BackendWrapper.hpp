@@ -44,7 +44,7 @@ class BackendWrapper : public QObject
 {
     Q_OBJECT
 public:
-    BackendWrapper(Backend::Client backend, PromiseConverter& promiseWrapper, QObject *parent = 0);
+    BackendWrapper(Backend::Client backend, PromiseConverter& promiseConverter, QObject *parent = 0);
     virtual ~BackendWrapper() noexcept {}
 
     Q_INVOKABLE Promise* increment(quint8 num);
@@ -67,7 +67,7 @@ public:
     Q_INVOKABLE Promise* getContests(int count);
 
 private:
-    PromiseConverter& promiseWrapper;
+    PromiseConverter& promiseConverter;
     Backend::Client backend;
     kj::ForkedPromise<ContestGenerator::Client> generatorPromise;
 };

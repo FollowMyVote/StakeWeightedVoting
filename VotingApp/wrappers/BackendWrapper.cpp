@@ -33,6 +33,7 @@ namespace swv {
 QByteArray convert(capnp::Data::Reader data) {
     return QByteArray(reinterpret_cast<const char*>(data.begin()), static_cast<signed>(data.size()));
 }
+// TODO: Try using QVariantMap instead
 QJsonObject convert(ContestGenerator::ListedContest::Reader contest) {
     return {{"contestId", QString(convert(contest.getContestId()).toHex())},
             {"votingStake", qint64(contest.getVotingStake())},
@@ -40,10 +41,6 @@ QJsonObject convert(ContestGenerator::ListedContest::Reader contest) {
 }
 
 kj::ForkedPromise<ContestGenerator::Client> makeGeneratorPromise(Backend::Client backend) {
-    // The spurious + here converts the lambda to a function pointer (inefficient!) because otherwise the stupid
-    // can't figure out whether to call the lambda directly or cast it to a function pointer and call that. Obviously
-    // it should just call them lambda, but I can't figure out a way to explicitly state "do the obviously correct
-    // thing," so for now I'm explicitly stating "do the obviously incorrect thing that works anyways, but slower."
     return backend.getContestGeneratorRequest().send().then([](capnp::Response<Backend::GetContestGeneratorResults> r) {
         return r.getGenerator();
     }).fork();
@@ -51,7 +48,7 @@ kj::ForkedPromise<ContestGenerator::Client> makeGeneratorPromise(Backend::Client
 
 BackendWrapper::BackendWrapper(Backend::Client backend, PromiseConverter& promiseWrapper, QObject *parent)
     : QObject(parent),
-      promiseWrapper(promiseWrapper),
+      promiseConverter(promiseWrapper),
       backend(kj::mv(backend)),
       generatorPromise(makeGeneratorPromise(this->backend))
 {
@@ -61,7 +58,7 @@ Promise* BackendWrapper::increment(quint8 num)
 {
     auto request = backend.incrementRequest();
     request.setNum(num);
-    return promiseWrapper.wrap(request.send(), [](Backend::IncrementResults::Reader results) -> QVariantList {
+    return promiseConverter.wrap(request.send(), [](Backend::IncrementResults::Reader results) -> QVariantList {
         return {results.getResult()};
     });
 }
@@ -71,7 +68,7 @@ Promise* BackendWrapper::getContest()
     auto promiseForContest = generatorPromise.addBranch().then([](ContestGenerator::Client generator) {
         return generator.nextRequest().send().then(+[](ContestGenerator::NextResults::Reader r) { return r; });
     });
-    return promiseWrapper.wrap(kj::mv(promiseForContest), [](ContestGenerator::NextResults::Reader r) -> QVariantList {
+    return promiseConverter.wrap(kj::mv(promiseForContest), [](ContestGenerator::NextResults::Reader r) -> QVariantList {
         return {convert(r.getNextContest())};
     });
 }
@@ -84,12 +81,13 @@ Promise* BackendWrapper::getContests(int count)
         request.setCount(count);
         return request.send().then([](capnp::Response<ContestGenerator::NextCountResults> r) { return r; });
     });
-    return promiseWrapper.wrap(kj::mv(promiseForContest),
-                               [](capnp::Response<ContestGenerator::NextCountResults> r) -> QVariantList {
+    return promiseConverter.wrap(kj::mv(promiseForContest),
+                                 [](capnp::Response<ContestGenerator::NextCountResults> r) -> QVariantList {
         qDebug() << "Got" << r.getNextContests().size() << "contests";
+        // TODO: Try using QVariantList instead
         QJsonArray contests;
-            for (auto contest : r.getNextContests())
-                contests.append(convert(contest));
+        for (auto contest : r.getNextContests())
+            contests.append(convert(contest));
         return {contests};
     });
 }

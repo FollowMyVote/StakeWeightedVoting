@@ -28,6 +28,12 @@ import Material.ListItems 0.1
 
 import FollowMyVote.StakeWeightedVoting 1.0
 
+/*
+ * This type is intended to be used as a delegate. It expects the model to define three values:
+ * contestId - the ID of the contest to display (hex-encoded string)
+ * votingStake - the number of tokens which have specified a decision on this contest (integer)
+ * tracksLiveResults - whether server has live results for this contest or not (boolean)
+ */
 Card {
     width: parent.width - Units.dp(16)
     x: Units.dp(8)
