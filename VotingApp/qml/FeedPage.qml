@@ -29,7 +29,8 @@ Page {
     title: qsTr("All Polls")
     actionBar.maxActionCount: 3
 
-    function reloadContests() { contestList.reload() }
+    function reloadContests() { contestList.reloadContests() }
+    function loadContests() { contestList.loadContests() }
 
     actions: [
         Action {
@@ -67,8 +68,12 @@ Page {
     ListModel {
         id: contestList
 
-        function reload() {
+        function reloadContests() {
+            votingSystem.backend.refreshContests()
             contestList.clear()
+            loadContests()
+        }
+        function loadContests() {
             // TODO: Fix hard-coded 10, and fetch contests to fill screen, handling out of contests case
             votingSystem.backend.getContests(10).then(function (contests) {
                 contests.forEach(function(contest) {
@@ -88,7 +93,7 @@ Page {
 
         PullToRefresh {
             view: parent
-            onTriggered: contestList.reload()
+            onTriggered: contestList.reloadContests()
             text: fullyPulled? qsTr("Release to Refresh") : qsTr("Pull to Refresh")
         }
 

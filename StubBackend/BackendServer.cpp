@@ -222,6 +222,14 @@ void PurchaseImpl::sendNotification()
     }
 }
 
+ContestGeneratorImpl::ContestGeneratorImpl()
+{
+}
+
+ContestGeneratorImpl::~ContestGeneratorImpl()
+{
+}
+
 ::kj::Promise<void> ContestGeneratorImpl::next(ContestGenerator::Server::NextContext context)
 {
     auto contest = context.getResults().initNextContest();

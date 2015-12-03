@@ -54,7 +54,7 @@ ApplicationWindow {
 
        Component.onCompleted: {
            configureChainAdaptor()
-           connectToBackend("127.0.0.1", 2572).then(feedPage.reloadContests)
+           connectToBackend("127.0.0.1", 2572).then(feedPage.loadContests)
        }
        onError: {
            console.log("Error from Voting System: %1".arg(message))

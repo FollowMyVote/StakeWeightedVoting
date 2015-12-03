@@ -53,8 +53,8 @@ protected:
 class ContestGeneratorImpl : public ContestGenerator::Server
 {
 public:
-    ContestGeneratorImpl(){}
-    virtual ~ContestGeneratorImpl(){}
+    ContestGeneratorImpl();
+    virtual ~ContestGeneratorImpl();
 
 private:
 

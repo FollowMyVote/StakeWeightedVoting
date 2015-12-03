@@ -48,6 +48,19 @@ public:
     virtual ~BackendWrapper() noexcept {}
 
     Q_INVOKABLE Promise* increment(quint8 num);
+
+    /**
+     * @section Contest Feed
+     *
+     * These methods manage the contest feed. The @ref getContest and @ref getContests methods each statefully fetch
+     * the next 1 or N contests from the server for the feed.
+     *
+     * If it is desired to throw away the state on which contests have been fetched and begin retrieving the list again
+     * from scratch, @ref refreshContests should be called. Subsequent calls to @ref getContest and @ref getContests
+     * will return contests as though none had already been fetched, so they may return a few new contests which just
+     * launched, then they may return the same sequence of contests they returned initially.
+     * @{
+     */
     /**
      * @brief Get a contest for the feed from the backend
      *
@@ -65,6 +78,12 @@ public:
      * The returned promise resolves to an array of objects of the form returned by @ref getFeedContest
      */
     Q_INVOKABLE Promise* getContests(int count);
+    /**
+     * @brief Refresh contest list so @ref getContest and @ref getContests lose state and return contests from the
+     * beginning of the feed again
+     */
+    Q_SLOT void refreshContests();
+    /// @}
 
 private:
     PromiseConverter& promiseConverter;

@@ -66,9 +66,10 @@ Promise* BackendWrapper::increment(quint8 num)
 Promise* BackendWrapper::getContest()
 {
     auto promiseForContest = generatorPromise.addBranch().then([](ContestGenerator::Client generator) {
-        return generator.nextRequest().send().then(+[](ContestGenerator::NextResults::Reader r) { return r; });
+        return generator.nextRequest().send().then([](capnp::Response<ContestGenerator::NextResults> r) { return r; });
     });
-    return promiseConverter.wrap(kj::mv(promiseForContest), [](ContestGenerator::NextResults::Reader r) -> QVariantList {
+    return promiseConverter.wrap(kj::mv(promiseForContest),
+                                 [](ContestGenerator::NextResults::Reader r) -> QVariantList {
         return {convert(r.getNextContest())};
     });
 }
@@ -89,7 +90,12 @@ Promise* BackendWrapper::getContests(int count)
         for (auto contest : r.getNextContests())
             contests.append(convert(contest));
         return {contests};
-    });
+});
+}
+
+void BackendWrapper::refreshContests()
+{
+    generatorPromise = makeGeneratorPromise(backend);
 }
 
 } // namespace swv
