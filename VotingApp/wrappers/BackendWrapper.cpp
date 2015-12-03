@@ -80,7 +80,7 @@ Promise* BackendWrapper::getContests(int count)
         for (auto contest : r.getNextContests())
             contests.append(convert(contest));
         return {contests};
-});
+    });
 }
 
 void BackendWrapper::refreshContests()
