@@ -47,8 +47,6 @@ public:
     BackendWrapper(Backend::Client backend, PromiseConverter& promiseConverter, QObject *parent = 0);
     virtual ~BackendWrapper() noexcept {}
 
-    Q_INVOKABLE Promise* increment(quint8 num);
-
     /**
      * @section Contest Feed
      *

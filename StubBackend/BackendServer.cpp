@@ -28,12 +28,6 @@
 BackendServer::BackendServer()
 {}
 
-::kj::Promise<void> BackendServer::increment(IncrementContext context)
-{
-    context.getResults().setResult(context.getParams().getNum() + 1);
-    return kj::READY_NOW;
-}
-
 ::kj::Promise<void> BackendServer::getContestGenerator(Backend::Server::GetContestGeneratorContext context)
 {
     context.getResults().setGenerator(kj::heap<ContestGeneratorImpl>());

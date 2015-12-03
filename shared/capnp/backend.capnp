@@ -24,8 +24,6 @@ interface Backend {
     # This is the master API to the FMV backend. It provides services related to listing contests, getting contest
     # results, and purchasing certified reports on the contest results.
 
-    increment @8 (num :UInt8) -> (result :UInt8);
-
     getContestGenerator @0 () -> (generator :ContestGenerator);
     # Get a generator for a feed of contests
     getContestResults @1 (contestId :Data) -> (results :ContestResults);

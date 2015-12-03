@@ -54,15 +54,6 @@ BackendWrapper::BackendWrapper(Backend::Client backend, PromiseConverter& promis
 {
 }
 
-Promise* BackendWrapper::increment(quint8 num)
-{
-    auto request = backend.incrementRequest();
-    request.setNum(num);
-    return promiseConverter.convert(request.send(), [](Backend::IncrementResults::Reader results) -> QVariantList {
-        return {results.getResult()};
-    });
-}
-
 Promise* BackendWrapper::getContest()
 {
     auto promiseForContest = generatorPromise.addBranch().then([](ContestGenerator::Client generator) {
