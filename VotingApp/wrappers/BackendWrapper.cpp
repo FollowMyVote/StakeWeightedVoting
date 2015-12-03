@@ -26,15 +26,13 @@
 #include <QDebug>
 #include <QtQml>
 #include <QVariant>
-#include <QJsonArray>
 
 namespace swv {
 
 QByteArray convert(capnp::Data::Reader data) {
     return QByteArray(reinterpret_cast<const char*>(data.begin()), static_cast<signed>(data.size()));
 }
-// TODO: Try using QVariantMap instead
-QJsonObject convert(ContestGenerator::ListedContest::Reader contest) {
+QVariantMap convert(ContestGenerator::ListedContest::Reader contest) {
     return {{"contestId", QString(convert(contest.getContestId()).toHex())},
             {"votingStake", qint64(contest.getVotingStake())},
             {"tracksLiveResults", contest.getTracksLiveResults()}};
@@ -78,8 +76,7 @@ Promise* BackendWrapper::getContests(int count)
     return promiseConverter.convert(kj::mv(promiseForContest),
                                  [](capnp::Response<ContestGenerator::GetContestsResults> r) -> QVariantList {
         qDebug() << "Got" << r.getNextContests().size() << "contests";
-        // TODO: Try using QVariantList instead
-        QJsonArray contests;
+        QVariantList contests;
         for (auto contest : r.getNextContests())
             contests.append(convert(contest));
         return {contests};
