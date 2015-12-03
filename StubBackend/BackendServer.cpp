@@ -17,6 +17,8 @@
  */
 
 #include "BackendServer.hpp"
+#include "ContestGeneratorImpl.hpp"
+#include "PurchaseImpl.hpp"
 
 #include <kj/debug.h>
 
@@ -172,96 +174,4 @@ BackendServer::BackendServer()
 {
     context.getResults().setResult(isComplete);
     return kj::READY_NOW;
-}
-
-::kj::Promise<void> PurchaseImpl::prices(Purchase::Server::PricesContext context)
-{
-    auto params = context.getParams();
-    QList<Price> prices;
-    if (params.hasPromoCode()) {
-        QString promoCode = QString::fromStdString(params.getPromoCode());
-        KJ_REQUIRE(promosAndPrices.contains(promoCode),
-                   "Unknown promo code", params.getPromoCode());
-        prices = promosAndPrices[QString::fromStdString(params.getPromoCode())];
-    } else {
-        KJ_REQUIRE(promosAndPrices.contains(QString::null), "A promo code is required to make this purchase.");
-        prices = promosAndPrices[QString::null];
-    }
-
-    auto resultPrices = context.getResults().initPrices(prices.size());
-    for (unsigned i = 0; i < resultPrices.size(); ++i) {
-        resultPrices[i].setCoinId(prices[i].coinId);
-        resultPrices[i].setAmount(prices[i].amount);
-        resultPrices[i].setPayAddress(prices[i].payAddress.toStdString());
-    }
-    return kj::READY_NOW;
-}
-
-::kj::Promise<void> PurchaseImpl::subscribe(Purchase::Server::SubscribeContext context)
-{
-    completionNotifier = context.getParams().getNotifier();
-    if (isComplete)
-        sendNotification();
-    return kj::READY_NOW;
-}
-
-::kj::Promise<void> PurchaseImpl::paymentSent(Purchase::Server::PaymentSentContext)
-{
-    isComplete = true;
-    sendNotification();
-    kj::evalLater(callback).detach([](kj::Exception&& e) {
-        KJ_LOG(ERROR, "Error when processing a payment! This is bad.", e);
-    });
-    return kj::READY_NOW;
-}
-
-void PurchaseImpl::sendNotification()
-{
-    KJ_IF_MAYBE(notifier, completionNotifier) {
-        notifier->notifyRequest().send();
-    }
-}
-
-ContestGeneratorImpl::ContestGeneratorImpl()
-{
-}
-
-ContestGeneratorImpl::~ContestGeneratorImpl()
-{
-}
-
-::kj::Promise<void> ContestGeneratorImpl::next(ContestGenerator::Server::NextContext context)
-{
-    auto contest = context.getResults().initNextContest();
-    populateContest(contest);
-
-    return kj::READY_NOW;
-}
-
-::kj::Promise<void> ContestGeneratorImpl::nextCount(ContestGenerator::Server::NextCountContext context)
-{
-    auto contestCount = std::min(context.getParams().getCount(), std::max(0, 10 - fetched));
-    auto contests = context.getResults().initNextContests(static_cast<unsigned>(contestCount));
-
-    for (auto builder : contests)
-        populateContest(builder);
-
-    return kj::READY_NOW;
-}
-
-void ContestGeneratorImpl::populateContest(ContestGenerator::ListedContest::Builder contest)
-{
-    switch(fetched++) {
-    case 0:
-        contest.initContestId(1)[0] = 0;
-        contest.setVotingStake(10);
-        contest.setTracksLiveResults(true);
-        break;
-    default:
-        KJ_REQUIRE(fetched <= 10, "No more contests are available.");
-        contest.initContestId(1)[0] = static_cast<unsigned char>(fetched - 1);
-        contest.setVotingStake(80000000000);
-        contest.setTracksLiveResults(false);
-        break;
-    }
 }

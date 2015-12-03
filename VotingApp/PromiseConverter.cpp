@@ -28,7 +28,7 @@ void PromiseConverter::taskFailed(kj::Exception&& exception)
     KJ_LOG(ERROR, exception);
 }
 
-Promise* PromiseConverter::wrap(kj::Promise<void> promise)
+Promise* PromiseConverter::convert(kj::Promise<void> promise)
 {
     auto result = new Promise(this);
 

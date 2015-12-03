@@ -9,6 +9,10 @@ QtApplication {
     files: [
         "BackendServer.cpp",
         "BackendServer.hpp",
+        "ContestGeneratorImpl.cpp",
+        "ContestGeneratorImpl.hpp",
+        "PurchaseImpl.cpp",
+        "PurchaseImpl.hpp",
         "TwoPartyServer.cpp",
         "TwoPartyServer.hpp",
         "main.cpp",

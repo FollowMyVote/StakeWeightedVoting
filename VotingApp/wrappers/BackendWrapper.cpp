@@ -58,7 +58,7 @@ Promise* BackendWrapper::increment(quint8 num)
 {
     auto request = backend.incrementRequest();
     request.setNum(num);
-    return promiseConverter.wrap(request.send(), [](Backend::IncrementResults::Reader results) -> QVariantList {
+    return promiseConverter.convert(request.send(), [](Backend::IncrementResults::Reader results) -> QVariantList {
         return {results.getResult()};
     });
 }
@@ -66,10 +66,12 @@ Promise* BackendWrapper::increment(quint8 num)
 Promise* BackendWrapper::getContest()
 {
     auto promiseForContest = generatorPromise.addBranch().then([](ContestGenerator::Client generator) {
-        return generator.nextRequest().send().then([](capnp::Response<ContestGenerator::NextResults> r) { return r; });
+        return generator.getContestRequest().send().then([](capnp::Response<ContestGenerator::GetContestResults> r) {
+            return r;
+        });
     });
-    return promiseConverter.wrap(kj::mv(promiseForContest),
-                                 [](ContestGenerator::NextResults::Reader r) -> QVariantList {
+    return promiseConverter.convert(kj::mv(promiseForContest),
+                                 [](ContestGenerator::GetContestResults::Reader r) -> QVariantList {
         return {convert(r.getNextContest())};
     });
 }
@@ -78,12 +80,12 @@ Promise* BackendWrapper::getContests(int count)
 {
     qDebug() << "Requesting" << count << "contests";
     auto promiseForContest = generatorPromise.addBranch().then([count](ContestGenerator::Client generator) {
-        auto request = generator.nextCountRequest();
+        auto request = generator.getContestsRequest();
         request.setCount(count);
-        return request.send().then([](capnp::Response<ContestGenerator::NextCountResults> r) { return r; });
+        return request.send().then([](capnp::Response<ContestGenerator::GetContestsResults> r) { return r; });
     });
-    return promiseConverter.wrap(kj::mv(promiseForContest),
-                                 [](capnp::Response<ContestGenerator::NextCountResults> r) -> QVariantList {
+    return promiseConverter.convert(kj::mv(promiseForContest),
+                                 [](capnp::Response<ContestGenerator::GetContestsResults> r) -> QVariantList {
         qDebug() << "Got" << r.getNextContests().size() << "contests";
         // TODO: Try using QVariantList instead
         QJsonArray contests;

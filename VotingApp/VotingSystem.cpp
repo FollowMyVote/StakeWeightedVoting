@@ -270,7 +270,7 @@ Promise* VotingSystem::castCurrentDecision(swv::Contest* contest)
         decision->setState(Decision::Pending);
     });
 
-    return d->promiseConverter->wrap(kj::mv(finishPromise));
+    return d->promiseConverter->convert(kj::mv(finishPromise));
 }
 
 void VotingSystem::setCurrentAccount(QString currentAccount)

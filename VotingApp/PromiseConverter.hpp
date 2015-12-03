@@ -56,8 +56,8 @@ public:
      * for it to be meaningful to QML. TConverter effects this conversion.
      */
     template<typename PromisedType, typename Func>
-    Promise* wrap(kj::Promise<PromisedType> promise, Func TConverter);
-    Promise* wrap(kj::Promise<void> promise);
+    Promise* convert(kj::Promise<PromisedType> promise, Func TConverter);
+    Promise* convert(kj::Promise<void> promise);
 
 private:
     // ErrorHandler interface
@@ -67,7 +67,7 @@ private:
 };
 
 template<typename T, typename Func>
-Promise* PromiseConverter::wrap(kj::Promise<T> promise, Func TConverter)
+Promise* PromiseConverter::convert(kj::Promise<T> promise, Func TConverter)
 {
     auto result = new Promise(this);
 
