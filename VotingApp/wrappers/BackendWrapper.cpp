@@ -79,7 +79,7 @@ Promise* BackendWrapper::getContests(int count)
         QVariantList contests;
         for (auto contest : r.getNextContests())
             contests.append(convert(contest));
-        return {contests};
+        return {QVariant(contests)};
     });
 }
 
