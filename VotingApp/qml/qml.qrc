@@ -4,6 +4,8 @@
         <file>FeedPage.qml</file>
         <file>ContestantDetailDialog.qml</file>
         <file>ContestCard.qml</file>
+        <file>ContestDelegate.qml</file>
+        <file>LoadingIndicator.qml</file>
         <file>PullToRefresh.qml</file>
         <file>NavigationPanel.qml</file>
         <file>res/Follow-My-Vote-Logo.png</file>

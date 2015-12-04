@@ -58,7 +58,6 @@ Page {
             name: qsTr("Send Feedback")
             iconName: "action/feedback"
         }
-
     ]
 
     ContestantDetailDialog {
@@ -96,27 +95,11 @@ Page {
             onTriggered: contestList.reloadContests()
             text: fullyPulled? qsTr("Release to Refresh") : qsTr("Pull to Refresh")
         }
-
-        Column {
-            anchors.centerIn: parent
-            visible: contestList.count === 0
-            ProgressCircle {
-                width: height
-                height: feedPage.height / 10
-                anchors.horizontalCenter: parent.horizontalCenter
-
-                NumberAnimation {
-                    target: parent
-                    property: "value"
-                    duration: 200
-                    from: 0; to: 1
-                    loops: Animation.Infinite
-                }
-            }
-            Label {
-                text: qsTr("Loading Polls")
-                anchors.horizontalCenter: parent.horizontalCenter
-            }
-        }
+    }
+    LoadingIndicator {
+        anchors.centerIn: parent
+        height: parent.height / 7
+        visible: contestList.count === 0
+        text: qsTr("Loading Polls")
     }
 }
