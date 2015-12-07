@@ -192,6 +192,12 @@ signals:
     void hasAdaptorChanged(bool);
     void error(QString message);
 
+    /// This signal will be emitted when an event occurs which causes a contest which had previously been counted
+    /// correctly to not be counted correctly anymore. Possible causes include the decision going stale because it's
+    /// balance was destroyed, the contest's owner acquired a new balance in the relevant coin, the decision being
+    /// forked out of the blockchain, etc.
+    void contestActionRequired(QString contestId);
+
 private:
     PromiseConverter& promiseConverter;
     kj::Own<BlockchainAdaptorInterface> m_adaptor;
