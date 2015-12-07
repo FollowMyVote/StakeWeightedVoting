@@ -28,7 +28,7 @@
 
 #define convert(name) \
     auto data = reader().get ## name (); \
-    return QByteArray::fromRawData((char*)data.begin(), data.size()).toHex()
+    return QByteArray::fromRawData(reinterpret_cast<const char*>(data.begin()), data.size()).toHex()
 
 namespace swv {
 
@@ -50,87 +50,68 @@ QString Decision::contestId() const
     convert(Contest);
 }
 
-QJSValue Decision::opinions() const
+QVariantMap Decision::opinions() const
 {
     auto data = reader().getOpinions();
-    auto engine = qjsEngine(this);
-    if (!engine) {
-        qDebug() << "Couldn't get the JS Engine! Cannot report opinions.";
-        return {};
-    }
 
-    QJSValue results = engine->newArray(data.size());
+    QVariantMap results;
     for (::Decision::Opinion::Reader opinion : data)
-        results.setProperty(QString::number(opinion.getContestant()), opinion.getOpinion());
+        results.insert(QString::number(opinion.getContestant()), opinion.getOpinion());
     return results;
 }
 
-QJSValue Decision::writeIns() const
+QVariantList Decision::writeIns() const
 {
-    auto map = reader().getWriteIns();
-    auto engine = qjsEngine(this);
-    if (!engine) {
-        qDebug() << "Couldn't get the JS Engine! Cannot report write-ins.";
-        return {};
-    }
+    auto data = reader().getWriteIns();
 
-    QJSValue results = engine->newArray(map.size());
-    int index = 0;
-    for (::UnsignedContest::Contestant::Reader contestant : map) {
-        auto jsContestant = engine->newObject();
-        jsContestant.setProperty("name", contestant.getName().cStr());
-        jsContestant.setProperty("description", contestant.getDescription().cStr());
-        results.setProperty(index++, jsContestant);
-    }
+    QVariantList results;
+    for (::UnsignedContest::Contestant::Reader contestant : data)
+        results.append(QVariantMap{{"name", contestant.getName().cStr()},
+                                   {"description", contestant.getDescription().cStr()}});
     return results;
 }
 
-void Decision::setOpinions(QJSValue newOpinions)
+QVariantMap Decision::canonicalizeOpinions(QVariantMap opinions)
 {
-    if (newOpinions.strictlyEquals(opinions()))
-        return;
-    if (!newOpinions.isObject()) {
-        qDebug() << "Cannot set opinions because opinions is not an object.";
-        return;
-    }
+    auto itr = opinions.begin();
+    while (itr != opinions.end())
+        if (itr.value().toInt() == 0)
+            itr = opinions.erase(itr);
+        else
+            ++itr;
+    return opinions;
+}
 
-    // The only way I know of to determine how many opinions there are is to iterate them and count
-    int opinionCount = 0;
-    QJSValueIterator itr(newOpinions);
-    while (itr.hasNext()) {
-        itr.next();
-        ++opinionCount;
-    }
-    itr = newOpinions;
+void Decision::setOpinions(QVariantMap newOpinions)
+{
+    canonicalizeOpinions(newOpinions);
+
+    if (newOpinions == opinions())
+        return;
 
     // Now we actually allocate space for and set the opinions
-    auto opinionList = m_decision.initOpinions(opinionCount);
-    opinionCount = 0;
-    while (itr.hasNext()) {
-        itr.next();
-        auto builder = opinionList[opinionCount++];
-        builder.setContestant(itr.name().toInt());
-        builder.setOpinion(itr.value().toInt());
+    auto opinionList = m_decision.initOpinions(newOpinions.size());
+    unsigned currentIndex = 0;
+    while (!newOpinions.empty()) {
+        auto builder = opinionList[currentIndex++];
+        auto key = newOpinions.firstKey();
+        builder.setContestant(key.toInt());
+        builder.setOpinion(newOpinions.take(key).toInt());
     }
 
     emit opinionsChanged();
 }
 
-void Decision::setWriteIns(QJSValue newWriteIns)
+void Decision::setWriteIns(QVariantList newWriteIns)
 {
-    if (newWriteIns.strictlyEquals(this->writeIns()))
+    if (newWriteIns == writeIns())
         return;
-    if (!newWriteIns.isArray()) {
-        qDebug() << "Cannot set write-ins because it is not an array.";
-        return;
-    }
 
-    auto writeInList = m_decision.initWriteIns(newWriteIns.property("length").toInt());
-    QJSValueIterator itr(newWriteIns);
+    auto writeInList = m_decision.initWriteIns(newWriteIns.size());
     for (::UnsignedContest::Contestant::Builder writeInBuilder : writeInList) {
-        itr.next();
-        writeInBuilder.setName(itr.value().property("name").toString().toStdString());
-        writeInBuilder.setDescription(itr.value().property("description").toString().toStdString());
+        auto writeIn = newWriteIns.takeFirst().toMap();
+        writeInBuilder.setName(writeIn["name"].toString().toStdString());
+        writeInBuilder.setDescription(writeIn["description"].toString().toStdString());
     }
 
     emit writeInsChanged();

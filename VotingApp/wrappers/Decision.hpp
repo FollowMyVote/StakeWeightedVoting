@@ -24,7 +24,7 @@
 #include <capnp/message.h>
 
 #include <QObject>
-#include <QJSValue>
+#include <QVariantMap>
 
 namespace swv {
 
@@ -40,16 +40,16 @@ public:
 
     Q_PROPERTY(QString id READ id CONSTANT)
     Q_PROPERTY(QString contestId READ contestId CONSTANT)
-    Q_PROPERTY(QJSValue opinions READ opinions WRITE setOpinions NOTIFY opinionsChanged)
-    Q_PROPERTY(QJSValue writeIns READ writeIns WRITE setWriteIns NOTIFY writeInsChanged)
+    Q_PROPERTY(QVariantMap opinions READ opinions WRITE setOpinions NOTIFY opinionsChanged)
+    Q_PROPERTY(QVariantList writeIns READ writeIns WRITE setWriteIns NOTIFY writeInsChanged)
 
     Decision(WrappedType::Builder b, QObject* parent = nullptr);
     ~Decision() noexcept;
 
     QString id() const;
     QString contestId() const;
-    QJSValue opinions() const;
-    QJSValue writeIns() const;
+    QVariantMap opinions() const;
+    QVariantList writeIns() const;
 
     ::Decision::Reader reader() const {
         return m_decision.asReader();
@@ -62,16 +62,19 @@ public:
     /// and write-ins. The IDs are not relevant to equality.
     bool operator== (const Decision& other) {
         return contestId() == other.contestId() &&
-                opinions().strictlyEquals(other.opinions()) &&
-                writeIns().strictlyEquals(other.writeIns());
+                opinions() == other.opinions() &&
+                writeIns() == other.writeIns();
     }
     bool operator!= (const Decision& other) {
         return !(*this == other);
     }
 
+    /// Remove all opinions of zero
+    QVariantMap canonicalizeOpinions(QVariantMap opinions);
+
 public slots:
-    void setOpinions(QJSValue newOpinions);
-    void setWriteIns(QJSValue newWriteIns);
+    void setOpinions(QVariantMap newOpinions);
+    void setWriteIns(QVariantList newWriteIns);
 
 signals:
     void balanceIdChanged();
