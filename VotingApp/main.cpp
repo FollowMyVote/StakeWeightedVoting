@@ -32,7 +32,7 @@
 #include "wrappers/Contest.hpp"
 #include "wrappers/Decision.hpp"
 #include "wrappers/Datagram.hpp"
-#include "wrappers/BackendWrapper.hpp"
+#include "BackendWrapper.hpp"
 #include "VotingSystem.hpp"
 #include "ChainAdaptorWrapper.hpp"
 #include <Promise.hpp>

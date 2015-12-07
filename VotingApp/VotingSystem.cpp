@@ -27,7 +27,7 @@
 #include "wrappers/Contest.hpp"
 #include "wrappers/Decision.hpp"
 #include "wrappers/Datagram.hpp"
-#include "wrappers/BackendWrapper.hpp"
+#include "BackendWrapper.hpp"
 #include "wrappers/OwningWrapper.hpp"
 #include "wrappers/Converters.hpp"
 #include "VotingSystem.hpp"
