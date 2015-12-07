@@ -73,16 +73,18 @@ Page {
             loadContests()
         }
         function loadContests() {
-            // TODO: Fix hard-coded 10, and fetch contests to fill screen, handling out of contests case
-            votingSystem.backend.getContests(10).then(function (contests) {
+            votingSystem.backend.getContests(3).then(function (contests) {
                 contests.forEach(function(contest) {
                     contestList.append(contest)
                 })
+                if(contests.length < 3) list.footer = noMoreContestsComponent
             })
+
         }
     }
 
     ListView {
+        id: list
         anchors.fill: parent
         anchors.topMargin: Units.dp(8)
         anchors.bottomMargin: Units.dp(8)
@@ -94,6 +96,33 @@ Page {
             view: parent
             onTriggered: contestList.reloadContests()
             text: fullyPulled? qsTr("Release to Refresh") : qsTr("Pull to Refresh")
+        }
+
+        onAtYEndChanged: {
+            if(list.atYEnd && votingSystem.isReady) {
+                contestList.loadContests()
+            }
+        }
+        onCountChanged: if (contentHeight < height && votingSystem.isReady)
+                            contestList.loadContests()
+
+
+        Component {
+            id: noMoreContestsComponent
+            Item {
+                id: noMoreContestsFooter
+                width: parent.width
+                height: noMoreContests.height*3
+
+                Label {
+                    id: noMoreContests
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.verticalCenter: parent.verticalCenter
+                    style: "subheading"
+                    text: "There are no more contests."
+
+                }
+            }
         }
     }
     LoadingIndicator {
