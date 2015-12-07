@@ -14,6 +14,8 @@ QtGuiApplication {
     files: [
         "ChainAdaptorWrapper.cpp",
         "ChainAdaptorWrapper.hpp",
+        "BackendWrapper.cpp",
+        "BackendWrapper.hpp",
         "PromiseConverter.cpp",
         "PromiseConverter.hpp",
         "TwoPartyClient.cpp",
@@ -27,8 +29,6 @@ QtGuiApplication {
         "main.cpp",
         "qml/*.qml",
         "qml/qml.qrc",
-        "wrappers/BackendWrapper.cpp",
-        "wrappers/BackendWrapper.hpp",
         "wrappers/Balance.cpp",
         "wrappers/Balance.hpp",
         "wrappers/Coin.cpp",
