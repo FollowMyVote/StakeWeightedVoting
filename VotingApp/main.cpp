@@ -32,10 +32,13 @@
 #include "wrappers/Contest.hpp"
 #include "wrappers/Decision.hpp"
 #include "wrappers/Datagram.hpp"
+#include "wrappers/ContestGeneratorWrapper.hpp"
 #include "BackendWrapper.hpp"
 #include "VotingSystem.hpp"
 #include "ChainAdaptorWrapper.hpp"
 #include <Promise.hpp>
+
+#include <capnqt/QtEventPort.hpp>
 
 int main(int argc, char *argv[])
 {
@@ -43,6 +46,11 @@ int main(int argc, char *argv[])
     app.setApplicationName(QObject::tr("Stake Weighted Voting"));
     app.setOrganizationName(QStringLiteral("Follow My Vote"));
     app.setOrganizationDomain(QStringLiteral("followmyvote.com"));
+
+    QtEventPort eventPort;
+    kj::EventLoop loop(eventPort);
+    eventPort.setLoop(&loop);
+    kj::WaitScope wsc(loop);
 
 #ifndef NDEBUG
     QQmlDebuggingEnabler debugEnabler;
@@ -62,6 +70,10 @@ int main(int argc, char *argv[])
                                                     QStringLiteral("Backend cannot be created from QML."));
     qmlRegisterUncreatableType<swv::ChainAdaptorWrapper>("FollowMyVote.StakeWeightedVoting", 1, 0, "ChainAdaptor",
                                                          QStringLiteral("Chain Adaptor cannot be created from QML."));
+    qmlRegisterUncreatableType<swv::ContestGeneratorWrapper>("FollowMyVote.StakeWeightedVoting", 1, 0,
+                                                             "ContestGenerator",
+                                                             QStringLiteral("Contest Generator cannot be created from "
+                                                                            "QML."));
     qmlRegisterType<swv::VotingSystem>("FollowMyVote.StakeWeightedVoting", 1, 0, "VotingSystem");
     qmlRegisterType<Promise>("FollowMyVote.StakeWeightedVoting", 1, 0, "Promise");
 

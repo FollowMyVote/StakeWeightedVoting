@@ -67,13 +67,20 @@ Page {
     ListModel {
         id: contestList
 
+        property var contestGenerator
+
         function reloadContests() {
-            votingSystem.backend.refreshContests()
+            contestGenerator = null
             contestList.clear()
             loadContests()
         }
         function loadContests() {
-            votingSystem.backend.getContests(3).then(function (contests) {
+            if (!contestGenerator) {
+                console.log("Setting contest generator")
+                contestGenerator = votingSystem.backend.getFeedGenerator()
+            }
+
+            contestGenerator.getContests(3).then(function (contests) {
                 contests.forEach(function(contest) {
                     contestList.append(contest)
                 })

@@ -36,7 +36,6 @@
 #include "PromiseConverter.hpp"
 #include "TwoPartyClient.hpp"
 
-#include "capnqt/QtEventPort.hpp"
 #include "capnqt/QSocketWrapper.hpp"
 
 #include <capnp/message.h>
@@ -58,14 +57,10 @@ class VotingSystemPrivate {
 public:
     VotingSystemPrivate(VotingSystem* q_ptr)
         : q_ptr(q_ptr),
-          eventPort(kj::heap<QtEventPort>()),
-          loop(*eventPort.get()),
-          waitScope(loop),
           promiseConverter(kj::heap<PromiseConverter>()),
           adaptor(kj::heap<ChainAdaptorWrapper>(*promiseConverter)),
           socket(kj::heap<QTcpSocket>())
     {
-        eventPort->setLoop(&loop);
         // Funky syntax is because QAbstractSocket::error is overloaded.
         // See: http://lists.qt-project.org/pipermail/interest/2013-November/009885.html
         QObject::connect(socket,
@@ -77,9 +72,6 @@ public:
 
     VotingSystem* q_ptr;
     QString lastError;
-    kj::Own<QtEventPort> eventPort;
-    kj::EventLoop loop;
-    kj::WaitScope waitScope;
     kj::Own<PromiseConverter> promiseConverter;
     kj::Own<ChainAdaptorWrapper> adaptor;
     kj::Own<TwoPartyClient> client;

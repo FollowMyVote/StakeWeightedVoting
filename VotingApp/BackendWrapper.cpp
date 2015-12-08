@@ -18,6 +18,7 @@
 
 #include "BackendWrapper.hpp"
 #include "PromiseConverter.hpp"
+#include "wrappers/ContestGeneratorWrapper.hpp"
 
 #include <Promise.hpp>
 
@@ -29,63 +30,16 @@
 
 namespace swv {
 
-QByteArray convert(capnp::Data::Reader data) {
-    return QByteArray(reinterpret_cast<const char*>(data.begin()), static_cast<signed>(data.size()));
-}
-QVariantMap convert(ContestGenerator::ListedContest::Reader contest) {
-    return {{"contestId", QString(convert(contest.getContestId()).toHex())},
-            {"votingStake", qint64(contest.getVotingStake())},
-            {"tracksLiveResults", contest.getTracksLiveResults()}};
-}
-
-kj::ForkedPromise<ContestGenerator::Client> makeGeneratorPromise(Backend::Client backend) {
-    return backend.getContestGeneratorRequest().send().then([](capnp::Response<Backend::GetContestGeneratorResults> r) {
-        return r.getGenerator();
-    }).fork();
-}
-
-BackendWrapper::BackendWrapper(Backend::Client backend, PromiseConverter& promiseWrapper, QObject *parent)
+BackendWrapper::BackendWrapper(Backend::Client backend, PromiseConverter& promiseConverter, QObject *parent)
     : QObject(parent),
-      promiseConverter(promiseWrapper),
-      backend(kj::mv(backend)),
-      generatorPromise(makeGeneratorPromise(this->backend))
+      promiseConverter(promiseConverter),
+      backend(kj::mv(backend))
 {
 }
 
-Promise* BackendWrapper::getContest()
+ContestGeneratorWrapper* BackendWrapper::getFeedGenerator()
 {
-    auto promiseForContest = generatorPromise.addBranch().then([](ContestGenerator::Client generator) {
-        return generator.getContestRequest().send().then([](capnp::Response<ContestGenerator::GetContestResults> r) {
-            return r;
-        });
-    });
-    return promiseConverter.convert(kj::mv(promiseForContest),
-                                 [](ContestGenerator::GetContestResults::Reader r) -> QVariantList {
-        return {convert(r.getNextContest())};
-    });
-}
-
-Promise* BackendWrapper::getContests(int count)
-{
-    qDebug() << "Requesting" << count << "contests";
-    auto promiseForContest = generatorPromise.addBranch().then([count](ContestGenerator::Client generator) {
-        auto request = generator.getContestsRequest();
-        request.setCount(count);
-        return request.send().then([](capnp::Response<ContestGenerator::GetContestsResults> r) { return r; });
-    });
-    return promiseConverter.convert(kj::mv(promiseForContest),
-                                 [](capnp::Response<ContestGenerator::GetContestsResults> r) -> QVariantList {
-        qDebug() << "Got" << r.getNextContests().size() << "contests";
-        QVariantList contests;
-        for (auto contest : r.getNextContests())
-            contests.append(convert(contest));
-        return {QVariant(contests)};
-    });
-}
-
-void BackendWrapper::refreshContests()
-{
-    generatorPromise = makeGeneratorPromise(backend);
+    return new ContestGeneratorWrapper(backend.getContestGeneratorRequest().send().getGenerator(), promiseConverter);
 }
 
 } // namespace swv
