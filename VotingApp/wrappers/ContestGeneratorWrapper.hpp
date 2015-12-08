@@ -21,10 +21,6 @@ public:
 
     Q_INVOKABLE Promise* getContest();
     Q_INVOKABLE Promise* getContests(int count);
-
-signals:
-
-public slots:
 };
 
 }

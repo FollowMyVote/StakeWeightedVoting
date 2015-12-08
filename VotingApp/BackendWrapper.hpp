@@ -48,7 +48,7 @@ public:
     BackendWrapper(Backend::Client backend, PromiseConverter& promiseConverter, QObject *parent = 0);
     virtual ~BackendWrapper() noexcept {}
 
-    ContestGeneratorWrapper* getFeedGenerator();
+    Q_INVOKABLE swv::ContestGeneratorWrapper* getFeedGenerator();
 
 private:
     PromiseConverter& promiseConverter;
