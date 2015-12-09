@@ -25,8 +25,6 @@
 #include <contest.capnp.h>
 
 #include <QObject>
-#include <QJsonObject>
-#include <QJsonArray>
 #include <QDateTime>
 
 namespace swv {
@@ -65,8 +63,8 @@ private:
     Q_PROPERTY(QString id READ id CONSTANT)
     Q_PROPERTY(QString name READ name CONSTANT)
     Q_PROPERTY(QString description READ description CONSTANT)
-    Q_PROPERTY(QJsonObject tags READ tags CONSTANT)
-    Q_PROPERTY(QJsonArray contestants READ contestants CONSTANT)
+    Q_PROPERTY(QVariantMap tags READ tags CONSTANT)
+    Q_PROPERTY(QVariantList contestants READ contestants CONSTANT)
     Q_PROPERTY(quint64 coin READ getCoin CONSTANT)
     Q_PROPERTY(QDateTime startTime READ startTime CONSTANT)
     Q_PROPERTY(swv::Decision* currentDecision READ currentDecision WRITE setCurrentDecision NOTIFY currentDecisionChanged)
@@ -86,8 +84,8 @@ public:
     QString description() const {
         return QString::fromStdString(getDescription());
     }
-    QJsonObject tags() const;
-    QJsonArray contestants() const;
+    QVariantMap tags() const;
+    QVariantList contestants() const;
     QDateTime startTime() const;
 
     OwningWrapper<Decision>* currentDecision();

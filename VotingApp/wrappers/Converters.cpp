@@ -22,7 +22,7 @@ QByteArray convertBlob(capnp::Data::Reader data) {
     return QByteArray(reinterpret_cast<const char*>(data.begin()), static_cast<signed>(data.size()));
 }
 
-QJsonObject convertListedContest(ContestGenerator::ListedContest::Reader contest) {
+QVariantMap convertListedContest(ContestGenerator::ListedContest::Reader contest) {
     return {{"contestId", QString(convertBlob(contest.getContestId()).toHex())},
             {"votingStake", qint64(contest.getVotingStake())},
             {"tracksLiveResults", contest.getTracksLiveResults()}};
