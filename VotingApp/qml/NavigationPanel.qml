@@ -27,14 +27,20 @@ NavigationDrawer {
     id: navDrawer
     enabled: true
 
-    property alias accountList: accountMenu.model
+    // Output properties
     property alias selectedAccountIndex: accountMenu.selectedIndex
+
+    // Input properties
+    property alias accountList: accountMenu.model
+
+    signal navigationPageSelected(var pageName)
 
     Flickable {
         anchors.fill: parent
 
         Column {
             width: parent.width
+
             SimpleMenu {
                 id: accountMenu
                 text: qsTr("Account")
@@ -64,6 +70,10 @@ NavigationDrawer {
             Divider{}
             Standard {
                 text: qsTr("Coin List")
+                onClicked: {
+                    navDrawer.close()
+                    navigationPageSelected("coinlist")
+                }
             }
         }
     }

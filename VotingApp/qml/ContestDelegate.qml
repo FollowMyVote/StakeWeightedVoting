@@ -120,8 +120,10 @@ Column {
                                 maxHeight = Math.max(maxHeight, contestantRepeater.itemAt(i).contentHeight)
                         return maxHeight + Units.dp(16)
                     }
-                    tintColor: displayContest.currentDecision &&
-                               displayContest.currentDecision.opinions[index]? Theme.accentColor : "transparent"
+                    tintColor: isSelected? Theme.accentColor : "transparent"
+
+                    property bool isSelected: !!displayContest.currentDecision &&
+                                              !!displayContest.currentDecision.opinions[index]
 
                     Behavior on tintColor {
                         ColorAnimation {
@@ -136,7 +138,7 @@ Column {
                         anchors.fill: parent
                         onClicked: {
                             var opinions = {}
-                            opinions[index] = 1
+                            opinions[index] = !isSelected
                             displayContest.currentDecision.opinions = opinions
                         }
                     }

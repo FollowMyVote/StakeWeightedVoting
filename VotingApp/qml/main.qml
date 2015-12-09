@@ -25,6 +25,7 @@ import Material.ListItems 0.1
 import FollowMyVote.StakeWeightedVoting 1.0
 
 ApplicationWindow {
+    id: window
     title: Qt.application.name
     width: 1280
     height: 768
@@ -66,6 +67,12 @@ ApplicationWindow {
 
     NavigationPanel {
         id: navDrawer
+
+        onNavigationPageSelected: {
+            if (pageName === "coinlist")
+                window.pageStack.push(coinListPage)
+        }
+
         Connections {
             target: votingSystem
             onIsReadyChanged: {
@@ -80,5 +87,8 @@ ApplicationWindow {
     FeedPage {
         id: feedPage
         backAction: navDrawer.action
+    }
+    FeedPage {
+        id: coinListPage
     }
 }
