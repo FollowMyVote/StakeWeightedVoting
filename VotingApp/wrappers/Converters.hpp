@@ -19,9 +19,9 @@
 #pragma once
 
 #include <QByteArray>
-#include <QJsonObject>
+#include <QVariantMap>
 
 #include <backend.capnp.h>
 
 QByteArray convertBlob(capnp::Data::Reader data);
-QJsonObject convertListedContest(ContestGenerator::ListedContest::Reader contest);
+QVariantMap convertListedContest(ContestGenerator::ListedContest::Reader contest);

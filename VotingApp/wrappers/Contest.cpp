@@ -35,22 +35,24 @@ QString Contest::id() const
                                    static_cast<signed>(data.size())).toHex();
 }
 
-QJsonObject Contest::tags() const
+QVariantMap Contest::tags() const
 {
-    QJsonObject results;
+    QVariantMap results;
     auto tagList = getTags();
     for (::UnsignedContest::Tag::Reader tag : tagList)
         results[QString::fromStdString(tag.getKey())] = QString::fromStdString(tag.getValue());
     return results;
 }
 
-QJsonArray Contest::contestants() const
+QVariantList Contest::contestants() const
 {
-    QJsonArray results;
+    QVariantList results;
     auto contestantList = getContestants();
     for (::UnsignedContest::Contestant::Reader contestant : contestantList)
-        results.append(QJsonObject({{QStringLiteral("name"), QString::fromStdString(contestant.getName())},
-                                    {QStringLiteral("description"), QString::fromStdString(contestant.getDescription())}}));
+        results.append(QVariantMap({{QStringLiteral("name"),
+                                     QString::fromStdString(contestant.getName())},
+                                    {QStringLiteral("description"),
+                                     QString::fromStdString(contestant.getDescription())}}));
     return results;
 }
 
