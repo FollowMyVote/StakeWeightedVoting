@@ -24,15 +24,12 @@
 #include <capnp/message.h>
 
 #include <QObject>
-#include <QJSValue>
+#include <QVariantMap>
 
 namespace swv {
 
 /**
  * @brief The Decision class is a read-write wrapper for the Decision type.
- *
- * In addition to exposing the properties of ::Decision in a QML-accessible form, the Decision provides a state
- * property to store the various states a decision may be in. See @ref State
  */
 class Decision : public QObject
 {
@@ -41,35 +38,18 @@ class Decision : public QObject
 public:
     using WrappedType = ::Decision;
 
-    enum State {
-        // The decision has not been cast, or has been changed since casting. This is the state of an empty
-        // (uninitialized) decision
-        Pending,
-        // The decision has been cast, but has not yet been confirmed as stored on the chain
-        Casting,
-        // The decision has been cast and is stored on the chain, and has not been changed since
-        Cast,
-        // The decision has been cast, but the owning balance has been destroyed rendering the decision invalid
-        Stale
-    };
-    Q_ENUM(State)
-
     Q_PROPERTY(QString id READ id CONSTANT)
     Q_PROPERTY(QString contestId READ contestId CONSTANT)
-    Q_PROPERTY(QJSValue opinions READ opinions WRITE setOpinions NOTIFY opinionsChanged)
-    Q_PROPERTY(QJSValue writeIns READ writeIns WRITE setWriteIns NOTIFY writeInsChanged)
-    Q_PROPERTY(State state READ state WRITE setState NOTIFY stateChanged)
+    Q_PROPERTY(QVariantMap opinions READ opinions WRITE setOpinions NOTIFY opinionsChanged)
+    Q_PROPERTY(QVariantList writeIns READ writeIns WRITE setWriteIns NOTIFY writeInsChanged)
 
     Decision(WrappedType::Builder b, QObject* parent = nullptr);
     ~Decision() noexcept;
 
     QString id() const;
     QString contestId() const;
-    QJSValue opinions() const;
-    QJSValue writeIns() const;
-    State state() const {
-        return m_state;
-    }
+    QVariantMap opinions() const;
+    QVariantList writeIns() const;
 
     ::Decision::Reader reader() const {
         return m_decision.asReader();
@@ -82,30 +62,26 @@ public:
     /// and write-ins. The IDs are not relevant to equality.
     bool operator== (const Decision& other) {
         return contestId() == other.contestId() &&
-                opinions().strictlyEquals(other.opinions()) &&
-                writeIns().strictlyEquals(other.writeIns());
+                opinions() == other.opinions() &&
+                writeIns() == other.writeIns();
     }
     bool operator!= (const Decision& other) {
         return !(*this == other);
     }
 
+    /// Remove all opinions of zero
+    QVariantMap canonicalizeOpinions(QVariantMap opinions);
+
 public slots:
-    void setOpinions(QJSValue newOpinions);
-    void setWriteIns(QJSValue newWriteIns);
-    void setState(State newState) {
-        if (newState != m_state)
-            m_state = newState;
-        emit stateChanged(newState);
-    }
+    void setOpinions(QVariantMap newOpinions);
+    void setWriteIns(QVariantList newWriteIns);
 
 signals:
     void balanceIdChanged();
     void opinionsChanged();
     void writeInsChanged();
-    void stateChanged(State);
 
 private:
-    State m_state = Pending;
     ::Decision::Builder m_decision;
 };
 

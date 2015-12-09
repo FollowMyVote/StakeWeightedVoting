@@ -36,7 +36,6 @@
 #include "PromiseConverter.hpp"
 #include "TwoPartyClient.hpp"
 
-#include "capnqt/QtEventPort.hpp"
 #include "capnqt/QSocketWrapper.hpp"
 
 #include <capnp/message.h>
@@ -58,14 +57,10 @@ class VotingSystemPrivate {
 public:
     VotingSystemPrivate(VotingSystem* q_ptr)
         : q_ptr(q_ptr),
-          eventPort(kj::heap<QtEventPort>()),
-          loop(*eventPort.get()),
-          waitScope(loop),
           promiseConverter(kj::heap<PromiseConverter>()),
           adaptor(kj::heap<ChainAdaptorWrapper>(*promiseConverter)),
           socket(kj::heap<QTcpSocket>())
     {
-        eventPort->setLoop(&loop);
         // Funky syntax is because QAbstractSocket::error is overloaded.
         // See: http://lists.qt-project.org/pipermail/interest/2013-November/009885.html
         QObject::connect(socket,
@@ -77,9 +72,6 @@ public:
 
     VotingSystem* q_ptr;
     QString lastError;
-    kj::Own<QtEventPort> eventPort;
-    kj::EventLoop loop;
-    kj::WaitScope waitScope;
     kj::Own<PromiseConverter> promiseConverter;
     kj::Own<ChainAdaptorWrapper> adaptor;
     kj::Own<TwoPartyClient> client;
@@ -219,18 +211,12 @@ Promise* VotingSystem::castCurrentDecision(swv::Contest* contest)
         setLastError(tr("Unable to cast vote because no decision was found."));
         return nullptr;
     }
-    if (decision->state() == Decision::Cast || decision->state() == Decision::Casting) {
-        setLastError(tr("Unable to cast vote because it has not been changed since it was last cast."));
-        return nullptr;
-    }
 
     auto chain = adaptor();
     if (chain == nullptr) {
         setLastError(tr("Oops! A bug is preventing your vote from being cast. (Chain adaptor is not ready)"));
         return nullptr;
     }
-
-    decision->setState(Decision::Casting);
 
     // Get all balances for current account, filter out the ones in a coin other than this contest's coin
     auto future = chain->adaptor()->getBalancesForOwner(d->currentAccount);
@@ -262,12 +248,6 @@ Promise* VotingSystem::castCurrentDecision(swv::Contest* contest)
         }
 
         return kj::joinPromises(promises.finish());
-    }).then([decision] {
-        if (decision->state() == Decision::Casting)
-            decision->setState(Decision::Cast);
-    }, [this, decision](kj::Exception e) {
-        setLastError(e.getDescription().cStr());
-        decision->setState(Decision::Pending);
     });
 
     return d->promiseConverter->convert(kj::mv(finishPromise));

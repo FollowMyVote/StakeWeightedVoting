@@ -161,7 +161,6 @@ Promise* ChainAdaptorWrapper::getDecision(QString owner, QString contestId)
                    "No decision found on chain for the requested contest and owner",
                    contestId.toStdString(),
                    owner.toStdString());
-        decision->setState(swv::Decision::Cast);
 
         // Search for non-matching or missing decisions, which would mean the decision is stale.
         for (auto maybeReader : datagrams) {
@@ -169,11 +168,11 @@ Promise* ChainAdaptorWrapper::getDecision(QString owner, QString contestId)
                 std::unique_ptr<OwningWrapper<swv::Decision>> otherDecision(
                             OwningWrapper<swv::Decision>::deserialize(convertBlob(reader->getContent())));
                 if (*otherDecision != *decision) {
-                    decision->setState(swv::Decision::Stale);
+                    emit contestActionRequired(contestId);
                     break;
                 }
             } else {
-                decision->setState(swv::Decision::Stale);
+                emit contestActionRequired(contestId);
                 break;
             }
         }
