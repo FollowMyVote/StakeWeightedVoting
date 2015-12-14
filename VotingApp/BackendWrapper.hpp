@@ -49,6 +49,8 @@ public:
     virtual ~BackendWrapper() noexcept {}
 
     Q_INVOKABLE swv::ContestGeneratorWrapper* getFeedGenerator();
+    Q_INVOKABLE swv::ContestGeneratorWrapper* getContestsByCreator(QString creator);
+    Q_INVOKABLE swv::ContestGeneratorWrapper* getContestsByCoin(quint64 coinId);
 
 private:
     PromiseConverter& promiseConverter;

@@ -42,4 +42,26 @@ ContestGeneratorWrapper* BackendWrapper::getFeedGenerator()
     return new ContestGeneratorWrapper(backend.getContestGeneratorRequest().send().getGenerator(), promiseConverter);
 }
 
+ContestGeneratorWrapper* BackendWrapper::getContestsByCreator(QString creator)
+{
+    auto request = backend.searchContestsRequest();
+    auto filters = request.initFilters(1);
+    filters[0].setType(Backend::Filter::Type::CONTEST_CREATOR);
+    auto arguments = filters[0].initArguments(1);
+    arguments.set(0, creator.toStdString());
+
+    return new ContestGeneratorWrapper(request.send().getGenerator(), promiseConverter);
+}
+
+ContestGeneratorWrapper* BackendWrapper::getContestsByCoin(quint64 coinId)
+{
+    auto request = backend.searchContestsRequest();
+    auto filters = request.initFilters(1);
+    filters[0].setType(Backend::Filter::Type::CONTEST_COIN);
+    auto arguments = filters[0].initArguments(1);
+    arguments.set(0, std::to_string(coinId));
+
+    return new ContestGeneratorWrapper(request.send().getGenerator(), promiseConverter);
+}
+
 } // namespace swv
