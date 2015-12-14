@@ -26,6 +26,8 @@ interface Backend {
 
     getContestGenerator @0 () -> (generator :ContestGenerator);
     # Get a generator for a feed of contests
+    searchContests @8 (filters :List(Filter)) -> (generator :ContestGenerator);
+    # Search contests and get a generator for the results
     getContestResults @1 (contestId :Data) -> (results :ContestResults);
     # Get the instantaneous live results for the specified contest
 
@@ -52,6 +54,20 @@ interface Backend {
         struct TalliedOpinion {
             contestant @0 :Int32;
             tally @1 :Int64;
+        }
+    }
+
+    struct Filter {
+        type @0 :Type;
+        arguments @1 :List(Text);
+
+        enum Type {
+            searchTerms @0;
+            # Search for contests containing the specified search terms. Each search term is an argument
+            contestCreator @1;
+            # Search for contests created by the specified account. Argument is a blockchain-specific account ID
+            contestCoin @2;
+            # Search for contests weighted by the specified coin. Argument is base-10 string of coin ID
         }
     }
 }

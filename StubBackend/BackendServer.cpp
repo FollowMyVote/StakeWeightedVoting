@@ -34,6 +34,12 @@ BackendServer::BackendServer()
     return kj::READY_NOW;
 }
 
+::kj::Promise<void> BackendServer::searchContests(Backend::Server::SearchContestsContext context)
+{
+    context.getResults().setGenerator(kj::heap<ContestGeneratorImpl>());
+    return kj::READY_NOW;
+}
+
 ::kj::Promise<void> BackendServer::getContestResults(Backend::Server::GetContestResultsContext context)
 {
     auto contestId = context.getParams().getContestId()[0];
