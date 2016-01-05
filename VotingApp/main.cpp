@@ -78,6 +78,7 @@ int main(int argc, char *argv[])
     qmlRegisterType<Promise>("FollowMyVote.StakeWeightedVoting", 1, 0, "Promise");
 
     QQmlApplicationEngine engine;
+    engine.addImportPath(QStringLiteral("qrc:/"));
     Promise::setEngine(&engine);
     engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
 

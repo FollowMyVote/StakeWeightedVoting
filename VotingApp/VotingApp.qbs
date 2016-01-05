@@ -8,7 +8,7 @@ QtGuiApplication {
     Depends { name: "StubChainAdaptor" }
     Depends { name: "Qt"; submodules: ["network", "qml"] }
 
-    qmlImportPaths: "/usr/local/opt/qt5/qml"
+    qmlImportPaths: ["/usr/local/opt/qt5/qml", path + "/qml"]
     cpp.includePaths: [".", "qml-promise/src"]
 
     files: [

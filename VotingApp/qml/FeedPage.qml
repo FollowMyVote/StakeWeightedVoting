@@ -86,7 +86,6 @@ Page {
                 })
                 if(contests.length < 3) list.footer = noMoreContestsComponent
             })
-
         }
     }
 
@@ -96,7 +95,12 @@ Page {
         anchors.topMargin: Units.dp(8)
         anchors.bottomMargin: Units.dp(8)
         model: contestList
-        delegate: ContestCard{}
+        delegate: ContestCard {
+            contestId: model.contestId
+            votingStake: model.votingStake
+            tracksLiveResults: model.tracksLiveResults
+            onSelected: feedPage.push(Qt.createComponent(Qt.resolvedUrl("ContestPage.qml")), {"contest": contest})
+        }
         spacing: Units.dp(8)
 
         PullToRefresh {
@@ -112,7 +116,6 @@ Page {
         }
         onCountChanged: if (contentHeight < height && votingSystem.isReady)
                             contestList.loadContests()
-
 
         Component {
             id: noMoreContestsComponent
