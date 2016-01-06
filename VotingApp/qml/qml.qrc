@@ -9,5 +9,9 @@
         <file>PullToRefresh.qml</file>
         <file>NavigationPanel.qml</file>
         <file>res/Follow-My-Vote-Logo.png</file>
+        <file>ContestPage.qml</file>
+        <file>jbQuick/Charts/QChart.js</file>
+        <file>jbQuick/Charts/QChart.qml</file>
+        <file>jbQuick/Charts/qmldir</file>
     </qresource>
 </RCC>

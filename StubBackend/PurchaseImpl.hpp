@@ -24,6 +24,8 @@
 
 #include "capnp/purchase.capnp.h"
 
+#include <functional>
+
 class PurchaseImpl : public Purchase::Server
 {
 public:
