@@ -14,23 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with SWV.  If not, see <http://www.gnu.org/licenses/>.
 
-@0xd073c95fea7a1ec4;
+@0xa761c66e7877d633;
 
-using Map = import "map.capnp".Map;
-
-struct UnsignedContest {
-    id @0 :Data;
-    name @1 :Text;
-    description @2 :Text;
-    tags @3 :Map(Text, Text);
-    # Map of key to value
-    contestants @4 :Map(Text, Text);
-    # Map of name to description
-    coin @5 :UInt64;
-    startTime @6 :UInt64;
-}
-
-struct Contest {
-    contest @0 :UnsignedContest;
-    signature @1 :Data;
+struct Map (Key, Value) {
+    entries @0 :List(Entry);
+    struct Entry {
+        key @0 :Key;
+        value @1 :Value;
+    }
 }

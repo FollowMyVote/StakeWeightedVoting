@@ -38,8 +38,8 @@ QString Contest::id() const
 QVariantMap Contest::tags() const
 {
     QVariantMap results;
-    auto tagList = getTags();
-    for (::UnsignedContest::Tag::Reader tag : tagList)
+    auto tagList = getTags().getEntries();
+    for (auto tag : tagList)
         results[QString::fromStdString(tag.getKey())] = QString::fromStdString(tag.getValue());
     return results;
 }
@@ -47,12 +47,12 @@ QVariantMap Contest::tags() const
 QVariantList Contest::contestants() const
 {
     QVariantList results;
-    auto contestantList = getContestants();
-    for (::UnsignedContest::Contestant::Reader contestant : contestantList)
+    auto contestantList = getContestants().getEntries();
+    for (auto contestant : contestantList)
         results.append(QVariantMap({{QStringLiteral("name"),
-                                     QString::fromStdString(contestant.getName())},
+                                     QString::fromStdString(contestant.getKey())},
                                     {QStringLiteral("description"),
-                                     QString::fromStdString(contestant.getDescription())}}));
+                                     QString::fromStdString(contestant.getValue())}}));
     return results;
 }
 

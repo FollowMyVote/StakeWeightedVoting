@@ -17,6 +17,7 @@
 @0x9d1e6685c0b5a466;
 
 using Contestant = import "contest.capnp".UnsignedContest.Contestant;
+using Map = import "map.capnp".Map;
 
 struct Decision {
 # A Decision is a vote on a particular contest. A decision specifies the voter's opinions on one or more contestants,
@@ -33,7 +34,7 @@ struct Decision {
     # ID of the contest this decision pertains to
     opinions @2 :List(Opinion);
     # List of opinions within this decision
-    writeIns @3 :List(Contestant);
+    writeIns @3 :Map(Text, Text);
     # List of write-in candidates specified in this decision
 
     struct Opinion {
