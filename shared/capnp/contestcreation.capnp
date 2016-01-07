@@ -115,20 +115,17 @@ interface ContestCreator {
         # Microsecond timestamp of end date; zero indicates no end
         sponsorship :union {
             noSponsorship @7 :Void;
-            options @8 :SponsorshipOptions;
+            options :group {
+                maxVotes @8 :Int64;
+                # Maximum number of votes to sponsor; zero indicates unlimited
+                maxRevotes @9 :Int32;
+                # Maximum number of revotes per voter to sponsor; zero indicates unlimited
+                endDate @10 :Int64;
+                # Microsecond timestamp of end of vote sponsorship period
+                incentive @11 :Int64;
+                # Balance to pay each voter as an incentive for voting on this contest
+            }
         }
-        promoCodes @9 :List(Text);
-
-        struct SponsorshipOptions {
-        # This struct contains all of the options surrounding sponsorship, if sponsorship is desired.
-            maxVotes @0 :Int64;
-            # Maximum number of votes to sponsor; zero indicates unlimited
-            maxRevotes @1 :Int32;
-            # Maximum number of revotes per voter to sponsor; zero indicates unlimited
-            endDate @2 :Int64;
-            # Microsecond timestamp of end of vote sponsorship period
-            incentive @3 :Int64;
-            # Balance to pay each voter as an incentive for voting on this contest
-        }
+        promoCodes @12 :List(Text);
     }
 }
