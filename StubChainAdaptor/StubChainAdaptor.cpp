@@ -106,16 +106,16 @@ StubChainAdaptor::StubChainAdaptor(QObject* parent)
     ucontest.setDescription("Where should we go for lunch?");
     ucontest.setStartTime(static_cast<uint64_t>(QDateTime::fromString("2015-09-20T12:00:00",
                                                                       Qt::ISODate).toMSecsSinceEpoch()));
-    auto tags = ucontest.initTags(1);
+    auto tags = ucontest.initTags().initEntries(1);
     tags[0].setKey("category");
     tags[0].setValue("food");
-    auto contestants = ucontest.initContestants(3);
-    contestants[0].setName("Wikiteria");
-    contestants[0].setDescription("Cafeteria on the CRC campus");
-    contestants[1].setName("Wicked Taco");
-    contestants[1].setDescription("Restaurant on Prices Fork");
-    contestants[2].setName("Firehouse");
-    contestants[2].setDescription("Sub Shop on University City Blvd");
+    auto contestants = ucontest.initContestants().initEntries(3);
+    contestants[0].setKey("Wikiteria");
+    contestants[0].setValue("Cafeteria on the CRC campus");
+    contestants[1].setKey("Wicked Taco");
+    contestants[1].setValue("Restaurant on Prices Fork");
+    contestants[2].setKey("Firehouse");
+    contestants[2].setValue("Sub Shop on University City Blvd");
     contests.emplace_back(kj::mv(contestOrphan));
 
     contestOrphan = orphanage.newOrphan<Contest>();
@@ -129,14 +129,14 @@ StubChainAdaptor::StubChainAdaptor(QObject* parent)
                             "using the Graphene Toolkit?");
     ucontest.setStartTime(static_cast<uint64_t>(QDateTime::fromString("2015-09-11T12:00:00",
                                                                       Qt::ISODate).toMSecsSinceEpoch()));
-    tags = ucontest.initTags(1);
+    tags = ucontest.initTags().initEntries(1);
     tags[0].setKey("category");
     tags[0].setValue("hard-forks");
-    contestants = ucontest.initContestants(2);
-    contestants[0].setName("Yes");
-    contestants[0].setDescription("Accept the upgrade, and hard-fork to BitShares 2.0");
-    contestants[1].setName("No");
-    contestants[1].setDescription("Reject the upgrade, and continue using BitShares 0.9.x");
+    contestants = ucontest.initContestants().initEntries(2);
+    contestants[0].setKey("Yes");
+    contestants[0].setValue("Accept the upgrade, and hard-fork to BitShares 2.0");
+    contestants[1].setKey("No");
+    contestants[1].setValue("Reject the upgrade, and continue using BitShares 0.9.x");
     contests.emplace_back(kj::mv(contestOrphan));
 
     // Total of 10 contests

@@ -17,6 +17,7 @@
  */
 
 #include "Decision.hpp"
+#include "contest.capnp.h"
 
 #include <capnp/serialize-packed.h>
 
@@ -62,12 +63,12 @@ QVariantMap Decision::opinions() const
 
 QVariantList Decision::writeIns() const
 {
-    auto data = reader().getWriteIns();
+    auto data = reader().getWriteIns().getEntries();
 
     QVariantList results;
-    for (::UnsignedContest::Contestant::Reader contestant : data)
-        results.append(QVariantMap{{"name", contestant.getName().cStr()},
-                                   {"description", contestant.getDescription().cStr()}});
+    for (auto contestant : data)
+        results.append(QVariantMap{{"name", contestant.getKey().cStr()},
+                                   {"description", contestant.getValue().cStr()}});
     return results;
 }
 
@@ -107,11 +108,11 @@ void Decision::setWriteIns(QVariantList newWriteIns)
     if (newWriteIns == writeIns())
         return;
 
-    auto writeInList = m_decision.initWriteIns(newWriteIns.size());
-    for (::UnsignedContest::Contestant::Builder writeInBuilder : writeInList) {
+    auto writeInList = m_decision.initWriteIns().initEntries(newWriteIns.size());
+    for (auto writeInBuilder : writeInList) {
         auto writeIn = newWriteIns.takeFirst().toMap();
-        writeInBuilder.setName(writeIn["name"].toString().toStdString());
-        writeInBuilder.setDescription(writeIn["description"].toString().toStdString());
+        writeInBuilder.setKey(writeIn["name"].toString().toStdString());
+        writeInBuilder.setValue(writeIn["description"].toString().toStdString());
     }
 
     emit writeInsChanged();
