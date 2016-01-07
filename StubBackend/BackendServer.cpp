@@ -17,6 +17,7 @@
  */
 
 #include "BackendServer.hpp"
+#include "ContestCreatorImpl.hpp"
 #include "ContestGeneratorImpl.hpp"
 #include "PurchaseImpl.hpp"
 
@@ -150,6 +151,12 @@ BackendServer::BackendServer()
     auto results = context.getResults().initReports(reports.size());
     for (unsigned i = 0; i < results.size(); ++i)
         results.set(i, reports[i].toTime_t());
+    return kj::READY_NOW;
+}
+
+::kj::Promise<void> BackendServer::getContestCreator(Backend::Server::GetContestCreatorContext context)
+{
+    context.getResults().setCreator(kj::heap<ContestCreatorImpl>());
     return kj::READY_NOW;
 }
 

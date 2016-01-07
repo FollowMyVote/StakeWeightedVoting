@@ -52,6 +52,8 @@ public:
     Q_INVOKABLE swv::ContestGeneratorWrapper* getContestsByCreator(QString creator);
     Q_INVOKABLE swv::ContestGeneratorWrapper* getContestsByCoin(quint64 coinId);
 
+    Q_INVOKABLE void getContestCreationRequest();
+
 private:
     PromiseConverter& promiseConverter;
     Backend::Client backend;

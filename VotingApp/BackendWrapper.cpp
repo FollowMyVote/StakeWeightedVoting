@@ -64,4 +64,9 @@ ContestGeneratorWrapper* BackendWrapper::getContestsByCoin(quint64 coinId)
     return new ContestGeneratorWrapper(request.send().getGenerator(), promiseConverter);
 }
 
+void BackendWrapper::getContestCreationRequest()
+{
+    auto request = backend;
+}
+
 } // namespace swv
