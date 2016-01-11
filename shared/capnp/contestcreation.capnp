@@ -71,11 +71,11 @@ interface ContestCreator {
         # Maximum permissible length of the contest description
         contestantCount @3;
         # Maximum number of contestants
-        contestnatName @4;
+        contestantNameLength @4;
         # Maximum length of a contestant name
-        contestantDescriptionHardLength @5;
+        contestantDescriptionSoftLength @5;
         # Maximum length of a contestant description before risking a surcharge
-        contestantDescriptionSoftLength @6;
+        contestantDescriptionHardLength @6;
         # Maximum permissible length of a contestant description
         maxEndDate @7;
         # Maximum end date of a finite-duration contest. A value of zero allows infinite contest duration; any other

@@ -19,6 +19,7 @@
 #include "BackendWrapper.hpp"
 #include "PromiseConverter.hpp"
 #include "wrappers/ContestGeneratorWrapper.hpp"
+#include "wrappers/ContestCreationRequest.hpp"
 
 #include <Promise.hpp>
 
@@ -64,9 +65,29 @@ ContestGeneratorWrapper* BackendWrapper::getContestsByCoin(quint64 coinId)
     return new ContestGeneratorWrapper(request.send().getGenerator(), promiseConverter);
 }
 
-void BackendWrapper::getContestCreationRequest()
+ContestCreationRequest* BackendWrapper::getContestCreationRequest()
 {
-    auto request = backend;
+    // Fetch a new creator if we don't have one yet
+    auto creator = [this] {
+        KJ_IF_MAYBE(creator, contestCreator)
+            return *creator;
+        auto creator = backend.getContestCreatorRequest().send().getCreator();
+        contestCreator = creator;
+        return creator;
+    }();
+
+    auto pricesPromise = creator.getPriceScheduleRequest().send();
+    auto pricesAndLimitsPromise = creator.getContestLimitsRequest().send().then(kj::mvCapture(kj::mv(pricesPromise),
+        [](kj::Promise<capnp::Response<::ContestCreator::GetPriceScheduleResults>> pricesPromise,
+           capnp::Response<::ContestCreator::GetContestLimitsResults> limits) {
+        return pricesPromise.then(kj::mvCapture(limits,
+                                                [] (decltype(limits) limits,
+                                                    capnp::Response<::ContestCreator::GetPriceScheduleResults> prices) {
+            return std::make_pair(kj::mv(prices), kj::mv(limits));
+        }));
+    }));
+
+    return new ContestCreationRequest(creator.purchaseContestRequest());
 }
 
 } // namespace swv
