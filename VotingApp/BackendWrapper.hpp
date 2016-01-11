@@ -22,11 +22,13 @@
 #include <QObject>
 
 #include <backend.capnp.h>
+#include <contestcreation.capnp.h>
 
 class Promise;
 class PromiseConverter;
 namespace swv {
 class ContestGeneratorWrapper;
+class ContestCreationRequest;
 
 /**
  * @brief The BackendWrapper class provides a QML-friendly wrapper for the RPC backend
@@ -52,11 +54,12 @@ public:
     Q_INVOKABLE swv::ContestGeneratorWrapper* getContestsByCreator(QString creator);
     Q_INVOKABLE swv::ContestGeneratorWrapper* getContestsByCoin(quint64 coinId);
 
-    Q_INVOKABLE void getContestCreationRequest();
+    Q_INVOKABLE ContestCreationRequest* getContestCreationRequest();
 
 private:
     PromiseConverter& promiseConverter;
     Backend::Client backend;
+    kj::Maybe<ContestCreator::Client> contestCreator;
 };
 
 } // namespace swv

@@ -33,6 +33,7 @@
 #include "wrappers/Decision.hpp"
 #include "wrappers/Datagram.hpp"
 #include "wrappers/ContestGeneratorWrapper.hpp"
+#include "wrappers/ContestCreationRequest.hpp"
 #include "BackendWrapper.hpp"
 #include "VotingSystem.hpp"
 #include "ChainAdaptorWrapper.hpp"
@@ -74,8 +75,15 @@ int main(int argc, char *argv[])
                                                              "ContestGenerator",
                                                              QStringLiteral("Contest Generator cannot be created from "
                                                                             "QML."));
+    qmlRegisterUncreatableType<swv::ContestGeneratorWrapper>("FollowMyVote.StakeWeightedVoting", 1, 0,
+                                                             "ContestGenerator",
+                                                             QStringLiteral("Contest Generator cannot be created from "
+                                                                            "QML."));
     qmlRegisterType<swv::VotingSystem>("FollowMyVote.StakeWeightedVoting", 1, 0, "VotingSystem");
     qmlRegisterType<Promise>("FollowMyVote.StakeWeightedVoting", 1, 0, "Promise");
+
+    qmlRegisterUncreatableType<swv::LineItems>("FollowMyVote.StakeWeightedVoting", 1, 0, "LineItems", "");
+    qmlRegisterUncreatableType<swv::ContestLimits>("FollowMyVote.StakeWeightedVoting", 1, 0, "ContestLimits", "");
 
     QQmlApplicationEngine engine;
     engine.addImportPath(QStringLiteral("qrc:/"));
