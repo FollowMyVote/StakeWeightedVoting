@@ -19,7 +19,7 @@
 using Purchase = import "purchase.capnp".Purchase;
 using Notifier = import "purchase.capnp".Notifier;
 using ContestGenerator = import "contestgenerator.capnp".ContestGenerator;
-using ContestCreator = import "contestcreation.capnp".ContestCreator;
+using ContestCreator = import "contestcreator.capnp".ContestCreator;
 
 interface Backend {
     # This is the master API to the FMV backend. It provides services related to listing contests, getting contest
