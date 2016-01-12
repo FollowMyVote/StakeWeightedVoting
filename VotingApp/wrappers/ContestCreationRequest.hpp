@@ -54,6 +54,3 @@ QML_ENUM_CLASS(ContestLimits,
 #endif // CONTESTCREATIONREQUEST_HPP
 
 } // namespace swv
-
-Q_DECLARE_METATYPE(swv::LineItems)
-Q_DECLARE_METATYPE(swv::ContestLimits)
