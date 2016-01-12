@@ -82,8 +82,10 @@ int main(int argc, char *argv[])
     qmlRegisterType<swv::VotingSystem>("FollowMyVote.StakeWeightedVoting", 1, 0, "VotingSystem");
     qmlRegisterType<Promise>("FollowMyVote.StakeWeightedVoting", 1, 0, "Promise");
 
-    qmlRegisterUncreatableType<swv::LineItems>("FollowMyVote.StakeWeightedVoting", 1, 0, "LineItems", "");
-    qmlRegisterUncreatableType<swv::ContestLimits>("FollowMyVote.StakeWeightedVoting", 1, 0, "ContestLimits", "");
+    qmlRegisterUncreatableType<swv::LineItems>("FollowMyVote.StakeWeightedVoting", 1, 0, "LineItems",
+                                               "LineItems is an enum container only; it cannot be created.");
+    qmlRegisterUncreatableType<swv::ContestLimits>("FollowMyVote.StakeWeightedVoting", 1, 0, "ContestLimits",
+                                                   "ContestLimits is an enum container only; it cannot be created.");
 
     QQmlApplicationEngine engine;
     engine.addImportPath(QStringLiteral("qrc:/"));
