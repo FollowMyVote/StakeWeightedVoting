@@ -36,6 +36,7 @@ interface ContestCreator {
 
     enum LineItems {
     # LineItems is an enumeration of all the individual features we may charge for
+    # NOTE: updates to this enum should be reflected in VotingApp/wrappers/ContestCreationRequest.hpp
         contestTypeOneOfN @0;
         # Base price for the One of N contest type
 
@@ -62,7 +63,8 @@ interface ContestCreator {
     }
 
     enum ContestLimits {
-    # ContestLimits is an enumeration of all the limits on contest creation
+    # ContestLimits is an enumeration of all the limits on contest creation.
+    # NOTE: updates to this enum should be reflected in VotingApp/wrappers/ContestCreationRequest.hpp
         nameLength @0;
         # Maximum length of the contest name
         descriptionSoftLength @1;
