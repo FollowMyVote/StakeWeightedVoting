@@ -16,11 +16,18 @@ namespace swv {
 class PurchaseContestRequest : public QObject
 {
     Q_OBJECT
+
+    kj::TaskSet& tasks;
 public:
     using PurchaseRequest = capnp::Request<::ContestCreator::PurchaseContestParams,
                                            ::ContestCreator::PurchaseContestResults>;
 
-    PurchaseContestRequest(PurchaseRequest&& request);
+    /**
+     * @param request The request to complete/submit
+     * @param taskTracker The task set to add the submission promise to
+     * @param parent The QObject parent must be set to an object which will not outlive taskTracker
+     */
+    PurchaseContestRequest(PurchaseRequest&& request, kj::TaskSet& taskTracker, QObject* parent);
     virtual ~PurchaseContestRequest() noexcept {}
 
 public slots:
