@@ -50,7 +50,7 @@ PurchaseContestRequest* ContestCreator::getPurchaseContestRequest()
 {
     refreshPrices();
     refreshLimits();
-    return new PurchaseContestRequest(creator.purchaseContestRequest());
+    return new PurchaseContestRequest(creator.purchaseContestRequest(), tasks, this);
 }
 
 } // namespace swv
