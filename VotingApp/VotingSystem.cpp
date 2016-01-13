@@ -208,7 +208,7 @@ void VotingSystem::configureChainAdaptor()
     d->adaptor->setAdaptor(kj::mv(adaptor));
 }
 
-Promise* VotingSystem::castCurrentDecision(swv::Contest* contest)
+Promise* VotingSystem::castCurrentDecision(swv::ContestWrapper* contest)
 {
     Q_D(VotingSystem);
 
@@ -245,7 +245,7 @@ Promise* VotingSystem::castCurrentDecision(swv::Contest* contest)
                 setLastError(tr("Unable to cast vote because the coin for the contest was not found."));
 
             setLastError(tr("Unable to cast vote because the current account, %1, has no %2.")
-                         .arg(d->currentAccount).arg(results.first().value<swv::Coin*>()->name()));
+                         .arg(d->currentAccount).arg(results.first().value<swv::CoinWrapper*>()->name()));
             KJ_FAIL_REQUIRE("Couldn't cast vote because voting account has no balances in the coin");
         }
 

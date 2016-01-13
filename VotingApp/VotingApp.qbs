@@ -45,7 +45,6 @@ QtGuiApplication {
         "wrappers/Decision.hpp",
         "wrappers/OwningWrapper.cpp",
         "wrappers/OwningWrapper.hpp",
-        "wrappers/Converters.cpp",
         "wrappers/Converters.hpp",
         "wrappers/PurchaseContestRequest.cpp",
         "wrappers/PurchaseContestRequest.hpp",

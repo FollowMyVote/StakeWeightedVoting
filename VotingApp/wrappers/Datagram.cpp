@@ -20,29 +20,29 @@
 
 namespace swv {
 
-Datagram::Datagram(::Datagram::Builder b, QObject* parent)
+DatagramWrapper::DatagramWrapper(::Datagram::Builder b, QObject* parent)
     : QObject(parent),
       m_datagram(b)
 {}
 
-QString Datagram::schema() const
+QString DatagramWrapper::schema() const
 {
     auto result = m_datagram.asReader().getSchema();
     return QByteArray::fromRawData((char*)result.begin(), result.size()).toHex();
 }
 
-QString Datagram::content() const
+QString DatagramWrapper::content() const
 {
     auto data = m_datagram.asReader().getContent();
     return QByteArray::fromRawData((char*)data.begin(), data.size()).toHex();
 }
 
-::Datagram::Reader Datagram::reader() const
+::Datagram::Reader DatagramWrapper::reader() const
 {
     return m_datagram.asReader();
 }
 
-::Datagram::Builder Datagram::builder()
+::Datagram::Builder DatagramWrapper::builder()
 {
     return m_datagram;
 }
@@ -52,13 +52,13 @@ QString Datagram::content() const
     auto target = dataBuilder.init ## fieldName(bin.size()); \
     memcpy(target.begin(), bin.data(), target.size())
 
-void Datagram::setSchema(QString schema)
+void DatagramWrapper::setSchema(QString schema)
 {
     ASSIGN(m_datagram, schema, Schema);
     emit schemaChanged(schema);
 }
 
-void Datagram::setContent(QString content)
+void DatagramWrapper::setContent(QString content)
 {
     ASSIGN(m_datagram, content, Content);
     emit contentChanged(content);

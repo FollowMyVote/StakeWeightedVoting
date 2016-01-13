@@ -39,7 +39,7 @@ namespace swv {
  * The contest may be in one of several states (see @ref State), depending on the chain state and interactions from the
  * user. This state is intended to be set and used by the GUI; it is ignored by all C++ code.
  */
-class Contest : public QObject, public ::UnsignedContest::Reader
+class ContestWrapper : public QObject, public ::UnsignedContest::Reader
 {
 public:
     enum State {
@@ -67,14 +67,14 @@ private:
     Q_PROPERTY(QVariantList contestants READ contestants CONSTANT)
     Q_PROPERTY(quint64 coin READ getCoin CONSTANT)
     Q_PROPERTY(QDateTime startTime READ startTime CONSTANT)
-    Q_PROPERTY(swv::Decision* currentDecision READ currentDecision WRITE setCurrentDecision NOTIFY currentDecisionChanged)
+    Q_PROPERTY(swv::DecisionWrapper* currentDecision READ currentDecision WRITE setCurrentDecision NOTIFY currentDecisionChanged)
     Q_PROPERTY(State state READ state WRITE setState NOTIFY stateChanged)
 
     State m_state;
-    OwningWrapper<Decision>* m_currentDecision = nullptr;
+    OwningWrapper<DecisionWrapper>* m_currentDecision = nullptr;
 
 public:
-    Contest(::UnsignedContest::Reader r, QObject* parent = nullptr);
+    ContestWrapper(::UnsignedContest::Reader r, QObject* parent = nullptr);
 
     // Hexadecimal string containing the ID of the contest
     QString id() const;
@@ -88,14 +88,14 @@ public:
     QVariantList contestants() const;
     QDateTime startTime() const;
 
-    OwningWrapper<Decision>* currentDecision();
-    const OwningWrapper<swv::Decision>* currentDecision() const;
+    OwningWrapper<DecisionWrapper>* currentDecision();
+    const OwningWrapper<swv::DecisionWrapper>* currentDecision() const;
 
     // Set the current decision. Destroys the old current decision and takes ownership of the new one.
-    void setCurrentDecision(OwningWrapper<Decision>* newDecision);
+    void setCurrentDecision(OwningWrapper<DecisionWrapper>* newDecision);
     // Overload of setCurrentDecision. If argument is an OwningWrapper, it casts and calls the other overload.
     // Otherwise, it copies newDecision into a new OwningWrapper<Decision> and calls the other overload.
-    void setCurrentDecision(Decision* newDecision);
+    void setCurrentDecision(DecisionWrapper* newDecision);
 
     State state() const
     {

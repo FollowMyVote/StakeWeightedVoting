@@ -28,7 +28,7 @@ namespace swv {
 /**
  * @brief The Coin class is a read-only wrapper for the Coin type
  */
-class Coin : public QObject, public ::Coin::Reader
+class CoinWrapper : public QObject, public ::Coin::Reader
 {
     Q_OBJECT
     Q_PROPERTY(quint64 id READ getId CONSTANT)
@@ -36,7 +36,7 @@ class Coin : public QObject, public ::Coin::Reader
     Q_PROPERTY(qint32 precision READ getPrecision CONSTANT)
     Q_PROPERTY(bool canPayFees READ getCanPayFees CONSTANT)
 public:
-    Coin(::Coin::Reader r, QObject* parent = nullptr);
+    CoinWrapper(::Coin::Reader r, QObject* parent = nullptr);
 
     QString name() const {
         return QString::fromStdString(getName());

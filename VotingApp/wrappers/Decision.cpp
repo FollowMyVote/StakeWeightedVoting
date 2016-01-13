@@ -33,25 +33,25 @@
 
 namespace swv {
 
-Decision::Decision(WrappedType::Builder b, QObject* parent)
+DecisionWrapper::DecisionWrapper(WrappedType::Builder b, QObject* parent)
     : QObject(parent),
       m_decision(b)
 {}
 
-Decision::~Decision() noexcept
+DecisionWrapper::~DecisionWrapper() noexcept
 {}
 
-QString Decision::id() const
+QString DecisionWrapper::id() const
 {
     convert(Id);
 }
 
-QString Decision::contestId() const
+QString DecisionWrapper::contestId() const
 {
     convert(Contest);
 }
 
-QVariantMap Decision::opinions() const
+QVariantMap DecisionWrapper::opinions() const
 {
     auto data = reader().getOpinions();
 
@@ -61,7 +61,7 @@ QVariantMap Decision::opinions() const
     return results;
 }
 
-QVariantList Decision::writeIns() const
+QVariantList DecisionWrapper::writeIns() const
 {
     auto data = reader().getWriteIns().getEntries();
 
@@ -72,7 +72,7 @@ QVariantList Decision::writeIns() const
     return results;
 }
 
-QVariantMap Decision::canonicalizeOpinions(QVariantMap opinions)
+QVariantMap DecisionWrapper::canonicalizeOpinions(QVariantMap opinions)
 {
     auto itr = opinions.begin();
     while (itr != opinions.end())
@@ -83,7 +83,7 @@ QVariantMap Decision::canonicalizeOpinions(QVariantMap opinions)
     return opinions;
 }
 
-void Decision::setOpinions(QVariantMap newOpinions)
+void DecisionWrapper::setOpinions(QVariantMap newOpinions)
 {
     canonicalizeOpinions(newOpinions);
 
@@ -103,7 +103,7 @@ void Decision::setOpinions(QVariantMap newOpinions)
     emit opinionsChanged();
 }
 
-void Decision::setWriteIns(QVariantList newWriteIns)
+void DecisionWrapper::setWriteIns(QVariantList newWriteIns)
 {
     if (newWriteIns == writeIns())
         return;

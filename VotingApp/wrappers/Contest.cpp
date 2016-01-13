@@ -23,19 +23,19 @@
 
 namespace swv {
 
-Contest::Contest(UnsignedContest::Reader r, QObject* parent)
+ContestWrapper::ContestWrapper(UnsignedContest::Reader r, QObject* parent)
     : QObject(parent),
       ::UnsignedContest::Reader(r)
 {}
 
-QString Contest::id() const
+QString ContestWrapper::id() const
 {
     auto data = getId();
     return QByteArray::fromRawData(reinterpret_cast<const char*>(data.begin()),
                                    static_cast<signed>(data.size())).toHex();
 }
 
-QVariantMap Contest::tags() const
+QVariantMap ContestWrapper::tags() const
 {
     QVariantMap results;
     auto tagList = getTags().getEntries();
@@ -44,7 +44,7 @@ QVariantMap Contest::tags() const
     return results;
 }
 
-QVariantList Contest::contestants() const
+QVariantList ContestWrapper::contestants() const
 {
     QVariantList results;
     auto contestantList = getContestants().getEntries();
@@ -56,20 +56,20 @@ QVariantList Contest::contestants() const
     return results;
 }
 
-QDateTime Contest::startTime() const
+QDateTime ContestWrapper::startTime() const
 {
     return QDateTime::fromMSecsSinceEpoch(static_cast<signed>(getStartTime()));
 }
 
-OwningWrapper<Decision>* Contest::currentDecision() {
+OwningWrapper<DecisionWrapper>* ContestWrapper::currentDecision() {
     return m_currentDecision;
 }
 
-const OwningWrapper<Decision>* Contest::currentDecision() const {
+const OwningWrapper<DecisionWrapper>* ContestWrapper::currentDecision() const {
     return m_currentDecision;
 }
 
-void Contest::setCurrentDecision(OwningWrapper<Decision>* newDecision)
+void ContestWrapper::setCurrentDecision(OwningWrapper<DecisionWrapper>* newDecision)
 {
     if (newDecision == nullptr) {
         qDebug() << "Ignoring setCurrentDecision(nullptr)";
@@ -83,16 +83,16 @@ void Contest::setCurrentDecision(OwningWrapper<Decision>* newDecision)
     emit currentDecisionChanged();
 }
 
-void Contest::setCurrentDecision(Decision* newDecision)
+void ContestWrapper::setCurrentDecision(DecisionWrapper* newDecision)
 {
     if (newDecision == nullptr) {
         qDebug() << "Ignoring setCurrentDecision(nullptr)";
         return;
     }
 
-    OwningWrapper<Decision>* decision = dynamic_cast<OwningWrapper<Decision>*>(newDecision);
+    OwningWrapper<DecisionWrapper>* decision = dynamic_cast<OwningWrapper<DecisionWrapper>*>(newDecision);
     if (decision == nullptr)
-        decision = new OwningWrapper<Decision>(newDecision->reader(), this);
+        decision = new OwningWrapper<DecisionWrapper>(newDecision->reader(), this);
     setCurrentDecision(decision);
 }
 

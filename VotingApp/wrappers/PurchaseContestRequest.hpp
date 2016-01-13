@@ -5,17 +5,32 @@
 
 #include <contestcreator.capnp.h>
 
+#include "vendor/QQmlEnumClassHelper.h"
+
 namespace swv {
 
+QML_ENUM_CLASS(ContestType,
+               OneOfN = static_cast<uint16_t>(::ContestCreator::ContestTypes::ONE_OF_N)
+        )
+QML_ENUM_CLASS(TallyAlgorithm,
+               Plurality = static_cast<uint16_t>(::ContestCreator::TallyAlgorithms::PLURALITY)
+        )
+
 /**
- * @brief The PurchaseContestRequest class provies a QML interface to a PurchaseRequest for a contest
+ * @brief The PurchaseContestRequest class provies a QML interface to manage purchasing a contest
  *
- * The request is initially empty, and must be configured by setting its properties. When the request is configured, it
- * can be submitted by calling @ref submit.
+ * The PurchaseContestRequest properties map to the fields of the ContestCreationRequest capnp struct; however, this
+ * class is really a wrapper for a request to call purchaseContest on the ContestCreator API. When the request is
+ * completely configured, it can be submitted by calling @ref submit, which will return a promise for a
+ * PurchaseContestResponse.
  */
-class PurchaseContestRequest : public QObject
+class PurchaseContestRequestWrapper : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(QString name READ name WRITE setName NOTIFY nameChanged)
+    Q_PROPERTY(QString description READ description WRITE setDescription NOTIFY descriptionChanged)
+    Q_PROPERTY(quint64 weightCoin READ weightCoin WRITE setWeightCoin NOTIFY weightCoinChanged)
+    Q_PROPERTY(qint64 expiration READ expiration WRITE setExpiration NOTIFY expirationChanged)
 
     kj::TaskSet& tasks;
 public:
@@ -27,12 +42,48 @@ public:
      * @param taskTracker The task set to add the submission promise to
      * @param parent The QObject parent must be set to an object which will not outlive taskTracker
      */
-    PurchaseContestRequest(PurchaseRequest&& request, kj::TaskSet& taskTracker, QObject* parent);
-    virtual ~PurchaseContestRequest() noexcept {}
+    PurchaseContestRequestWrapper(PurchaseRequest&& request, kj::TaskSet& taskTracker, QObject* parent);
+    virtual ~PurchaseContestRequestWrapper() noexcept {}
+
+    QString name() const;
+    QString description() const;
+    quint64 weightCoin() const
+    {
+        return request.asReader().getRequest().getWeightCoin();
+    }
+    qint64 expiration() const
+    {
+        return request.asReader().getRequest().getContestExpiration();
+    }
 
 public slots:
     /// @brief Submit the request to the server. This consumes the request.
     void submit(){}
+
+    void setName(QString name);
+    void setDescription(QString description);
+    void setWeightCoin(quint64 weightCoin)
+    {
+        if (weightCoin == this->weightCoin())
+            return;
+
+        request.getRequest().setWeightCoin(weightCoin);
+        emit weightCoinChanged(weightCoin);
+    }
+    void setExpiration(qint64 expiration)
+    {
+        if (expiration == this->expiration())
+            return;
+
+        request.getRequest().setContestExpiration(expiration);
+        emit expirationChanged(expiration);
+    }
+
+signals:
+    void nameChanged(QString name);
+    void descriptionChanged(QString description);
+    void weightCoinChanged(quint64 weightCoin);
+    void expirationChanged(qint64 expiration);
 
 private:
     PurchaseRequest request;

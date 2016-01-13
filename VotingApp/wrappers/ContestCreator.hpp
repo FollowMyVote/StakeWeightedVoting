@@ -9,9 +9,9 @@
 #include "vendor/QQmlEnumClassHelper.h"
 
 namespace swv {
-class PurchaseContestRequest;
+class PurchaseContestRequestWrapper;
 
-class ContestCreator : public QObject, private kj::TaskSet::ErrorHandler
+class ContestCreatorWrapper : public QObject, private kj::TaskSet::ErrorHandler
 {
     Q_OBJECT
     Q_PROPERTY(QVariantMap priceSchedule READ priceSchedule NOTIFY priceScheduleChanged)
@@ -27,8 +27,8 @@ class ContestCreator : public QObject, private kj::TaskSet::ErrorHandler
     void taskFailed(kj::Exception&& exception);
 
 public:
-    explicit ContestCreator(::ContestCreator::Client&& creator);
-    virtual ~ContestCreator() noexcept {}
+    explicit ContestCreatorWrapper(::ContestCreator::Client&& creator);
+    virtual ~ContestCreatorWrapper() noexcept {}
 
     /// @brief Get the cached price schedule
     /// @note The result will be empty until the schedule is refreshed via @ref refreshPrices. Generally this will
@@ -48,7 +48,7 @@ public:
     }
 
     /// @brief Get an empty contest purchase request
-    Q_INVOKABLE swv::PurchaseContestRequest* getPurchaseContestRequest();
+    Q_INVOKABLE swv::PurchaseContestRequestWrapper* getPurchaseContestRequest();
 
 public slots:
     void refreshPrices();
