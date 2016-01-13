@@ -30,7 +30,7 @@ class ContestGeneratorWrapper;
 class ContestCreatorWrapper;
 
 /**
- * @brief The BackendWrapper class provides a QML-friendly wrapper for the RPC backend
+ * @brief The BackendWrapper class provides a QML-friendly wrapper for the backend API
  *
  * This class makes all of the Cap'nProto RPC interfaces to the backend friendly to QML. It wraps the
  * functions in Q_INVOKABLE proxies and adapts the return values to Qt types and wraps any interfaces

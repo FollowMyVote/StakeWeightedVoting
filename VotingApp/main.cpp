@@ -35,9 +35,9 @@
 #include "wrappers/ContestGeneratorWrapper.hpp"
 #include "wrappers/PurchaseContestRequest.hpp"
 #include "wrappers/ContestCreator.hpp"
-#include "BackendWrapper.hpp"
+#include "wrappers/BackendWrapper.hpp"
+#include "wrappers/ChainAdaptorWrapper.hpp"
 #include "VotingSystem.hpp"
-#include "ChainAdaptorWrapper.hpp"
 #include <Promise.hpp>
 
 #include <capnqt/QtEventPort.hpp>
@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
     REGISTER_ENUM(TallyAlgorithm);
 #undef REGISTER_ENUM
 
-    // Register controllers
+    // Other registrations
     qmlRegisterType<swv::VotingSystem>("FollowMyVote.StakeWeightedVoting", 1, 0, "VotingSystem");
     qmlRegisterType<Promise>("FollowMyVote.StakeWeightedVoting", 1, 0, "Promise");
 

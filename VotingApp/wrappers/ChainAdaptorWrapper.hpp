@@ -40,7 +40,7 @@ class BalanceWrapper;
  * @brief The ChainAdaptorWrapper class wraps a BlockchainAdaptorInterface in a more QML-friendly interface
  *
  * Because BlockchainAdaptorInterface is designed to be mostly Qt-independent, it (and its implementors) is not friendly
- * to QML (i.e. it returns types that QML can't inspect or manipulate). This class wraps such an adaptor and provides an
+ * to QML (i.e. it returns types that QML can't inspect or manipulate). This class wraps the interface and provides an
  * interface which exposes QML-friendly wrappers and types to manipulate the Cap'n Proto backend types.
  *
  * The ChainAdaptorWrapper is also responsible for managing decisions on contests, including their persistence.
