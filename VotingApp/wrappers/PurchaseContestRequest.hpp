@@ -27,6 +27,9 @@ QML_ENUM_CLASS(TallyAlgorithm,
 class PurchaseContestRequestWrapper : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(ContestType::Type contestType READ contestType WRITE setContestType NOTIFY contestTypeChanged)
+    Q_PROPERTY(TallyAlgorithm::Type tallyAlgorithm READ tallyAlgorithm WRITE setTallyAlgorithm
+               NOTIFY tallyAlgorithmChanged)
     Q_PROPERTY(QString name READ name WRITE setName NOTIFY nameChanged)
     Q_PROPERTY(QString description READ description WRITE setDescription NOTIFY descriptionChanged)
     Q_PROPERTY(quint64 weightCoin READ weightCoin WRITE setWeightCoin NOTIFY weightCoinChanged)
@@ -55,6 +58,8 @@ public:
     {
         return request.asReader().getRequest().getContestExpiration();
     }
+    ContestType::Type contestType() const;
+    TallyAlgorithm::Type tallyAlgorithm() const;
 
 public slots:
     /// @brief Submit the request to the server. This consumes the request.
@@ -78,12 +83,16 @@ public slots:
         request.getRequest().setContestExpiration(expiration);
         emit expirationChanged(expiration);
     }
+    void setContestType(ContestType::Type contestType);
+    void setTallyAlgorithm(TallyAlgorithm::Type tallyAlgorithm);
 
 signals:
     void nameChanged(QString name);
     void descriptionChanged(QString description);
     void weightCoinChanged(quint64 weightCoin);
     void expirationChanged(qint64 expiration);
+    void contestTypeChanged(ContestType::Type contestType);
+    void tallyAlgorithmChanged(TallyAlgorithm::Type tallyAlgorithm);
 
 private:
     PurchaseRequest request;
