@@ -5,13 +5,13 @@
 
 namespace swv {
 
-void ContestCreator::taskFailed(kj::Exception&& exception)
+void ContestCreatorWrapper::taskFailed(kj::Exception&& exception)
 {
     KJ_LOG(ERROR, exception);
     emit error(QString::fromStdString(exception.getDescription()));
 }
 
-ContestCreator::ContestCreator(::ContestCreator::Client&& creator)
+ContestCreatorWrapper::ContestCreatorWrapper(::ContestCreator::Client&& creator)
     : creator(kj::mv(creator)),
       tasks(*this)
 {
@@ -20,7 +20,7 @@ ContestCreator::ContestCreator(::ContestCreator::Client&& creator)
 }
 
 
-void ContestCreator::refreshPrices()
+void ContestCreatorWrapper::refreshPrices()
 {
     auto promise = creator.getPriceScheduleRequest().send();
     tasks.add(promise.then([this](capnp::Response<::ContestCreator::GetPriceScheduleResults> r)
@@ -33,7 +33,7 @@ void ContestCreator::refreshPrices()
     }));
 }
 
-void ContestCreator::refreshLimits()
+void ContestCreatorWrapper::refreshLimits()
 {
     auto promise = creator.getContestLimitsRequest().send();
     tasks.add(promise.then([this](capnp::Response<::ContestCreator::GetContestLimitsResults> r)
@@ -46,11 +46,11 @@ void ContestCreator::refreshLimits()
     }));
 }
 
-PurchaseContestRequest* ContestCreator::getPurchaseContestRequest()
+PurchaseContestRequestWrapper* ContestCreatorWrapper::getPurchaseContestRequest()
 {
     refreshPrices();
     refreshLimits();
-    return new PurchaseContestRequest(creator.purchaseContestRequest(), tasks, this);
+    return new PurchaseContestRequestWrapper(creator.purchaseContestRequest(), tasks, this);
 }
 
 } // namespace swv

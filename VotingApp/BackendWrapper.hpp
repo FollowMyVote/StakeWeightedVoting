@@ -27,7 +27,7 @@ class Promise;
 class PromiseConverter;
 namespace swv {
 class ContestGeneratorWrapper;
-class ContestCreator;
+class ContestCreatorWrapper;
 
 /**
  * @brief The BackendWrapper class provides a QML-friendly wrapper for the RPC backend
@@ -45,7 +45,8 @@ class ContestCreator;
 class BackendWrapper : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(ContestCreator* contestCreator READ contestCreator CONSTANT);
+    Q_PROPERTY(ContestCreatorWrapper* contestCreator READ contestCreator CONSTANT);
+
 public:
     BackendWrapper(Backend::Client backend, PromiseConverter& promiseConverter, QObject *parent = 0);
     virtual ~BackendWrapper() noexcept;
@@ -54,12 +55,12 @@ public:
     Q_INVOKABLE swv::ContestGeneratorWrapper* getContestsByCreator(QString creator);
     Q_INVOKABLE swv::ContestGeneratorWrapper* getContestsByCoin(quint64 coinId);
 
-    swv::ContestCreator* contestCreator();
+    swv::ContestCreatorWrapper* contestCreator();
 
 private:
     PromiseConverter& promiseConverter;
     Backend::Client backend;
-    kj::Own<ContestCreator> creator;
+    kj::Own<ContestCreatorWrapper> creator;
 };
 
 } // namespace swv

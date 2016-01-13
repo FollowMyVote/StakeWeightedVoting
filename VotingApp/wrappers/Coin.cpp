@@ -20,7 +20,7 @@
 
 namespace swv {
 
-Coin::Coin(::Coin::Reader r, QObject* parent)
+CoinWrapper::CoinWrapper(::Coin::Reader r, QObject* parent)
     : QObject(parent),
       ::Coin::Reader(r)
 {}

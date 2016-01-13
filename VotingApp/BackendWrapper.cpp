@@ -68,11 +68,11 @@ ContestGeneratorWrapper* BackendWrapper::getContestsByCoin(quint64 coinId)
     return new ContestGeneratorWrapper(request.send().getGenerator(), promiseConverter);
 }
 
-ContestCreator*BackendWrapper::contestCreator()
+ContestCreatorWrapper*BackendWrapper::contestCreator()
 {
     // Lazy load the creator; most runs we will probably never need it.
     if (creator.get() == nullptr)
-        creator = kj::heap<ContestCreator>(backend.getContestCreatorRequest().send().getCreator());
+        creator = kj::heap<ContestCreatorWrapper>(backend.getContestCreatorRequest().send().getCreator());
     return creator.get();
 }
 

@@ -27,8 +27,8 @@ class Promise;
 namespace swv {
 class ChainAdaptorWrapper;
 class BackendWrapper;
-class Decision;
-class Contest;
+class DecisionWrapper;
+class ContestWrapper;
 
 const static QString DECISION_SCHEMA = QStringLiteral("00");
 
@@ -114,7 +114,7 @@ public slots:
      *
      * See also @ref resetCurrentDecision
      */
-    Promise* castCurrentDecision(swv::Contest* contest);
+    Promise* castCurrentDecision(swv::ContestWrapper* contest);
 
     void setCurrentAccount(QString currentAccount);
 

@@ -28,7 +28,7 @@ namespace swv {
 /**
  * @brief The Datagram class is a read-write wrapper for the Datagram type.
  */
-class Datagram : public QObject
+class DatagramWrapper : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(QString schema READ schema WRITE setSchema NOTIFY schemaChanged)
@@ -36,8 +36,8 @@ class Datagram : public QObject
 public:
     using WrappedType = ::Datagram;
 
-    Datagram(WrappedType::Builder b, QObject* parent = nullptr);
-    virtual ~Datagram() throw() {}
+    DatagramWrapper(WrappedType::Builder b, QObject* parent = nullptr);
+    virtual ~DatagramWrapper() throw() {}
 
     QString schema() const;
     // Hexadecimal representation of the content of this datagram
