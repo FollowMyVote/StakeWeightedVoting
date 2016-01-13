@@ -34,6 +34,7 @@ class PurchaseContestRequestWrapper : public QObject
     Q_PROPERTY(QString description READ description WRITE setDescription NOTIFY descriptionChanged)
     Q_PROPERTY(quint64 weightCoin READ weightCoin WRITE setWeightCoin NOTIFY weightCoinChanged)
     Q_PROPERTY(qint64 expiration READ expiration WRITE setExpiration NOTIFY expirationChanged)
+    Q_PROPERTY(bool sponsorshipEnabled READ sponsorshipEnabled NOTIFY sponsorshipEnabledChanged STORED false)
 
     kj::TaskSet& tasks;
 public:
@@ -50,16 +51,11 @@ public:
 
     QString name() const;
     QString description() const;
-    quint64 weightCoin() const
-    {
-        return request.asReader().getRequest().getWeightCoin();
-    }
-    qint64 expiration() const
-    {
-        return request.asReader().getRequest().getContestExpiration();
-    }
+    quint64 weightCoin() const;
+    qint64 expiration() const;
     ContestType::Type contestType() const;
     TallyAlgorithm::Type tallyAlgorithm() const;
+    bool sponsorshipEnabled() const;
 
 public slots:
     /// @brief Submit the request to the server. This consumes the request.
@@ -67,24 +63,11 @@ public slots:
 
     void setName(QString name);
     void setDescription(QString description);
-    void setWeightCoin(quint64 weightCoin)
-    {
-        if (weightCoin == this->weightCoin())
-            return;
-
-        request.getRequest().setWeightCoin(weightCoin);
-        emit weightCoinChanged(weightCoin);
-    }
-    void setExpiration(qint64 expiration)
-    {
-        if (expiration == this->expiration())
-            return;
-
-        request.getRequest().setContestExpiration(expiration);
-        emit expirationChanged(expiration);
-    }
+    void setWeightCoin(quint64 weightCoin);
+    void setExpiration(qint64 expiration);
     void setContestType(ContestType::Type contestType);
     void setTallyAlgorithm(TallyAlgorithm::Type tallyAlgorithm);
+    void disableSponsorship();
 
 signals:
     void nameChanged(QString name);
@@ -93,6 +76,7 @@ signals:
     void expirationChanged(qint64 expiration);
     void contestTypeChanged(ContestType::Type contestType);
     void tallyAlgorithmChanged(TallyAlgorithm::Type tallyAlgorithm);
+    void sponsorshipEnabledChanged(bool sponsorshipEnabled);
 
 private:
     PurchaseRequest request;
