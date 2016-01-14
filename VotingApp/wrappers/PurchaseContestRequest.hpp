@@ -6,6 +6,7 @@
 #include <contestcreator.capnp.h>
 
 #include "vendor/QQmlEnumClassHelper.h"
+#include "vendor/QQmlVariantListModel.h"
 
 namespace swv {
 
@@ -32,11 +33,16 @@ class PurchaseContestRequestWrapper : public QObject
                NOTIFY tallyAlgorithmChanged)
     Q_PROPERTY(QString name READ name WRITE setName NOTIFY nameChanged)
     Q_PROPERTY(QString description READ description WRITE setDescription NOTIFY descriptionChanged)
+    /// Contestants is a list of Javascript options containing "name" and "description" properties, each being strings
+    Q_PROPERTY(QQmlVariantListModel* contestants READ contestants CONSTANT)
+    Q_PROPERTY(QQmlVariantListModel* promoCodes READ promoCodes CONSTANT)
     Q_PROPERTY(quint64 weightCoin READ weightCoin WRITE setWeightCoin NOTIFY weightCoinChanged)
     Q_PROPERTY(qint64 expiration READ expiration WRITE setExpiration NOTIFY expirationChanged)
     Q_PROPERTY(bool sponsorshipEnabled READ sponsorshipEnabled NOTIFY sponsorshipEnabledChanged STORED false)
 
     kj::TaskSet& tasks;
+    QQmlVariantListModel m_contestants;
+    QQmlVariantListModel m_promoCodes;
 public:
     using PurchaseRequest = capnp::Request<::ContestCreator::PurchaseContestParams,
                                            ::ContestCreator::PurchaseContestResults>;
@@ -56,10 +62,16 @@ public:
     ContestType::Type contestType() const;
     TallyAlgorithm::Type tallyAlgorithm() const;
     bool sponsorshipEnabled() const;
+    QQmlVariantListModel* contestants() {
+        return &m_contestants;
+    }
+    QQmlVariantListModel* promoCodes() {
+        return &m_promoCodes;
+    }
 
 public slots:
     /// @brief Submit the request to the server. This consumes the request.
-    void submit(){}
+    void submit();
 
     void setName(QString name);
     void setDescription(QString description);
@@ -77,6 +89,10 @@ signals:
     void contestTypeChanged(ContestType::Type contestType);
     void tallyAlgorithmChanged(TallyAlgorithm::Type tallyAlgorithm);
     void sponsorshipEnabledChanged(bool sponsorshipEnabled);
+
+protected slots:
+    void updateContestants();
+    void updatePromoCodes();
 
 private:
     PurchaseRequest request;
