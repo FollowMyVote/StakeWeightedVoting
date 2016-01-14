@@ -51,6 +51,8 @@ QtGuiApplication {
         "wrappers/README.md",
         "qml-promise/src/Promise.cpp",
         "qml-promise/src/Promise.hpp",
+        "vendor/QQmlVariantListModel.cpp",
+        "vendor/QQmlVariantListModel.h",
     ]
 
     property bool install: true

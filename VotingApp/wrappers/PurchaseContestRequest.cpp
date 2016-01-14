@@ -38,11 +38,16 @@
     }
 
 namespace swv {
-PurchaseContestRequestWrapper::PurchaseContestRequestWrapper(PurchaseRequest&& request, kj::TaskSet& taskTracker, QObject* parent)
+PurchaseContestRequestWrapper::PurchaseContestRequestWrapper(PurchaseRequest&& request,
+                                                             kj::TaskSet& taskTracker,
+                                                             QObject* parent)
     : QObject(parent),
       tasks(taskTracker),
       request(kj::mv(request))
 {
+    // When the contestants change, automatically update the request
+    connect(&m_contestants, &QQmlVariantListModel::dataChanged,
+            this, &PurchaseContestRequestWrapper::updateContestants);
 }
 
 ENUM_GETTER_SETTER(contestType, ContestType)
@@ -55,7 +60,38 @@ SIMPLE_GETTER_SETTER(expiration, Expiration, qint64, ContestExpiration)
 bool PurchaseContestRequestWrapper::sponsorshipEnabled() const {
     return request.asReader().getRequest().getSponsorship().isOptions();
 }
+
+void PurchaseContestRequestWrapper::submit() {
+    //TODO: implement me
+}
+
 void PurchaseContestRequestWrapper::disableSponsorship() {
     request.getRequest().initSponsorship().setNoSponsorship();
+}
+
+// Converts a QQmlVariantListModel to a capnp list. Func is a callable taking an element of List and a QVariant as
+// arguments which copies the QVariant into the List element
+template <typename List, typename Func>
+void updateList(List target, const QQmlVariantListModel& source, Func copier) {
+    for (uint i = 0; i < target.size(); ++i)
+        copier(target[i], source.get(i).toMap());
+}
+
+void PurchaseContestRequestWrapper::updateContestants()
+{
+    updateList(request.getRequest().initContestants().initEntries(m_contestants.count()), m_contestants,
+               [] (::Map<capnp::Text, capnp::Text>::Entry::Builder dest, const QVariant& src) {
+        auto srcMap = src.toMap();
+        convertText(dest.getKey(), srcMap["name"].toString());
+        convertText(dest.getValue(), srcMap["description"].toString());
+    });
+}
+
+void PurchaseContestRequestWrapper::updatePromoCodes()
+{
+    updateList(request.getRequest().initPromoCodes(m_promoCodes.count()), m_promoCodes,
+               [] (capnp::Text::Builder dest, const QVariant& src) {
+        convertText(dest, src.toString());
+    });
 }
 } // namespace swv
