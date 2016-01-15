@@ -1,14 +1,17 @@
 #include "PurchaseContestRequest.hpp"
 #include "Converters.hpp"
 
+#define _CHECK_NOT_SAME(property) \
+    if (property == this->property()) \
+        return;
+
 // Macro to generate getter and setter for text properties
 #define TEXT_GETTER_SETTER(property, upperProperty, requestField) \
     QString PurchaseContestRequestWrapper::property() const { \
         return convertText(request.asReader().getRequest().get ## requestField ()); \
     } \
     void PurchaseContestRequestWrapper::set ## upperProperty(QString property) { \
-        if (property == this->property()) \
-        return; \
+        _CHECK_NOT_SAME(property) \
         convertText(request.getRequest().get ## requestField (), property); \
         emit property ## Changed(property); \
     }
@@ -19,22 +22,36 @@
         return static_cast<upperProperty::Type>(request.asReader().getRequest().get ## upperProperty ()); \
     } \
     void PurchaseContestRequestWrapper::set ## upperProperty(upperProperty::Type property) { \
-        if (property == this->property()) \
-            return; \
+        _CHECK_NOT_SAME(property) \
         request.getRequest().set ## upperProperty (static_cast<::ContestCreator::upperProperty ## s>(property)); \
         emit property ## Changed(property); \
     }
 
+#define _SIMPLE_GETTER_IMPL(requestField) \
+    return request.asReader().getRequest().get ## requestField();
+#define _SIMPLE_SETTER_IMPL(property, requestMethod) \
+    _CHECK_NOT_SAME(property) \
+    request.getRequest().requestMethod; \
+    emit property ## Changed(property);
+
 // Macro to generate getter and setter for properties which require no special conversion steps
 #define SIMPLE_GETTER_SETTER(property, upperProperty, type, requestField) \
     type PurchaseContestRequestWrapper::property() const { \
-        return request.asReader().getRequest().get ## requestField(); \
+        _SIMPLE_GETTER_IMPL(requestField) \
     } \
     void PurchaseContestRequestWrapper::set ## upperProperty(type property) { \
-        if (property == this->property()) \
-            return; \
-        request.getRequest().set ## requestField(property); \
-        emit property ## Changed(property); \
+        _SIMPLE_SETTER_IMPL(property, set ## requestField(property)) \
+    }
+
+// Macro to generate getter and setter for simple properties in the sponsorship options
+#define SPONSORSHIP_SIMPLE_GETTER_SETTER(property, upperProperty, type, requestField) \
+    type PurchaseContestRequestWrapper::property() { \
+        _SIMPLE_GETTER_IMPL(Sponsorship().getOptions().get ## requestField) \
+    } \
+    void PurchaseContestRequestWrapper::set ## upperProperty(type property) { \
+        if (!sponsorshipEnabled()) \
+            request.getRequest().initSponsorship().initOptions(); \
+        _SIMPLE_SETTER_IMPL(property, getSponsorship().getOptions().set ## requestField(property)) \
     }
 
 namespace swv {
@@ -68,6 +85,11 @@ void PurchaseContestRequestWrapper::submit() {
 void PurchaseContestRequestWrapper::disableSponsorship() {
     request.getRequest().initSponsorship().setNoSponsorship();
 }
+
+SPONSORSHIP_SIMPLE_GETTER_SETTER(sponsorMaxVotes, SponsorMaxVotes, qint64, MaxVotes)
+SPONSORSHIP_SIMPLE_GETTER_SETTER(sponsorMaxRevotes, SponsorMaxRevotes, qint32, MaxRevotes)
+SPONSORSHIP_SIMPLE_GETTER_SETTER(sponsorEndDate, SponsorEndDate, qint64, EndDate)
+SPONSORSHIP_SIMPLE_GETTER_SETTER(sponsorIncentive, SponsorIncentive, qint64, Incentive)
 
 // Converts a QQmlVariantListModel to a capnp list. Func is a callable taking an element of List and a QVariant as
 // arguments which copies the QVariant into the List element

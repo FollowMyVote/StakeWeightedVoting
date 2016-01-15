@@ -39,6 +39,11 @@ class PurchaseContestRequestWrapper : public QObject
     Q_PROPERTY(quint64 weightCoin READ weightCoin WRITE setWeightCoin NOTIFY weightCoinChanged)
     Q_PROPERTY(qint64 expiration READ expiration WRITE setExpiration NOTIFY expirationChanged)
     Q_PROPERTY(bool sponsorshipEnabled READ sponsorshipEnabled NOTIFY sponsorshipEnabledChanged STORED false)
+    Q_PROPERTY(qint64 sponsorMaxVotes READ sponsorMaxVotes WRITE setSponsorMaxVotes NOTIFY sponsorMaxVotesChanged)
+    Q_PROPERTY(qint32 sponsorMaxRevotes READ sponsorMaxRevotes WRITE setSponsorMaxRevotes
+               NOTIFY sponsorMaxRevotesChanged)
+    Q_PROPERTY(qint64 sponsorEndDate READ sponsorEndDate WRITE setSponsorEndDate NOTIFY sponsorEndDateChanged)
+    Q_PROPERTY(qint64 sponsorIncentive READ sponsorIncentive WRITE setSponsorIncentive NOTIFY sponsorIncentiveChanged)
 
     kj::TaskSet& tasks;
     QQmlVariantListModel m_contestants;
@@ -68,6 +73,10 @@ public:
     QQmlVariantListModel* promoCodes() {
         return &m_promoCodes;
     }
+    qint64 sponsorMaxVotes();
+    qint32 sponsorMaxRevotes();
+    qint64 sponsorEndDate();
+    qint64 sponsorIncentive();
 
 public slots:
     /// @brief Submit the request to the server. This consumes the request.
@@ -80,8 +89,12 @@ public slots:
     void setContestType(ContestType::Type contestType);
     void setTallyAlgorithm(TallyAlgorithm::Type tallyAlgorithm);
     void disableSponsorship();
+    void setSponsorMaxVotes(qint64 sponsorMaxVotes);
+    void setSponsorMaxRevotes(qint32 sponsorMaxRevotes);
+    void setSponsorEndDate(qint64 sponsorEndDate);
+    void setSponsorIncentive(qint64 sponsorIncentive);
 
-signals:
+    signals:
     void nameChanged(QString name);
     void descriptionChanged(QString description);
     void weightCoinChanged(quint64 weightCoin);
@@ -89,6 +102,10 @@ signals:
     void contestTypeChanged(ContestType::Type contestType);
     void tallyAlgorithmChanged(TallyAlgorithm::Type tallyAlgorithm);
     void sponsorshipEnabledChanged(bool sponsorshipEnabled);
+    void sponsorMaxVotesChanged(qint64 sponsorMaxVotes);
+    void sponsorMaxRevotesChanged(qint32 sponsorMaxRevotes);
+    void sponsorEndDateChanged(qint64 sponsorEndDate);
+    void sponsorIncentiveChanged(qint64 sponsorIncentive);
 
 protected slots:
     void updateContestants();
@@ -96,6 +113,7 @@ protected slots:
 
 private:
     PurchaseRequest request;
+    qint64 m_sponsorIncentive;
 };
 
 } // namespace swv
