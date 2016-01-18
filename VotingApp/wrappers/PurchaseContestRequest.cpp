@@ -1,6 +1,8 @@
 #include "PurchaseContestRequest.hpp"
 #include "Converters.hpp"
 
+#include <PromiseConverter.hpp>
+
 #define _CHECK_NOT_SAME(property) \
     if (property == this->property()) \
         return;
@@ -78,8 +80,22 @@ bool PurchaseContestRequestWrapper::sponsorshipEnabled() const {
     return request.asReader().getRequest().getSponsorship().isOptions();
 }
 
-void PurchaseContestRequestWrapper::submit() {
-    //TODO: implement me
+QVariantMap PurchaseContestRequestWrapper::submit() {
+    auto promise = request.send();
+    auto purchase = promise.getPurchaseApi();
+    PromiseConverter converter(tasks);
+    auto qmlPromise = converter.convert(kj::mv(promise),
+                                        [] (capnp::Response<ContestCreator::PurchaseContestResults> r) -> QVariantList
+    {
+        QVariantList results;
+        for (auto surcharge : r.getSurcharges().getEntries())
+            results.append(QVariantMap{{"description", QString::fromStdString(surcharge.getKey())},
+                                       {"charge", QVariant::fromValue(surcharge.getValue().getPrice())}});
+        return QVariantList() << results;
+    });
+
+    // TODO: Replace 'false' below with the wrapped purchase API
+    return QVariantMap{{"purchaseApi", false},{"surchargePromise", QVariant::fromValue(qmlPromise)}};
 }
 
 void PurchaseContestRequestWrapper::disableSponsorship() {
