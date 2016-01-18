@@ -29,7 +29,7 @@ interface ContestCreator {
     getContestLimits @1 () -> (limits :Map(ContestLimit, LimitValue));
     # Get a list of limits for various aspects of contest creation. Any omitted limits are assumed to be unlimited.
 
-    purchaseContest @2 (request :ContestCreationRequest) -> (purchaseHandle :Purchase, surcharges :Map(Text, Price));
+    purchaseContest @2 (request :ContestCreationRequest) -> (purchaseApi :Purchase, surcharges :Map(Text, Price));
     # Begin checkout with a contest creation request. Returns a Purchase API to finish checkout, and a list of
     # surcharges as a map of human-readable description to price. Negative surcharges are discounts (usually for a
     # promo code).

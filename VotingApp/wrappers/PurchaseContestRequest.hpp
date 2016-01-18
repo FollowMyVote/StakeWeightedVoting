@@ -80,7 +80,9 @@ public:
 
 public slots:
     /// @brief Submit the request to the server. This consumes the request.
-    void submit();
+    /// @return A map with two entries: "purchaseApi" (a purchase API wrapper) and "surchargePromise" (a @ref Promise
+    /// for the surcharge list, which is itself a QVAriantList of objects with "description" and "charge" fields)
+    QVariantMap submit();
 
     void setName(QString name);
     void setDescription(QString description);
@@ -113,7 +115,6 @@ protected slots:
 
 private:
     PurchaseRequest request;
-    qint64 m_sponsorIncentive;
 };
 
 } // namespace swv
