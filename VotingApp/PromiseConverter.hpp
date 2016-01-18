@@ -35,11 +35,11 @@
  * garbage collected by the QML runtime. The Promise remains parented to the converter, so if the QML runtime never
  * garbage collects the Promise, it will be deleted when the PromiseWrapper is deleted.
  */
-class PromiseConverter : public QObject, private kj::TaskSet::ErrorHandler
+class PromiseConverter : public QObject
 {
     Q_OBJECT
 public:
-    explicit PromiseConverter(QObject *parent = 0);
+    explicit PromiseConverter(kj::TaskSet& tasks, QObject *parent = 0);
     virtual ~PromiseConverter() noexcept {}
 
     /**
@@ -60,10 +60,7 @@ public:
     Promise* convert(kj::Promise<void> promise);
 
 private:
-    // ErrorHandler interface
-    virtual void taskFailed(kj::Exception&& exception);
-
-    kj::TaskSet tasks;
+    kj::TaskSet& tasks;
 };
 
 template<typename T, typename Func>
