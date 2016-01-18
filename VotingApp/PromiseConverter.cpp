@@ -18,22 +18,17 @@
 
 #include "PromiseConverter.hpp"
 
-PromiseConverter::PromiseConverter(QObject* parent)
+PromiseConverter::PromiseConverter(kj::TaskSet& tasks, QObject* parent)
     : QObject(parent),
-      tasks(*this)
+      tasks(tasks)
 {}
-
-void PromiseConverter::taskFailed(kj::Exception&& exception)
-{
-    KJ_LOG(ERROR, exception);
-}
 
 Promise* PromiseConverter::convert(kj::Promise<void> promise)
 {
     auto result = new Promise(this);
 
     auto responsePromise = promise.then(
-                               [result]() {
+                [result]() {
         result->resolve({});
         QQmlEngine::setObjectOwnership(result, QQmlEngine::JavaScriptOwnership);
     }, [result](kj::Exception&& exception) {
