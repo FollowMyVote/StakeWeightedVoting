@@ -3,6 +3,7 @@
 
 #include <QObject>
 
+#include <PromiseConverter.hpp>
 #include <contestcreator.capnp.h>
 
 #include "vendor/QQmlEnumClassHelper.h"
@@ -48,6 +49,8 @@ class PurchaseContestRequestWrapper : public QObject
     kj::TaskSet& tasks;
     QQmlVariantListModel m_contestants;
     QQmlVariantListModel m_promoCodes;
+    PromiseConverter converter;
+
 public:
     using PurchaseRequest = capnp::Request<::ContestCreator::PurchaseContestParams,
                                            ::ContestCreator::PurchaseContestResults>;

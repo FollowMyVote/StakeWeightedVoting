@@ -1,4 +1,5 @@
 #include "PurchaseContestRequest.hpp"
+#include "PurchaseWrapper.hpp"
 #include "Converters.hpp"
 
 #include <PromiseConverter.hpp>
@@ -62,7 +63,8 @@ PurchaseContestRequestWrapper::PurchaseContestRequestWrapper(PurchaseRequest&& r
                                                              QObject* parent)
     : QObject(parent),
       tasks(taskTracker),
-      request(kj::mv(request))
+      request(kj::mv(request)),
+      converter(tasks)
 {
     // When the contestants change, automatically update the request
     connect(&m_contestants, &QQmlVariantListModel::dataChanged,
@@ -83,7 +85,6 @@ bool PurchaseContestRequestWrapper::sponsorshipEnabled() const {
 QVariantMap PurchaseContestRequestWrapper::submit() {
     auto promise = request.send();
     auto purchase = promise.getPurchaseApi();
-    PromiseConverter converter(tasks);
     auto qmlPromise = converter.convert(kj::mv(promise),
                                         [] (capnp::Response<ContestCreator::PurchaseContestResults> r) -> QVariantList
     {
@@ -94,8 +95,8 @@ QVariantMap PurchaseContestRequestWrapper::submit() {
         return QVariantList() << results;
     });
 
-    // TODO: Replace 'false' below with the wrapped purchase API
-    return QVariantMap{{"purchaseApi", false},{"surchargePromise", QVariant::fromValue(qmlPromise)}};
+    return QVariantMap{{"purchaseApi", QVariant::fromValue(new PurchaseWrapper(kj::mv(purchase), tasks, this))},
+                       {"surchargePromise", QVariant::fromValue(qmlPromise)}};
 }
 
 void PurchaseContestRequestWrapper::disableSponsorship() {

@@ -48,6 +48,8 @@ QtGuiApplication {
         "wrappers/Converters.hpp",
         "wrappers/PurchaseContestRequest.cpp",
         "wrappers/PurchaseContestRequest.hpp",
+        "wrappers/PurchaseWrapper.cpp",
+        "wrappers/PurchaseWrapper.hpp",
         "wrappers/README.md",
         "qml-promise/src/Promise.cpp",
         "qml-promise/src/Promise.hpp",

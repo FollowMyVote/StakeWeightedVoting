@@ -52,6 +52,6 @@ protected:
 
     bool isComplete = false;
     QMap<QString, QList<Price>> promosAndPrices;
-    kj::Maybe<Notifier<capnp::AnyPointer>::Client> completionNotifier;
+    kj::Maybe<Notifier<capnp::Text>::Client> completionNotifier;
     std::function<void()> callback;
 };
