@@ -26,8 +26,8 @@ interface Purchase {
     # Check the status of the purchase
     prices @1 (promoCode :Text) -> (prices :List(Price));
     # Get the price of the purchase in all available coins
-    subscribe @2 (notifier :Notifier) -> ();
-    # Get notified when the purchase is complete
+    subscribe @2 (notifier :Notifier(Text)) -> ();
+    # Get notified when the purchase is complete. Notification message will either be "true" or "false"
     paymentSent @3 (priceSelection :Price) -> ();
     # Used to notify the server that the payment has been sent
 

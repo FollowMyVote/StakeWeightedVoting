@@ -34,6 +34,7 @@
 #include "wrappers/Datagram.hpp"
 #include "wrappers/ContestGeneratorWrapper.hpp"
 #include "wrappers/PurchaseContestRequest.hpp"
+#include "wrappers/PurchaseWrapper.hpp"
 #include "wrappers/ContestCreator.hpp"
 #include "wrappers/BackendWrapper.hpp"
 #include "wrappers/ChainAdaptorWrapper.hpp"
@@ -71,6 +72,7 @@ int main(int argc, char *argv[])
     REGISTER_WRAPPER(ContestGenerator);
     REGISTER_WRAPPER(ContestCreator);
     REGISTER_WRAPPER(PurchaseContestRequest);
+    REGISTER_WRAPPER(Purchase);
 #undef REGISTER_WRAPPER
 
     // Register enum wrappers

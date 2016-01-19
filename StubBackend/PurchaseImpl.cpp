@@ -64,6 +64,7 @@
 void PurchaseImpl::sendNotification()
 {
     KJ_IF_MAYBE(notifier, completionNotifier) {
+        notifier->notifyRequest().setMessage("true");
         notifier->notifyRequest().send();
     }
 }
