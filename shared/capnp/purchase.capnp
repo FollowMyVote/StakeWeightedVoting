@@ -24,7 +24,7 @@ interface Purchase {
 
     complete @0 () -> (result :Bool);
     # Check the status of the purchase
-    prices @1 (promoCode :Text) -> (prices :List(Price));
+    prices @1 () -> (prices :List(Price));
     # Get the price of the purchase in all available coins
     subscribe @2 (notifier :Notifier(Text)) -> ();
     # Get notified when the purchase is complete. Notification message will either be "true" or "false"

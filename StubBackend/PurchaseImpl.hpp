@@ -22,7 +22,7 @@
 
 #include <kj/async.h>
 
-#include "capnp/purchase.capnp.h"
+#include <capnp/purchase.capnp.h>
 
 #include <functional>
 
@@ -35,8 +35,8 @@ public:
         QString payAddress;
     };
 
-    PurchaseImpl(QMap<QString, QList<Price>> promosAndPrices, std::function<void()> onPurchasedCallback)
-        : promosAndPrices(promosAndPrices),
+    PurchaseImpl(QList<Price> prices, std::function<void()> onPurchasedCallback)
+        : m_prices(prices),
           callback(onPurchasedCallback)
     {}
     virtual ~PurchaseImpl(){}
@@ -51,7 +51,7 @@ protected:
     void sendNotification();
 
     bool isComplete = false;
-    QMap<QString, QList<Price>> promosAndPrices;
+    QList<Price> m_prices;
     kj::Maybe<Notifier<capnp::Text>::Client> completionNotifier;
     std::function<void()> callback;
 };
