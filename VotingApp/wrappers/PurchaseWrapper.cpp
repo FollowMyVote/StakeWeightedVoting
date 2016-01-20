@@ -1,4 +1,5 @@
 #include "PurchaseWrapper.hpp"
+#include "Converters.hpp"
 
 namespace swv {
 
@@ -36,5 +37,25 @@ PurchaseWrapper::PurchaseWrapper(Purchase::Client&& api, kj::TaskSet& tasks, QOb
 
 PurchaseWrapper::~PurchaseWrapper() noexcept
 {}
+
+Promise* PurchaseWrapper::prices()
+{
+    return converter.convert(api.pricesRequest().send(), [](capnp::Response<Purchase::PricesResults> r) {
+        QVariantList results;
+        for (auto price : r.getPrices()) {
+            results.append(QVariantMap{{"coinId", QVariant::fromValue(price.getCoinId())},
+                                       {"amount", QVariant::fromValue(price.getAmount())},
+                                       {"payAddress", QVariant::fromValue(convertText(price.getPayAddress()))}});
+        }
+        return QVariantList() << results;
+    });
+}
+
+void PurchaseWrapper::paymentSent(qint16 selectedPrice)
+{
+    auto request = api.paymentSentRequest();
+    request.setSelectedPrice(selectedPrice);
+    tasks.add(request.send().then([](capnp::Response<Purchase::PaymentSentResults>){}));
+}
 
 } // namespace swv

@@ -33,6 +33,14 @@ public:
     bool complete() const {
         return m_complete;
     }
+    Q_INVOKABLE Promise* prices();
+
+public slots:
+    /**
+     * @brief Notify the server that payment has been sent
+     * @param selectedPrice Index in array returned from @ref prices of the price which was paid
+     */
+    void paymentSent(qint16 selectedPrice);
 
 signals:
     void completeChanged(bool complete);
