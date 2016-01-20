@@ -62,10 +62,11 @@ Card {
         }
     }
 
-    Ink {
+    MouseArea {
         anchors.fill: parent
         enabled: visibleContestLoader.status === Loader.Ready
         onClicked: card.selected(visibleContestLoader.item.displayContest)
+        z: -1
     }
     Loader {
         id: visibleContestLoader
