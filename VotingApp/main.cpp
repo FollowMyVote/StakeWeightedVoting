@@ -64,6 +64,7 @@ int main(int argc, char *argv[])
     qmlRegisterUncreatableType<swv::name ## Wrapper>("FollowMyVote.StakeWeightedVoting", 1, 0, #name, \
                                           #name " is a wrapper. It cannot be created from QML.")
     REGISTER_WRAPPER(Balance);
+    REGISTER_WRAPPER(Decision);
     REGISTER_WRAPPER(Contest);
     REGISTER_WRAPPER(Coin);
     REGISTER_WRAPPER(Datagram);
