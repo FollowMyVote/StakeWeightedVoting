@@ -1,0 +1,8 @@
+{
+  "title": "VotingApp",
+  "identifier": "com.followmyvote.stakeweightedvoting",
+  "orientation": "auto",
+  "versioncode": 1,
+  "versionname": "1.0",
+  "stage": "test"
+}
