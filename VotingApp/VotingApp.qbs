@@ -7,9 +7,12 @@ QtGuiApplication {
     Depends { name: "shared" }
     Depends { name: "StubChainAdaptor" }
     Depends { name: "Qt"; submodules: ["network", "qml"] }
+    Depends { name: "VPlay" }
+    VPlay.qtIncPath: { print(Qt.core.incPath); return Qt.core.incPath }
 
     qmlImportPaths: ["/usr/local/opt/qt5/qml", path + "/qml"]
-    cpp.includePaths: [".", "qml-promise/src"]
+    cpp.includePaths: [".", "qml-promise/src", VPlay.includePath]
+    cpp.staticLibraries: VPlay.staticLibrary
 
     files: [
         "PromiseConverter.cpp",
@@ -23,8 +26,8 @@ QtGuiApplication {
         "capnqt/QtEventPort.cpp",
         "capnqt/QtEventPort.hpp",
         "main.cpp",
+        "qml.qrc",
         "qml/*.qml",
-        "qml/qml.qrc",
         "wrappers/ChainAdaptorWrapper.cpp",
         "wrappers/ChainAdaptorWrapper.hpp",
         "wrappers/BackendWrapper.cpp",
@@ -77,5 +80,11 @@ QtGuiApplication {
         fileTagsFilter: ["pkginfo"]
         qbs.install: install && bundle.isBundle
         qbs.installDir: FileInfo.joinPaths(installDir, FileInfo.path(bundle.pkgInfoPath))
+    }
+
+    Group {
+        qbs.install: install
+        qbs.installDir: FileInfo.joinPaths(installDir, "../share/followmyvote/Material")
+        files: ["vendor/Material"]
     }
 }

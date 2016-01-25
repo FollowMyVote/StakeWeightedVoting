@@ -26,11 +26,11 @@ import Material.ListItems 0.1
 
 import FollowMyVote.StakeWeightedVoting 1.0
 
-Card {
+Rectangle {
     id: card
-    width: parent.width - Units.dp(16)
-    x: Units.dp(8)
-    height: visibleContestLoader.height + Units.dp(32)
+    width: parent.width - window.dp(16)
+    x: window.dp(8)
+    height: visibleContestLoader.height + window.dp(32)
 
     property string contestId
     property int votingStake
@@ -52,7 +52,7 @@ Card {
         id: loadingPlaceholder
 
         Item {
-            height: Units.dp(120)
+            height: window.dp(120)
 
             LoadingIndicator {
                 anchors.centerIn: parent
@@ -74,7 +74,7 @@ Card {
             left: parent.left
             right: parent.right
             top: parent.top
-            margins: Units.dp(16)
+            margins: window.dp(16)
         }
         sourceComponent: loadingPlaceholder
     }
