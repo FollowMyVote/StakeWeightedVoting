@@ -58,7 +58,7 @@ App {
         NavigationItem {
             title: "Feed"
 
-            FeedPage {
+            ContestPage {
                 id: feedPage
                 Connections {
                     target: votingSystem
@@ -69,18 +69,9 @@ App {
         NavigationItem {
             title: "Coin List"
 
-            FeedPage {
+            ContestPage {
                 id: coinListPage
             }
         }
     }
-
-    //ContestListPage {
-        //id: feedPage
-        //backAction: navDrawer.action
-        //getContestGeneratorFunction: function() { return votingSystem.backend.getFeedGenerator() }
-    //}
-    //CoinListPage {
-        //id: coinListPage
-    //}
 }
