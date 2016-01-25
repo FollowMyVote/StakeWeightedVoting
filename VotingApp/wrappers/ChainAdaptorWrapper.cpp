@@ -79,9 +79,10 @@ Promise* ChainAdaptorWrapper::listAllCoins()
     if (hasAdaptor()) {
         return promiseConverter.convert(m_adaptor->listAllCoins(),
                                         [](kj::Array<::Coin::Reader> coins) -> QVariantList {
-            QList<CoinWrapper*> results;
+            QVariantList results;
             std::transform(coins.begin(), coins.end(), std::back_inserter(results),
-                           [](::Coin::Reader r) { return new CoinWrapper(r); });
+                           [](::Coin::Reader r) { return QVariant::fromValue((QObject*)new swv::Coin(r)); });
+
             return {QVariant::fromValue(results)};
         });
     }

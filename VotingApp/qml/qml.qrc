@@ -1,7 +1,7 @@
 <RCC>
     <qresource prefix="/">
         <file>main.qml</file>
-        <file>FeedPage.qml</file>
+        <file>ContestListPage.qml</file>
         <file>ContestantDetailDialog.qml</file>
         <file>ContestCard.qml</file>
         <file>ContestDelegate.qml</file>
@@ -13,5 +13,6 @@
         <file>jbQuick/Charts/QChart.js</file>
         <file>jbQuick/Charts/QChart.qml</file>
         <file>jbQuick/Charts/qmldir</file>
+        <file>CoinListPage.qml</file>
     </qresource>
 </RCC>
