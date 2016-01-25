@@ -58,8 +58,11 @@ App {
         NavigationItem {
             title: "Feed"
 
-            ContestPage {
+            ContestListPage {
                 id: feedPage
+                getContestGeneratorFunction: votingSystem.isReady? votingSystem.backend.getFeedGenerator
+                                                                 : null
+
                 Connections {
                     target: votingSystem
                     onConnected: loadContests()
@@ -69,7 +72,7 @@ App {
         NavigationItem {
             title: "Coin List"
 
-            ContestPage {
+            ContestListPage {
                 id: coinListPage
             }
         }
