@@ -2,14 +2,12 @@ import QtQuick 2.5
 import QtQuick.Layouts 1.1
 import QtQuick.Window 2.0
 
-import Material 0.1
-import Material.Extras 0.1
-import Material.ListItems 0.1
+import VPlayApps 1.0
 
 import FollowMyVote.StakeWeightedVoting 1.0
 
 Column {
-    spacing: Units.dp(16)
+    spacing: window.dp(16)
 
     property var displayContest
 
@@ -17,26 +15,25 @@ Column {
         id: categoryLayout
         width: parent.width
 
-        Label {
+        AppText {
             Layout.fillWidth: true
             text: displayContest.tags["category"]
-            style: "button"
-            color: Theme.accentColor
+            color: Theme.textColor
         }
         Icon {
-            name: "hardware/cast"
-            color: Theme.accentColor
+            icon: IconType.wifi
+            color: Theme.tintColor
         }
     }
-    Rectangle { height: Units.dp(1); width: parent.width; color: "lightgrey" }
+    Rectangle { height: window.dp(1); width: parent.width; color: "lightgrey" }
     GridLayout {
         id: contestLayout
         anchors {
             left: parent.left
             right: parent.right
         }
-        columns: width > 120 * Units.pixelDensity && displayContest.description.length < 1000? 2 : 1
-        columnSpacing: Units.dp(16)
+        columns: width > 120 * window.pixelDensity && displayContest.description.length < 1000? 2 : 1
+        columnSpacing: window.dp(16)
 
         ColumnLayout {
             id: contestDetailsLayout
@@ -46,37 +43,35 @@ Column {
 
             RowLayout {
                 id: contestHeader
-                spacing: Units.dp(16)
-                height: Units.dp(72)
+                spacing: window.dp(16)
+                height: window.dp(72)
                 Layout.fillWidth: true
 
-                CircleImage {
+                Image {
                     id: coinImage
-                    width: Units.dp(40)
-                    height: Units.dp(40)
+                    width: window.dp(40)
+                    height: window.dp(40)
                     source: "res/Follow-My-Vote-Logo.png"
                     fillMode: Image.PreserveAspectCrop
                 }
                 Column {
                     Layout.alignment: Qt.AlignVCenter
                     Layout.fillWidth: true
-                    Label {
+                    AppText {
                         width: parent.width
-                        style: "title"
                         text: displayContest.name
                         wrapMode: Text.WrapAtWordBoundaryOrAnywhere
                     }
-                    Label {
+                    AppText {
                         width: parent.width
-                        style: "subheading"
                         text: displayContest.startTime.toLocaleString(Qt.locale(), Locale.ShortFormat)
                         wrapMode: Text.WrapAtWordBoundaryOrAnywhere
                         opacity: .54
                     }
                 }
             }
-            Item { width: 1; height: Units.dp(24) }
-            Label {
+            Item { width: 1; height: window.dp(24) }
+            AppText {
                 text: displayContest.description
                 Layout.alignment: Qt.AlignTop | Qt.AlignLeft
                 Layout.fillHeight: true
@@ -89,22 +84,17 @@ Column {
             columns: Math.max(1, Math.floor(width / contestantMinimumWidth()))
             Layout.fillWidth: true
             Layout.preferredWidth: 1
-            columnSpacing: Units.dp(8)
+            columnSpacing: window.dp(8)
             rowSpacing: columnSpacing
 
             function contestantMinimumWidth() {
-                switch (Device.type) {
-                case Device.phone:
-                    return Units.pixelDensity * 50
-                case Device.desktop:
-                    return Units.pixelDensity * 50
-                }
+                return window.pixelDensity * 50
             }
 
             Repeater {
                 id: contestantRepeater
                 model: displayContest.contestants
-                delegate: Card {
+                delegate: Rectangle {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     Layout.preferredHeight: {
@@ -112,22 +102,16 @@ Column {
                         for (var i = 0; i < contestantRepeater.count; ++i)
                             if (contestantRepeater.itemAt(i) !== null)
                                 maxHeight = Math.max(maxHeight, contestantRepeater.itemAt(i).contentHeight)
-                        return maxHeight + Units.dp(16)
+                        return maxHeight + window.dp(16)
                     }
-                    tintColor: isSelected? Theme.accentColor : "transparent"
+                    color: isSelected? Theme.selectedBackgroundColor : "transparent"
 
                     property bool isSelected: !!displayContest.currentDecision &&
                                               !!displayContest.currentDecision.opinions[index]
 
-                    Behavior on tintColor {
-                        ColorAnimation {
-                            duration: 100
-                        }
-                    }
-
                     property alias contentHeight: contestantColumn.height
 
-                    Ink {
+                    MouseArea {
                         z: 0
                         anchors.fill: parent
                         onClicked: {
@@ -140,16 +124,15 @@ Column {
                         id: contestantColumn
                         anchors.left: parent.left
                         anchors.right: parent.right
-                        anchors.margins: Units.dp(8)
-                        y: Units.dp(8)
+                        anchors.margins: window.dp(8)
+                        y: window.dp(8)
 
-                        Label {
-                            style: "title"
+                        AppText {
                             text: modelData.name
                             Layout.fillWidth: true
                             wrapMode: Text.WrapAtWordBoundaryOrAnywhere
                         }
-                        Label {
+                        AppText {
                             id: contestantDescription
                             text: modelData.description
                             Layout.fillWidth: true
@@ -157,7 +140,7 @@ Column {
                             elide: Text.ElideRight
                             maximumLineCount: 5
                         }
-                        Button {
+                        AppButton {
                             text: qsTr("Read more")
                             visible: contestantDescription.truncated
                             Layout.fillWidth: true
@@ -168,7 +151,7 @@ Column {
             }
         }
     }
-    Rectangle { height: Units.dp(1); width: parent.width; color: "lightgrey" }
+    Rectangle { height: window.dp(1); width: parent.width; color: "lightgrey" }
     RowLayout {
         id: contestFooter
         anchors {
@@ -177,14 +160,14 @@ Column {
         }
 
         Row {
-            Button {
+            AppButton {
                 text: qsTr("Cast Vote")
                 visible: displayContest.currentDecision && displayContest.currentDecision.state === Decision.Pending
                 onClicked: {
                     votingSystem.castCurrentDecision(displayContest)
                 }
             }
-            Button {
+            AppButton {
                 text: qsTr("Cancel")
                 onClicked: {
                     votingSystem.adaptor.getDecision(votingSystem.currentAccount,
@@ -200,8 +183,8 @@ Column {
             }
         }
         Item { height: 1; Layout.fillWidth: true }
-        IconButton {
-            iconName: "social/share"
+        Icon {
+            icon: IconType.share
         }
     }
 }

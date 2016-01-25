@@ -20,50 +20,49 @@ import QtQuick 2.5
 import QtQuick.Layouts 1.1
 import QtQuick.Window 2.0
 
-import Material 0.1
+import VPlayApps 1.0
 
 import FollowMyVote.StakeWeightedVoting 1.0
 
 Page {
     id: feedPage
     title: qsTr("All Polls")
-    actionBar.maxActionCount: 3
 
     function reloadContests() { contestList.reloadContests() }
     function loadContests() { contestList.loadContests() }
 
-    actions: [
-        Action {
-            name: qsTr("Find Polls")
-            iconName: "action/search"
-        },
-        Action {
-            name: qsTr("Notifications")
-            iconName: "social/notifications_none"
-        },
-        Action {
-            name: qsTr("Reload Polls")
-            iconName: "navigation/refresh"
-            onTriggered: reloadContests()
-        },
-        Action {
-            name: qsTr("Settings")
-            iconName: "action/settings"
-        },
-        Action {
-            name: qsTr("Help")
-            iconName: "action/help"
-        },
-        Action {
-            name: qsTr("Send Feedback")
-            iconName: "action/feedback"
-        }
-    ]
+//    actions: [
+//        Action {
+//            name: qsTr("Find Polls")
+//            iconName: "action/search"
+//        },
+//        Action {
+//            name: qsTr("Notifications")
+//            iconName: "social/notifications_none"
+//        },
+//        Action {
+//            name: qsTr("Reload Polls")
+//            iconName: "navigation/refresh"
+//            onTriggered: reloadContests()
+//        },
+//        Action {
+//            name: qsTr("Settings")
+//            iconName: "action/settings"
+//        },
+//        Action {
+//            name: qsTr("Help")
+//            iconName: "action/help"
+//        },
+//        Action {
+//            name: qsTr("Send Feedback")
+//            iconName: "action/feedback"
+//        }
+//    ]
 
-    ContestantDetailDialog {
-        id: contestantDetailDialog
-        width: feedPage.width * .75
-    }
+//    ContestantDetailDialog {
+//        id: contestantDetailDialog
+//        width: feedPage.width * .75
+//    }
     ListModel {
         id: contestList
 
@@ -92,8 +91,8 @@ Page {
     ListView {
         id: list
         anchors.fill: parent
-        anchors.topMargin: Units.dp(8)
-        anchors.bottomMargin: Units.dp(8)
+        anchors.topMargin: window.dp(8)
+        anchors.bottomMargin: window.dp(8)
         model: contestList
         delegate: ContestCard {
             contestId: model.contestId
@@ -101,7 +100,7 @@ Page {
             tracksLiveResults: model.tracksLiveResults
             onSelected: feedPage.push(Qt.createComponent(Qt.resolvedUrl("ContestPage.qml")), {"contest": contest})
         }
-        spacing: Units.dp(8)
+        spacing: window.dp(8)
 
         PullToRefresh {
             view: parent
@@ -124,21 +123,20 @@ Page {
                 width: parent.width
                 height: noMoreContests.height*3
 
-                Label {
+                AppText {
                     id: noMoreContests
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.verticalCenter: parent.verticalCenter
-                    style: "subheading"
                     text: "There are no more contests."
 
                 }
             }
         }
     }
-    LoadingIndicator {
-        anchors.centerIn: parent
-        height: parent.height / 7
-        visible: contestList.count === 0
-        text: qsTr("Loading Polls")
-    }
+//    LoadingIndicator {
+//        anchors.centerIn: parent
+//        height: parent.height / 7
+//        visible: contestList.count === 0
+//        text: qsTr("Loading Polls")
+//    }
 }

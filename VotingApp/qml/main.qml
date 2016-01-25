@@ -18,29 +18,21 @@
 
 import QtQuick 2.5
 import QtQuick.Layouts 1.1
+import QtQuick.Controls 1.4
 
-import Material 0.1
-import Material.ListItems 0.1
+import VPlayApps 1.0
 
 import FollowMyVote.StakeWeightedVoting 1.0
 
-ApplicationWindow {
+App {
     id: window
     title: Qt.application.name
     width: 1280
     height: 768
     visible: true
-    initialPage: feedPage
-
-    theme {
-        primaryColor: "#2196F3"
-        primaryDarkColor: "#1976D2"
-        accentColor: "#7C4DFF"
-        backgroundColor: "white"
-    }
+    licenseKey: "C169F952253269837F5604FE99EE6CD85C2C3604457C1626830BFDBCBD9BB390F75539977C2A4918FD5B62F4D4F236F62FB90BDD8E059F65C9CF04D5848E2597339ECC96C10945E2623372CA29F961C8B93E296FDF9C654F8BD21D3ACCC46128E2145815507281DC6C17D4810D39103B0891C41FC340FF6CC6122512D6CDDC4F460659BA576ECE24E1A40366DA5B6308CCEF71EB0A7A93F52F788EDF569A8484C60169F6792D3407DF91C435A9DCA407539523938DA57D970780F76F7FFE10713D9670FE8E8510EFB66C10E682AC81D2EE2801C3856C835F351F6C55C0CF3AFC7D3C02AC367F8BF4C4B4DDB8EB1BB7CBE410F0B730AA597543A390B6079FC77443D911CA3FE65195288F80D28AC90666098E9D49FD7C60DEC733B1D886586281401B800B0B75DE96DB19F89351AF0171"
 
     Action {
-        name: qsTr("Quit")
         shortcut: "Ctrl+Q"
         onTriggered: Qt.quit()
     }
@@ -48,14 +40,11 @@ ApplicationWindow {
     VotingSystem {
        id: votingSystem
 
-       Binding on currentAccount {
-           when: navDrawer.selectedAccountIndex >= 0
-           value: votingSystem.isReady? navDrawer.accountList[navDrawer.selectedAccountIndex] : null
-       }
+       signal connected
 
        Component.onCompleted: {
            configureChainAdaptor()
-           connectToBackend("127.0.0.1", 2572).then(feedPage.loadContests)
+           connectToBackend("127.0.0.1", 2572).then(votingSystem.connected)
        }
        onError: {
            console.log("Error from Voting System: %1".arg(message))
@@ -65,30 +54,24 @@ ApplicationWindow {
        onCurrentAccountChanged: console.log("Current account set to " + currentAccount)
     }
 
-    NavigationPanel {
-        id: navDrawer
+    Navigation {
+        NavigationItem {
+            title: "Feed"
 
-        onNavigationPageSelected: {
-            if (pageName === "coinlist")
-                window.pageStack.push(coinListPage)
-        }
-
-        Connections {
-            target: votingSystem
-            onIsReadyChanged: {
-                if (votingSystem.isReady)
-                    votingSystem.adaptor.getMyAccounts().then(function(accounts) {
-                        navDrawer.accountList = accounts
-                    })
+            FeedPage {
+                id: feedPage
+                Connections {
+                    target: votingSystem
+                    onConnected: loadContests()
+                }
             }
         }
-    }
+        NavigationItem {
+            title: "Coin List"
 
-    FeedPage {
-        id: feedPage
-        backAction: navDrawer.action
-    }
-    FeedPage {
-        id: coinListPage
+            FeedPage {
+                id: coinListPage
+            }
+        }
     }
 }
