@@ -20,12 +20,12 @@
 
 namespace swv {
 
-Balance::Balance(Balance::Reader r, QObject* parent)
+BalanceWrapper::BalanceWrapper(BalanceWrapper::Reader r, QObject* parent)
     : QObject(parent),
       ::Balance::Reader(r)
 {}
 
-QString Balance::id() const
+QString BalanceWrapper::id() const
 {
     auto reader = getId();
     return QByteArray::fromRawData((char*)reader.begin(), reader.size()).toHex();

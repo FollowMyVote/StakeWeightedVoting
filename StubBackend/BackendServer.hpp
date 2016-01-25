@@ -45,6 +45,7 @@ protected:
     virtual ::kj::Promise<void> purchaseAuditTrail(PurchaseAuditTrailContext context);
     virtual ::kj::Promise<void> downloadAuditTrail(DownloadAuditTrailContext context);
     virtual ::kj::Promise<void> listAvailableAuditTrails(ListAvailableAuditTrailsContext context);
+    virtual ::kj::Promise<void> getContestCreator(GetContestCreatorContext context);
 
     QMap<quint8, QList<QDateTime>> availableResultReports;
     QMap<quint8, QList<QDateTime>> availableAuditTrails;

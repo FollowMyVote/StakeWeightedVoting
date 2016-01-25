@@ -31,7 +31,7 @@ namespace swv {
 /**
  * @brief The Decision class is a read-write wrapper for the Decision type.
  */
-class Decision : public QObject
+class DecisionWrapper : public QObject
 {
     Q_OBJECT
 
@@ -43,8 +43,8 @@ public:
     Q_PROPERTY(QVariantMap opinions READ opinions WRITE setOpinions NOTIFY opinionsChanged)
     Q_PROPERTY(QVariantList writeIns READ writeIns WRITE setWriteIns NOTIFY writeInsChanged)
 
-    Decision(WrappedType::Builder b, QObject* parent = nullptr);
-    ~Decision() noexcept;
+    DecisionWrapper(WrappedType::Builder b, QObject* parent = nullptr);
+    ~DecisionWrapper() noexcept;
 
     QString id() const;
     QString contestId() const;
@@ -60,12 +60,12 @@ public:
 
     /// @brief Compare two decisions. Decisions are equal if they apply to the same contest and have the same opinions
     /// and write-ins. The IDs are not relevant to equality.
-    bool operator== (const Decision& other) {
+    bool operator== (const DecisionWrapper& other) {
         return contestId() == other.contestId() &&
                 opinions() == other.opinions() &&
                 writeIns() == other.writeIns();
     }
-    bool operator!= (const Decision& other) {
+    bool operator!= (const DecisionWrapper& other) {
         return !(*this == other);
     }
 

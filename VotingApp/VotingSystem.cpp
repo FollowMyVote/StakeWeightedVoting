@@ -22,16 +22,16 @@
 #include <QDebug>
 #include <QQmlEngine>
 
+#include "VotingSystem.hpp"
 #include "wrappers/Coin.hpp"
 #include "wrappers/Balance.hpp"
 #include "wrappers/Contest.hpp"
 #include "wrappers/Decision.hpp"
 #include "wrappers/Datagram.hpp"
-#include "BackendWrapper.hpp"
+#include "wrappers/BackendWrapper.hpp"
 #include "wrappers/OwningWrapper.hpp"
 #include "wrappers/Converters.hpp"
-#include "VotingSystem.hpp"
-#include "ChainAdaptorWrapper.hpp"
+#include "wrappers/ChainAdaptorWrapper.hpp"
 #include "Promise.hpp"
 #include "PromiseConverter.hpp"
 #include "TwoPartyClient.hpp"
@@ -50,14 +50,15 @@ const static QString PENDING_DECISION = QStringLiteral("pendingDecisions/%1");
 const static QString OPINIONS = QStringLiteral("pendingDecisions/%1/opinions");
 const static QString WRITEINS = QStringLiteral("pendingDecisions/%1/writeins");
 
-class VotingSystemPrivate {
+class VotingSystemPrivate : private kj::TaskSet::ErrorHandler {
     Q_DISABLE_COPY(VotingSystemPrivate)
     Q_DECLARE_PUBLIC(VotingSystem)
 
 public:
     VotingSystemPrivate(VotingSystem* q_ptr)
         : q_ptr(q_ptr),
-          promiseConverter(kj::heap<PromiseConverter>()),
+          tasks(*this),
+          promiseConverter(kj::heap<PromiseConverter>(tasks)),
           adaptor(kj::heap<ChainAdaptorWrapper>(*promiseConverter)),
           socket(kj::heap<QTcpSocket>())
     {
@@ -67,11 +68,12 @@ public:
                          static_cast<void (QTcpSocket::*)(QAbstractSocket::SocketError)>(&QTcpSocket::error),
                          q_ptr, [this](QAbstractSocket::SocketError e) {socketError(e);});
     }
-    ~VotingSystemPrivate() noexcept
+    virtual ~VotingSystemPrivate() noexcept
     {}
 
     VotingSystem* q_ptr;
     QString lastError;
+    kj::TaskSet tasks;
     kj::Own<PromiseConverter> promiseConverter;
     kj::Own<ChainAdaptorWrapper> adaptor;
     kj::Own<TwoPartyClient> client;
@@ -110,6 +112,16 @@ public:
             return;
         }
         q->setLastError(QObject::tr("Connection to server has encountered an error: %1").arg(socket->errorString()));
+    }
+
+private:
+    // ErrorHandler interface
+    void taskFailed(kj::Exception&& exception) {
+        Q_Q(VotingSystem);
+
+        KJ_LOG(ERROR, exception);
+        q->setLastError(QObject::tr("Internal error: Promise failed: %1")
+                        .arg(QString::fromStdString(exception.getDescription())));
     }
 };
 
@@ -196,7 +208,7 @@ void VotingSystem::configureChainAdaptor()
     d->adaptor->setAdaptor(kj::mv(adaptor));
 }
 
-Promise* VotingSystem::castCurrentDecision(swv::Contest* contest)
+Promise* VotingSystem::castCurrentDecision(swv::ContestWrapper* contest)
 {
     Q_D(VotingSystem);
 
@@ -233,7 +245,7 @@ Promise* VotingSystem::castCurrentDecision(swv::Contest* contest)
                 setLastError(tr("Unable to cast vote because the coin for the contest was not found."));
 
             setLastError(tr("Unable to cast vote because the current account, %1, has no %2.")
-                         .arg(d->currentAccount).arg(results.first().value<swv::Coin*>()->name()));
+                         .arg(d->currentAccount).arg(results.first().value<swv::CoinWrapper*>()->name()));
             KJ_FAIL_REQUIRE("Couldn't cast vote because voting account has no balances in the coin");
         }
 

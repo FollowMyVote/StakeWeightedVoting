@@ -12,10 +12,6 @@ QtGuiApplication {
     cpp.includePaths: [".", "qml-promise/src"]
 
     files: [
-        "ChainAdaptorWrapper.cpp",
-        "ChainAdaptorWrapper.hpp",
-        "BackendWrapper.cpp",
-        "BackendWrapper.hpp",
         "PromiseConverter.cpp",
         "PromiseConverter.hpp",
         "TwoPartyClient.cpp",
@@ -29,12 +25,18 @@ QtGuiApplication {
         "main.cpp",
         "qml/*.qml",
         "qml/qml.qrc",
+        "wrappers/ChainAdaptorWrapper.cpp",
+        "wrappers/ChainAdaptorWrapper.hpp",
+        "wrappers/BackendWrapper.cpp",
+        "wrappers/BackendWrapper.hpp",
         "wrappers/Balance.cpp",
         "wrappers/Balance.hpp",
         "wrappers/Coin.cpp",
         "wrappers/Coin.hpp",
         "wrappers/Contest.cpp",
         "wrappers/Contest.hpp",
+        "wrappers/ContestCreator.cpp",
+        "wrappers/ContestCreator.hpp",
         "wrappers/ContestGeneratorWrapper.cpp",
         "wrappers/ContestGeneratorWrapper.hpp",
         "wrappers/Datagram.cpp",
@@ -44,10 +46,15 @@ QtGuiApplication {
         "wrappers/OwningWrapper.cpp",
         "wrappers/OwningWrapper.hpp",
         "wrappers/Converters.hpp",
-        "wrappers/Converters.cpp",
+        "wrappers/PurchaseContestRequest.cpp",
+        "wrappers/PurchaseContestRequest.hpp",
+        "wrappers/PurchaseWrapper.cpp",
+        "wrappers/PurchaseWrapper.hpp",
         "wrappers/README.md",
         "qml-promise/src/Promise.cpp",
         "qml-promise/src/Promise.hpp",
+        "vendor/QQmlVariantListModel.cpp",
+        "vendor/QQmlVariantListModel.h",
     ]
 
     property bool install: true

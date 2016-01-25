@@ -17,6 +17,7 @@
  */
 
 #include "BackendServer.hpp"
+#include "ContestCreatorImpl.hpp"
 #include "ContestGeneratorImpl.hpp"
 #include "PurchaseImpl.hpp"
 
@@ -60,15 +61,14 @@ BackendServer::BackendServer()
 
 ::kj::Promise<void> BackendServer::purchaseResultReport(Backend::Server::PurchaseResultReportContext context)
 {
-    QMap<QString, QList<PurchaseImpl::Price>> priceList;
+    QList<PurchaseImpl::Price> priceList;
     auto params = context.getParams();
     switch(params.getContestId()[0]) {
     case 0:
-        priceList[QString::null] = {{0, 10000, "follow-my-vote"},{2, 500, "follow-my-vote"}};
-        priceList["FREE"] = {{0, 0, "follow-my-vote"}};
+        priceList = {{0, 10000, "follow-my-vote"},{2, 500, "follow-my-vote"}};
         break;
     case 1:
-        priceList[QString::null] = {{0, 30000, "follow-my-vote"}};
+        priceList = {{0, 30000, "follow-my-vote"}};
         break;
     default:
         KJ_FAIL_REQUIRE("Unknown contest ID.", params.getContestId());
@@ -108,14 +108,14 @@ BackendServer::BackendServer()
 
 ::kj::Promise<void> BackendServer::purchaseAuditTrail(Backend::Server::PurchaseAuditTrailContext context)
 {
-    QMap<QString, QList<PurchaseImpl::Price>> priceList;
+    QList<PurchaseImpl::Price> priceList;
     auto params = context.getParams();
     switch(params.getContestId()[0]) {
     case 0:
-        priceList[QString::null] = {{0, 40000, "follow-my-vote"},{2, 2000, "follow-my-vote"}};
+        priceList = {{0, 40000, "follow-my-vote"},{2, 2000, "follow-my-vote"}};
         break;
     case 1:
-        priceList[QString::null] = {{0, 120000, "follow-my-vote"}};
+        priceList = {{0, 120000, "follow-my-vote"}};
         break;
     default:
         KJ_FAIL_REQUIRE("Unknown contest ID.", params.getContestId());
@@ -150,6 +150,12 @@ BackendServer::BackendServer()
     auto results = context.getResults().initReports(reports.size());
     for (unsigned i = 0; i < results.size(); ++i)
         results.set(i, reports[i].toTime_t());
+    return kj::READY_NOW;
+}
+
+::kj::Promise<void> BackendServer::getContestCreator(Backend::Server::GetContestCreatorContext context)
+{
+    context.getResults().setCreator(kj::heap<ContestCreatorImpl>());
     return kj::READY_NOW;
 }
 

@@ -33,14 +33,14 @@ class PromiseConverter;
 
 namespace swv {
 
-class Coin;
-class Balance;
+class CoinWrapper;
+class BalanceWrapper;
 
 /**
  * @brief The ChainAdaptorWrapper class wraps a BlockchainAdaptorInterface in a more QML-friendly interface
  *
  * Because BlockchainAdaptorInterface is designed to be mostly Qt-independent, it (and its implementors) is not friendly
- * to QML (i.e. it returns types that QML can't inspect or manipulate). This class wraps such an adaptor and provides an
+ * to QML (i.e. it returns types that QML can't inspect or manipulate). This class wraps the interface and provides an
  * interface which exposes QML-friendly wrappers and types to manipulate the Cap'n Proto backend types.
  *
  * The ChainAdaptorWrapper is also responsible for managing decisions on contests, including their persistence.
@@ -171,7 +171,7 @@ public:
      * @brief Get a new datagram
      * @return A wrapped datagram, suitable for populating and passing to @ref publishDatagram
      */
-    Q_INVOKABLE Datagram* getDatagram();
+    Q_INVOKABLE DatagramWrapper* getDatagram();
     /**
      * @brief Publish a datagram to the blockchain
      * @param payer Balance which will be used to pay for the publication

@@ -24,12 +24,13 @@ interface Purchase {
 
     complete @0 () -> (result :Bool);
     # Check the status of the purchase
-    prices @1 (promoCode :Text) -> (prices :List(Price));
+    prices @1 () -> (prices :List(Price));
     # Get the price of the purchase in all available coins
-    subscribe @2 (notifier :Notifier) -> ();
-    # Get notified when the purchase is complete
-    paymentSent @3 (priceSelection :Price) -> ();
-    # Used to notify the server that the payment has been sent
+    subscribe @2 (notifier :Notifier(Text)) -> ();
+    # Get notified when the purchase is complete. Notification message will either be "true" or "false"
+    paymentSent @3 (selectedPrice :Int16) -> ();
+    # Used to notify the server that the payment has been sent. selectedPrice is the index of the price paid in the
+    # array returned by prices()
 
     struct Price {
         coinId @0 :UInt64;

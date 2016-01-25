@@ -27,9 +27,10 @@ class Promise;
 class PromiseConverter;
 namespace swv {
 class ContestGeneratorWrapper;
+class ContestCreatorWrapper;
 
 /**
- * @brief The BackendWrapper class provides a QML-friendly wrapper for the RPC backend
+ * @brief The BackendWrapper class provides a QML-friendly wrapper for the backend API
  *
  * This class makes all of the Cap'nProto RPC interfaces to the backend friendly to QML. It wraps the
  * functions in Q_INVOKABLE proxies and adapts the return values to Qt types and wraps any interfaces
@@ -44,17 +45,22 @@ class ContestGeneratorWrapper;
 class BackendWrapper : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(ContestCreatorWrapper* contestCreator READ contestCreator CONSTANT);
+
 public:
     BackendWrapper(Backend::Client backend, PromiseConverter& promiseConverter, QObject *parent = 0);
-    virtual ~BackendWrapper() noexcept {}
+    virtual ~BackendWrapper() noexcept;
 
     Q_INVOKABLE swv::ContestGeneratorWrapper* getFeedGenerator();
     Q_INVOKABLE swv::ContestGeneratorWrapper* getContestsByCreator(QString creator);
     Q_INVOKABLE swv::ContestGeneratorWrapper* getContestsByCoin(quint64 coinId);
 
+    swv::ContestCreatorWrapper* contestCreator();
+
 private:
     PromiseConverter& promiseConverter;
     Backend::Client backend;
+    kj::Own<ContestCreatorWrapper> creator;
 };
 
 } // namespace swv

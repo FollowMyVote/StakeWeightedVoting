@@ -23,22 +23,12 @@
 ::kj::Promise<void> PurchaseImpl::prices(Purchase::Server::PricesContext context)
 {
     auto params = context.getParams();
-    QList<Price> prices;
-    if (params.hasPromoCode()) {
-        QString promoCode = QString::fromStdString(params.getPromoCode());
-        KJ_REQUIRE(promosAndPrices.contains(promoCode),
-                   "Unknown promo code", params.getPromoCode());
-        prices = promosAndPrices[QString::fromStdString(params.getPromoCode())];
-    } else {
-        KJ_REQUIRE(promosAndPrices.contains(QString::null), "A promo code is required to make this purchase.");
-        prices = promosAndPrices[QString::null];
-    }
 
-    auto resultPrices = context.getResults().initPrices(prices.size());
+    auto resultPrices = context.getResults().initPrices(m_prices.size());
     for (unsigned i = 0; i < resultPrices.size(); ++i) {
-        resultPrices[i].setCoinId(prices[i].coinId);
-        resultPrices[i].setAmount(prices[i].amount);
-        resultPrices[i].setPayAddress(prices[i].payAddress.toStdString());
+        resultPrices[i].setCoinId(m_prices[i].coinId);
+        resultPrices[i].setAmount(m_prices[i].amount);
+        resultPrices[i].setPayAddress(m_prices[i].payAddress.toStdString());
     }
     return kj::READY_NOW;
 }
@@ -64,6 +54,7 @@
 void PurchaseImpl::sendNotification()
 {
     KJ_IF_MAYBE(notifier, completionNotifier) {
+        notifier->notifyRequest().setMessage("true");
         notifier->notifyRequest().send();
     }
 }

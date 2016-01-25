@@ -28,14 +28,14 @@ namespace swv {
 /**
  * @brief The Balance class is a read-only wrapper for the Balance type
  */
-class Balance : public QObject, public ::Balance::Reader
+class BalanceWrapper : public QObject, public ::Balance::Reader
 {
     Q_OBJECT
     Q_PROPERTY(QString id READ id CONSTANT)
     Q_PROPERTY(qint64 amount READ getAmount CONSTANT)
     Q_PROPERTY(quint64 type READ getType CONSTANT)
 public:
-    Balance(::Balance::Reader r, QObject* parent = nullptr);
+    BalanceWrapper(::Balance::Reader r, QObject* parent = nullptr);
 
     QString id() const;
 };

@@ -19,6 +19,7 @@
 using Purchase = import "purchase.capnp".Purchase;
 using Notifier = import "purchase.capnp".Notifier;
 using ContestGenerator = import "contestgenerator.capnp".ContestGenerator;
+using ContestCreator = import "contestcreator.capnp".ContestCreator;
 
 interface Backend {
     # This is the master API to the FMV backend. It provides services related to listing contests, getting contest
@@ -30,6 +31,9 @@ interface Backend {
     # Search contests and get a generator for the results
     getContestResults @1 (contestId :Data) -> (results :ContestResults);
     # Get the instantaneous live results for the specified contest
+
+    getContestCreator @9 () -> (creator :ContestCreator);
+    # Get a ContestCreator API
 
     purchaseResultReport @2 (contestId :Data, timestamp :UInt32) -> (api :Purchase);
     # Purchase a contest results report for a given time

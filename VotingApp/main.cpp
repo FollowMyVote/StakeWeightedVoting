@@ -33,9 +33,12 @@
 #include "wrappers/Decision.hpp"
 #include "wrappers/Datagram.hpp"
 #include "wrappers/ContestGeneratorWrapper.hpp"
-#include "BackendWrapper.hpp"
+#include "wrappers/PurchaseContestRequest.hpp"
+#include "wrappers/PurchaseWrapper.hpp"
+#include "wrappers/ContestCreator.hpp"
+#include "wrappers/BackendWrapper.hpp"
+#include "wrappers/ChainAdaptorWrapper.hpp"
 #include "VotingSystem.hpp"
-#include "ChainAdaptorWrapper.hpp"
 #include <Promise.hpp>
 
 #include <capnqt/QtEventPort.hpp>
@@ -56,24 +59,34 @@ int main(int argc, char *argv[])
     QQmlDebuggingEnabler debugEnabler;
 #endif
 
-    qmlRegisterUncreatableType<swv::Balance>("FollowMyVote.StakeWeightedVoting", 1, 0, "Balance",
-                                             QStringLiteral("Balances cannot be created from QML."));
-    qmlRegisterUncreatableType<swv::Contest>("FollowMyVote.StakeWeightedVoting", 1, 0, "Contest",
-                                             QStringLiteral("Contests cannot be created from QML."));
-    qmlRegisterUncreatableType<swv::Coin>("FollowMyVote.StakeWeightedVoting", 1, 0, "Coin",
-                                          QStringLiteral("Coins cannot be created from QML."));
-    qmlRegisterUncreatableType<swv::Datagram>("FollowMyVote.StakeWeightedVoting", 1, 0, "Datagram",
-                                              QStringLiteral("Datagrams cannot be created from QML."));
-    qmlRegisterUncreatableType<swv::Decision>("FollowMyVote.StakeWeightedVoting", 1, 0, "Decision",
-                                              QStringLiteral("Decisions cannot be created from QML."));
-    qmlRegisterUncreatableType<swv::BackendWrapper>("FollowMyVote.StakeWeightedVoting", 1, 0, "Backend",
-                                                    QStringLiteral("Backend cannot be created from QML."));
-    qmlRegisterUncreatableType<swv::ChainAdaptorWrapper>("FollowMyVote.StakeWeightedVoting", 1, 0, "ChainAdaptor",
-                                                         QStringLiteral("Chain Adaptor cannot be created from QML."));
-    qmlRegisterUncreatableType<swv::ContestGeneratorWrapper>("FollowMyVote.StakeWeightedVoting", 1, 0,
-                                                             "ContestGenerator",
-                                                             QStringLiteral("Contest Generator cannot be created from "
-                                                                            "QML."));
+    // Register data/API wrappers
+#define REGISTER_WRAPPER(name) \
+    qmlRegisterUncreatableType<swv::name ## Wrapper>("FollowMyVote.StakeWeightedVoting", 1, 0, #name, \
+                                          #name " is a wrapper. It cannot be created from QML.")
+    REGISTER_WRAPPER(Balance);
+    REGISTER_WRAPPER(Decision);
+    REGISTER_WRAPPER(Contest);
+    REGISTER_WRAPPER(Coin);
+    REGISTER_WRAPPER(Datagram);
+    REGISTER_WRAPPER(Backend);
+    REGISTER_WRAPPER(ChainAdaptor);
+    REGISTER_WRAPPER(ContestGenerator);
+    REGISTER_WRAPPER(ContestCreator);
+    REGISTER_WRAPPER(PurchaseContestRequest);
+    REGISTER_WRAPPER(Purchase);
+#undef REGISTER_WRAPPER
+
+    // Register enum wrappers
+#define REGISTER_ENUM(name) \
+    qmlRegisterUncreatableType<swv::name>("FollowMyVote.StakeWeightedVoting", 1, 0, #name, \
+                                          #name " is an enum container only; it cannot be created.")
+    REGISTER_ENUM(LineItems);
+    REGISTER_ENUM(ContestLimits);
+    REGISTER_ENUM(ContestType);
+    REGISTER_ENUM(TallyAlgorithm);
+#undef REGISTER_ENUM
+
+    // Other registrations
     qmlRegisterType<swv::VotingSystem>("FollowMyVote.StakeWeightedVoting", 1, 0, "VotingSystem");
     qmlRegisterType<Promise>("FollowMyVote.StakeWeightedVoting", 1, 0, "Promise");
 

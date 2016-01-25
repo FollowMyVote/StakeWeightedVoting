@@ -19,6 +19,8 @@
 #include "BackendWrapper.hpp"
 #include "PromiseConverter.hpp"
 #include "wrappers/ContestGeneratorWrapper.hpp"
+#include "wrappers/PurchaseContestRequest.hpp"
+#include "wrappers/ContestCreator.hpp"
 
 #include <Promise.hpp>
 
@@ -34,8 +36,10 @@ BackendWrapper::BackendWrapper(Backend::Client backend, PromiseConverter& promis
     : QObject(parent),
       promiseConverter(promiseConverter),
       backend(kj::mv(backend))
-{
-}
+{}
+
+BackendWrapper::~BackendWrapper() noexcept
+{}
 
 ContestGeneratorWrapper* BackendWrapper::getFeedGenerator()
 {
@@ -62,6 +66,14 @@ ContestGeneratorWrapper* BackendWrapper::getContestsByCoin(quint64 coinId)
     arguments.set(0, std::to_string(coinId));
 
     return new ContestGeneratorWrapper(request.send().getGenerator(), promiseConverter);
+}
+
+ContestCreatorWrapper*BackendWrapper::contestCreator()
+{
+    // Lazy load the creator; most runs we will probably never need it.
+    if (creator.get() == nullptr)
+        creator = kj::heap<ContestCreatorWrapper>(backend.getContestCreatorRequest().send().getCreator());
+    return creator.get();
 }
 
 } // namespace swv

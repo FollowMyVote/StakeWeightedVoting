@@ -59,7 +59,7 @@ Promise* ChainAdaptorWrapper::getCoin(quint64 id)
     if (hasAdaptor())
         return promiseConverter.convert(m_adaptor->getCoin(id),
                                         [](::Coin::Reader r) -> QVariantList {
-            return {QVariant::fromValue<QObject*>(new Coin(r))};
+            return {QVariant::fromValue<QObject*>(new CoinWrapper(r))};
         });
     return nullptr;
 }
@@ -69,7 +69,7 @@ Promise* ChainAdaptorWrapper::getCoin(QString symbol)
     if (hasAdaptor())
         return promiseConverter.convert(m_adaptor->getCoin(symbol),
                                         [](::Coin::Reader r) -> QVariantList {
-            return {QVariant::fromValue<QObject*>(new Coin(r))};
+            return {QVariant::fromValue<QObject*>(new CoinWrapper(r))};
         });
    return nullptr;
 }
@@ -82,6 +82,7 @@ Promise* ChainAdaptorWrapper::listAllCoins()
             QVariantList results;
             std::transform(coins.begin(), coins.end(), std::back_inserter(results),
                            [](::Coin::Reader r) { return QVariant::fromValue((QObject*)new swv::Coin(r)); });
+
             return {QVariant::fromValue(results)};
         });
     }
@@ -150,10 +151,10 @@ Promise* ChainAdaptorWrapper::getDecision(QString owner, QString contestId)
 
         return kj::joinPromises(accumulator.datagramPromises.finish());
     }).then([=](kj::Array<kj::Maybe<::Datagram::Reader>> datagrams) {
-        std::unique_ptr<OwningWrapper<swv::Decision>> decision;
+        std::unique_ptr<OwningWrapper<swv::DecisionWrapper>> decision;
         for (auto datagramMaybe : datagrams) {
             KJ_IF_MAYBE(datagram, datagramMaybe) {
-                decision.reset(OwningWrapper<Decision>::deserialize(convertBlob(datagram->getContent())));
+                decision.reset(OwningWrapper<DecisionWrapper>::deserialize(convertBlob(datagram->getContent())));
                 break;
             }
         }
@@ -165,8 +166,8 @@ Promise* ChainAdaptorWrapper::getDecision(QString owner, QString contestId)
         // Search for non-matching or missing decisions, which would mean the decision is stale.
         for (auto maybeReader : datagrams) {
             KJ_IF_MAYBE(reader, maybeReader) {
-                std::unique_ptr<OwningWrapper<swv::Decision>> otherDecision(
-                            OwningWrapper<swv::Decision>::deserialize(convertBlob(reader->getContent())));
+                std::unique_ptr<OwningWrapper<swv::DecisionWrapper>> otherDecision(
+                            OwningWrapper<swv::DecisionWrapper>::deserialize(convertBlob(reader->getContent())));
                 if (*otherDecision != *decision) {
                     emit contestActionRequired(contestId);
                     break;
@@ -179,7 +180,7 @@ Promise* ChainAdaptorWrapper::getDecision(QString owner, QString contestId)
         return decision.release();
     });
 
-    return promiseConverter.convert(kj::mv(promise), [](OwningWrapper<swv::Decision>* d) -> QVariantList {
+    return promiseConverter.convert(kj::mv(promise), [](OwningWrapper<swv::DecisionWrapper>* d) -> QVariantList {
         return {QVariant::fromValue<QObject*>(d)};
     });
 }
@@ -200,7 +201,7 @@ Promise* ChainAdaptorWrapper::getBalance(QByteArray id)
 {
     if (hasAdaptor())
         return promiseConverter.convert(m_adaptor->getBalance(id), [](::Balance::Reader r) -> QVariantList {
-            return {QVariant::fromValue<QObject*>(new Balance(r))};
+            return {QVariant::fromValue<QObject*>(new BalanceWrapper(r))};
         });
     return nullptr;
 }
@@ -210,9 +211,9 @@ Promise* ChainAdaptorWrapper::getAccountBalances(QString account)
     if (hasAdaptor()) {
         return promiseConverter.convert(m_adaptor->getBalancesForOwner(account),
                                         [](kj::Array<::Balance::Reader> balances) -> QVariantList {
-            QList<Balance*> results;
+            QList<BalanceWrapper*> results;
             std::transform(balances.begin(), balances.end(), std::back_inserter(results),
-                           [](::Balance::Reader r) { return new Balance(r); });
+                           [](::Balance::Reader r) { return new BalanceWrapper(r); });
             return {QVariant::fromValue(results)};
         });
     }
@@ -221,13 +222,12 @@ Promise* ChainAdaptorWrapper::getAccountBalances(QString account)
 
 Promise* ChainAdaptorWrapper::getBalancesForOwner(QString owner)
 {
-    QList<Balance*> results;
     if (hasAdaptor()) {
         return promiseConverter.convert(m_adaptor->getBalancesForOwner(owner),
                                         [](kj::Array<::Balance::Reader> balances) -> QVariantList {
-            QList<Balance*> results;
+            QList<BalanceWrapper*> results;
             std::transform(balances.begin(), balances.end(), std::back_inserter(results),
-                           [](::Balance::Reader r) { return new Balance(r); });
+                           [](::Balance::Reader r) { return new BalanceWrapper(r); });
             return {QVariant::fromValue(results)};
         });
     }
@@ -241,8 +241,8 @@ Promise* ChainAdaptorWrapper::getContest(QString contestId)
         return promiseConverter.convert(m_adaptor->getContest(realContestId),
                                         [this](::Contest::Reader r) -> QVariantList {
             //TODO: Check signature
-            auto contest = new Contest(r.getContest(), this);
-            auto decision = new OwningWrapper<Decision>(contest);
+            auto contest = new ContestWrapper(r.getContest(), this);
+            auto decision = new OwningWrapper<DecisionWrapper>(contest);
 
             // Defer persistence concerns until later; the contest doesn't know about the QML engine yet so we can't
             // manipulate the QJSValue properties
@@ -252,7 +252,7 @@ Promise* ChainAdaptorWrapper::getContest(QString contestId)
                 if (settings.contains(key)) {
                     try {
                         auto bytes = settings.value(key, QByteArray()).toByteArray();
-                        decision = OwningWrapper<Decision>::deserialize(bytes, contest);
+                        decision = OwningWrapper<DecisionWrapper>::deserialize(bytes, contest);
                         contest->setCurrentDecision(decision);
                     } catch (kj::Exception e) {
                         emit error(tr("Error when recovering decision: %1")
@@ -264,8 +264,8 @@ Promise* ChainAdaptorWrapper::getContest(QString contestId)
                     auto bytes = decision->serialize();
                     settings.setValue(key, bytes);
                 };
-                connect(decision, &OwningWrapper<Decision>::opinionsChanged, persist);
-                connect(decision, &OwningWrapper<Decision>::writeInsChanged, persist);
+                connect(decision, &OwningWrapper<DecisionWrapper>::opinionsChanged, persist);
+                connect(decision, &OwningWrapper<DecisionWrapper>::writeInsChanged, persist);
             });
             contest->setCurrentDecision(decision);
 
@@ -274,10 +274,10 @@ Promise* ChainAdaptorWrapper::getContest(QString contestId)
     return nullptr;
 }
 
-Datagram* ChainAdaptorWrapper::getDatagram()
+DatagramWrapper* ChainAdaptorWrapper::getDatagram()
 {
     if (hasAdaptor())
-        return new Datagram(m_adaptor->createDatagram(), this);
+        return new DatagramWrapper(m_adaptor->createDatagram(), this);
     return nullptr;
 }
 
@@ -293,7 +293,7 @@ Promise* ChainAdaptorWrapper::getDatagram(QString balanceId, QString schema)
     if (hasAdaptor()) {
         return promiseConverter.convert(m_adaptor->getDatagram(QByteArray::fromHex(balanceId.toLocal8Bit()), schema),
                                         [this](::Datagram::Reader r) -> QVariantList {
-            return {QVariant::fromValue<QObject*>(new OwningWrapper<Datagram>(r, this))};
+            return {QVariant::fromValue<QObject*>(new OwningWrapper<DatagramWrapper>(r, this))};
         });
     }
     return nullptr;
