@@ -2,7 +2,7 @@ import QtQuick 2.5
 import QtQuick.Layouts 1.1
 import QtQuick.Window 2.0
 
-import Material 0.1
+import VPlayApps 1.0
 
 import FollowMyVote.StakeWeightedVoting 1.0
 
