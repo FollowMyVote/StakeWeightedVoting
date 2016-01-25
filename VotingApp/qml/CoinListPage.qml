@@ -19,50 +19,35 @@ import QtQuick 2.5
 import QtQuick.Layouts 1.1
 import QtQuick.Window 2.0
 
-import Material 0.1
-import Material.Extras 0.1
-import Material.ListItems 0.1
+import VPlayApps 1.0
 
 import FollowMyVote.StakeWeightedVoting 1.0
 
-Page {
+ListPage {
     id: coinListPage
     title: qsTr("Coin List")
-    actionBar.maxActionCount: 3
+    model: coinList
+    delegate: AppText {
+        text: name
+        //subText: qsTr("%1 contests/month").arg("N")
+        //iconSource: "qrc:/res/Follow-My-Vote-Logo.png"
+    }
 
-    function loadCoins() { coinList.loadCoins() }
+    function loadCoins() {
+        console.log("Loading coins...")
+        coinList.loadCoins()
+    }
 
     ListModel {
         id: coinList
 
         function loadCoins() {
             votingSystem.adaptor.listAllCoins().then(function (coins) {
+                console.log("Coins: " + JSON.stringify(coins))
                 coins.forEach(function(coin) {
                     coinList.append(coin)
                 })
             })
         }
-    }
-
-    ListView {
-        id: list
-        anchors.fill: parent
-        anchors.topMargin: Units.dp(8)
-        anchors.bottomMargin: Units.dp(8)
-        model: coinList
-        delegate: Subtitled {
-            text: name
-            subText: qsTr("%1 contests/month").arg("N")
-            iconSource: "qrc:/res/Follow-My-Vote-Logo.png"
-        }
-
-        spacing: Units.dp(8)
-
-    }
-    LoadingIndicator {
-        anchors.centerIn: parent
-        height: parent.height / 7
-        visible: coinList.count === 0
-        text: qsTr("Loading Coins")
     }
 }

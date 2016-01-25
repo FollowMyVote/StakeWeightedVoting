@@ -85,6 +85,7 @@ public:
 signals:
     void error(QString message);
     void isReadyChanged();
+    void ready();
     void backendConnectedChanged(bool backendConnected);
     void adaptorReadyChanged(bool adaptorReady);
     void currentAccountChanged(QString currentAccount);

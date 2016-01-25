@@ -31,7 +31,10 @@ Page {
     property var getContestGeneratorFunction
 
     function reloadContests() { contestList.reloadContests() }
-    function loadContests() { contestList.loadContests() }
+    function loadContests() {
+        console.log("Loading contests...")
+        contestList.loadContests()
+    }
 
 //    actions: [
 //        Action {
