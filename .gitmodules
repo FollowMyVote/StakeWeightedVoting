@@ -1,3 +1,0 @@
-[submodule "VotingApp/qml/jbQuick/Charts"]
-	path = VotingApp/qml/jbQuick/Charts
-	url = git://github.com/jwintz/qchart.js.git
