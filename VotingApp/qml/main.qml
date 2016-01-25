@@ -30,7 +30,6 @@ App {
     width: 1280
     height: 768
     visible: true
-    licenseKey: "C169F952253269837F5604FE99EE6CD85C2C3604457C1626830BFDBCBD9BB390F75539977C2A4918FD5B62F4D4F236F62FB90BDD8E059F65C9CF04D5848E2597339ECC96C10945E2623372CA29F961C8B93E296FDF9C654F8BD21D3ACCC46128E2145815507281DC6C17D4810D39103B0891C41FC340FF6CC6122512D6CDDC4F460659BA576ECE24E1A40366DA5B6308CCEF71EB0A7A93F52F788EDF569A8484C60169F6792D3407DF91C435A9DCA407539523938DA57D970780F76F7FFE10713D9670FE8E8510EFB66C10E682AC81D2EE2801C3856C835F351F6C55C0CF3AFC7D3C02AC367F8BF4C4B4DDB8EB1BB7CBE410F0B730AA597543A390B6079FC77443D911CA3FE65195288F80D28AC90666098E9D49FD7C60DEC733B1D886586281401B800B0B75DE96DB19F89351AF0171"
 
     Action {
         shortcut: "Ctrl+Q"
@@ -60,20 +59,19 @@ App {
 
             ContestListPage {
                 id: feedPage
-                getContestGeneratorFunction: votingSystem.isReady? votingSystem.backend.getFeedGenerator
-                                                                 : null
-
-                Connections {
-                    target: votingSystem
-                    onConnected: loadContests()
+                getContestGeneratorFunction: function() {
+                    if (votingSystem.isReady)
+                        return votingSystem.backend.getFeedGenerator()
                 }
+                Component.onCompleted: if (votingSystem.isReady) loadContests()
             }
         }
         NavigationItem {
             title: "Coin List"
 
-            ContestListPage {
+            CoinListPage {
                 id: coinListPage
+                Component.onCompleted: if (votingSystem.isReady) loadCoins()
             }
         }
     }
