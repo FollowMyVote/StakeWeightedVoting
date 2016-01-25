@@ -25,9 +25,11 @@ import Material 0.1
 import FollowMyVote.StakeWeightedVoting 1.0
 
 Page {
-    id: feedPage
+    id: contestListPage
     title: qsTr("All Polls")
     actionBar.maxActionCount: 3
+
+    property var getContestGeneratorFunction
 
     function reloadContests() { contestList.reloadContests() }
     function loadContests() { contestList.loadContests() }
@@ -62,7 +64,7 @@ Page {
 
     ContestantDetailDialog {
         id: contestantDetailDialog
-        width: feedPage.width * .75
+        width: contestListPage.width * .75
     }
     ListModel {
         id: contestList
@@ -77,7 +79,7 @@ Page {
         function loadContests() {
             if (!contestGenerator) {
                 console.log("Setting contest generator")
-                contestGenerator = votingSystem.backend.getFeedGenerator()
+                contestGenerator = getContestGeneratorFunction()
             }
 
             contestGenerator.getContests(3).then(function (contests) {

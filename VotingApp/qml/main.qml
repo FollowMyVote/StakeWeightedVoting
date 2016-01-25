@@ -55,7 +55,10 @@ ApplicationWindow {
 
        Component.onCompleted: {
            configureChainAdaptor()
-           connectToBackend("127.0.0.1", 2572).then(feedPage.loadContests)
+           connectToBackend("127.0.0.1", 2572).then(function() {
+               feedPage.loadContests()
+               coinListPage.loadCoins()
+           })
        }
        onError: {
            console.log("Error from Voting System: %1".arg(message))
@@ -84,11 +87,12 @@ ApplicationWindow {
         }
     }
 
-    FeedPage {
+    ContestListPage {
         id: feedPage
         backAction: navDrawer.action
+        getContestGeneratorFunction: function() { return votingSystem.backend.getFeedGenerator() }
     }
-    FeedPage {
+    CoinListPage {
         id: coinListPage
     }
 }
