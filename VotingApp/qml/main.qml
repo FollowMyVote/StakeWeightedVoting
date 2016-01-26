@@ -31,6 +31,8 @@ App {
     height: 768
     visible: true
 
+    Component.onCompleted: Theme.platform = "android"
+
     Action {
         shortcut: "Ctrl+Q"
         onTriggered: Qt.quit()
@@ -57,21 +59,25 @@ App {
         NavigationItem {
             title: "Feed"
 
-            ContestListPage {
-                id: feedPage
-                getContestGeneratorFunction: function() {
-                    if (votingSystem.isReady)
-                        return votingSystem.backend.getFeedGenerator()
+            NavigationStack {
+                ContestListPage {
+                    id: feedPage
+                    getContestGeneratorFunction: function() {
+                        if (votingSystem.isReady)
+                            return votingSystem.backend.getFeedGenerator()
+                    }
+                    Component.onCompleted: if (votingSystem.isReady) loadContests()
                 }
-                Component.onCompleted: if (votingSystem.isReady) loadContests()
             }
         }
         NavigationItem {
             title: "Coin List"
 
-            CoinListPage {
-                id: coinListPage
-                Component.onCompleted: if (votingSystem.isReady) loadCoins()
+            NavigationStack {
+                CoinListPage {
+                    id: coinListPage
+                    Component.onCompleted: if (votingSystem.isReady) loadCoins()
+                }
             }
         }
     }

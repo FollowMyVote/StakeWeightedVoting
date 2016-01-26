@@ -47,10 +47,10 @@ Column {
                 height: window.dp(72)
                 Layout.fillWidth: true
 
-                Image {
+                AppImage {
                     id: coinImage
-                    width: window.dp(40)
-                    height: window.dp(40)
+                    Layout.preferredWidth: window.dp(40)
+                    Layout.preferredHeight: window.dp(40)
                     source: "res/Follow-My-Vote-Logo.png"
                     fillMode: Image.PreserveAspectCrop
                 }
