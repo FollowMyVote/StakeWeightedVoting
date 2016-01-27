@@ -88,7 +88,7 @@ Column {
             rowSpacing: columnSpacing
 
             function contestantMinimumWidth() {
-                return window.pixelDensity * 50
+                return window.dp(300)
             }
 
             Repeater {

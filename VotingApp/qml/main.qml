@@ -30,6 +30,7 @@ App {
     width: 1280
     height: 768
     visible: true
+    minimumWidth: dp(400)
 
     Component.onCompleted: Theme.platform = "android"
 
