@@ -24,7 +24,7 @@ import VPlayApps 1.0
 
 import FollowMyVote.StakeWeightedVoting 1.0
 
-Page {
+ListPage {
     id: contestListPage
     title: qsTr("All Polls")
 
@@ -34,6 +34,65 @@ Page {
     function loadContests() {
         console.log("Loading contests...")
         contestList.loadContests()
+    }
+
+    model: contestList
+    delegate: ContestCard {
+        contestId: model.contestId
+        votingStake: model.votingStake
+        tracksLiveResults: model.tracksLiveResults
+        onSelected: feedPage.push(Qt.createComponent(Qt.resolvedUrl("ContestPage.qml")), {"contest": contest})
+    }
+
+    listView.spacing: window.dp(8)
+    listView.onAtYEndChanged: {
+        if(listView.atYEnd && votingSystem.isReady) {
+            contestList.loadContests()
+        }
+    }
+    listView.onCountChanged: if (listView.contentHeight < height && votingSystem.isReady)
+                                 contestList.loadContests()
+
+
+    ListModel {
+        id: contestList
+
+        property var contestGenerator
+
+        function reloadContests() {
+            contestGenerator = null
+            contestList.clear()
+            loadContests()
+        }
+        function loadContests() {
+            if (!contestGenerator) {
+                console.log("Setting contest generator")
+                contestGenerator = getContestGeneratorFunction()
+            }
+
+            contestGenerator.getContests(3).then(function (contests) {
+                contests.forEach(function(contest) {
+                    contestList.append(contest)
+                })
+                if(contests.length < 3) listView.footer = noMoreContestsComponent
+            })
+        }
+    }
+    Component {
+        id: noMoreContestsComponent
+        Item {
+            id: noMoreContestsFooter
+            width: parent.width
+            height: noMoreContests.height*3
+
+            AppText {
+                id: noMoreContests
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.verticalCenter: parent.verticalCenter
+                text: "There are no more contests."
+
+            }
+        }
     }
 
 //    actions: [
@@ -67,81 +126,5 @@ Page {
 //    ContestantDetailDialog {
 //        id: contestantDetailDialog
 //        width: feedPage.width * .75
-//    }
-    ListModel {
-        id: contestList
-
-        property var contestGenerator
-
-        function reloadContests() {
-            contestGenerator = null
-            contestList.clear()
-            loadContests()
-        }
-        function loadContests() {
-            if (!contestGenerator) {
-                console.log("Setting contest generator")
-                contestGenerator = getContestGeneratorFunction()
-            }
-
-            contestGenerator.getContests(3).then(function (contests) {
-                contests.forEach(function(contest) {
-                    contestList.append(contest)
-                })
-                if(contests.length < 3) list.footer = noMoreContestsComponent
-            })
-        }
-    }
-
-    ListView {
-        id: list
-        anchors.fill: parent
-        anchors.topMargin: window.dp(8)
-        anchors.bottomMargin: window.dp(8)
-        model: contestList
-        delegate: ContestCard {
-            contestId: model.contestId
-            votingStake: model.votingStake
-            tracksLiveResults: model.tracksLiveResults
-            onSelected: feedPage.push(Qt.createComponent(Qt.resolvedUrl("ContestPage.qml")), {"contest": contest})
-        }
-        spacing: window.dp(8)
-
-        PullToRefresh {
-            view: parent
-            onTriggered: contestList.reloadContests()
-            text: fullyPulled? qsTr("Release to Refresh") : qsTr("Pull to Refresh")
-        }
-
-        onAtYEndChanged: {
-            if(list.atYEnd && votingSystem.isReady) {
-                contestList.loadContests()
-            }
-        }
-        onCountChanged: if (contentHeight < height && votingSystem.isReady)
-                            contestList.loadContests()
-
-        Component {
-            id: noMoreContestsComponent
-            Item {
-                id: noMoreContestsFooter
-                width: parent.width
-                height: noMoreContests.height*3
-
-                AppText {
-                    id: noMoreContests
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "There are no more contests."
-
-                }
-            }
-        }
-    }
-//    LoadingIndicator {
-//        anchors.centerIn: parent
-//        height: parent.height / 7
-//        visible: contestList.count === 0
-//        text: qsTr("Loading Polls")
 //    }
 }

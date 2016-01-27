@@ -32,7 +32,10 @@ App {
     visible: true
     minimumWidth: dp(400)
 
-    Component.onCompleted: Theme.platform = "android"
+    onInitTheme: {
+        Theme.platform = "android"
+        Theme.colors.backgroundColor = "#e5e5e5"
+    }
 
     Action {
         shortcut: "Ctrl+Q"

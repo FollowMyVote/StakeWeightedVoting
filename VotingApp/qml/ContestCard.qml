@@ -19,10 +19,7 @@
 import QtQuick 2.5
 import QtQuick.Layouts 1.1
 import QtQuick.Window 2.0
-
-import Material 0.1
-import Material.Extras 0.1
-import Material.ListItems 0.1
+import QtGraphicalEffects 1.0
 
 import FollowMyVote.StakeWeightedVoting 1.0
 
@@ -31,10 +28,19 @@ Rectangle {
     width: parent.width - window.dp(16)
     x: window.dp(8)
     height: visibleContestLoader.height + window.dp(32)
+    layer.enabled: showDropShadow
+    layer.effect: DropShadow {
+        radius: 4
+        samples: 16
+        source: card
+        color: Qt.rgba(0, 0, 0, 0.5)
+        transparentBorder: true
+    }
 
     property string contestId
     property int votingStake
     property bool tracksLiveResults
+    property bool showDropShadow: true
 
     signal selected(Contest contest)
 

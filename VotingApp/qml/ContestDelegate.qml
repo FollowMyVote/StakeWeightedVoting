@@ -11,21 +11,6 @@ Column {
 
     property var displayContest
 
-    RowLayout {
-        id: categoryLayout
-        width: parent.width
-
-        AppText {
-            Layout.fillWidth: true
-            text: displayContest.tags["category"]
-            color: Theme.textColor
-        }
-        Icon {
-            icon: IconType.wifi
-            color: Theme.tintColor
-        }
-    }
-    Rectangle { height: window.dp(1); width: parent.width; color: "lightgrey" }
     GridLayout {
         id: contestLayout
         anchors {
@@ -152,7 +137,15 @@ Column {
                             text: qsTr("Read more")
                             visible: contestantDescription.truncated
                             Layout.fillWidth: true
-                            onClicked: contestantDetailDialog.display(modelData.name, modelData.description)
+                            onClicked: {
+                                var dlg = InputDialog.confirm(window,
+                                                              "%1\n\n%2".arg(modelData.name).arg(contestantDescription.text),
+                                                              function(){})
+                                dlg.negativeAction = false
+                                dlg.Keys.escapePressed.connect(dlg.close)
+                                dlg.focus = true
+                            }
+                            Layout.preferredHeight: contentHeight
                         }
                     }
                 }
