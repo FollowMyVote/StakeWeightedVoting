@@ -27,6 +27,10 @@ import FollowMyVote.StakeWeightedVoting 1.0
 ListPage {
     id: contestListPage
     title: qsTr("All Polls")
+    pullToRefreshHandler.enabled: true
+    pullToRefreshHandler.onRefresh:{
+        reloadContests()
+    }
 
     property var getContestGeneratorFunction
 
@@ -122,9 +126,4 @@ ListPage {
 //            iconName: "action/feedback"
 //        }
 //    ]
-
-//    ContestantDetailDialog {
-//        id: contestantDetailDialog
-//        width: feedPage.width * .75
-//    }
 }
