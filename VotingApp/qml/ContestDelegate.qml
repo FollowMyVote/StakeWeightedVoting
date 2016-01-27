@@ -95,6 +95,7 @@ Column {
                 id: contestantRepeater
                 model: displayContest.contestants
                 delegate: Rectangle {
+                    id: contestantButton
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     Layout.preferredHeight: {
@@ -104,7 +105,11 @@ Column {
                                 maxHeight = Math.max(maxHeight, contestantRepeater.itemAt(i).contentHeight)
                         return maxHeight + window.dp(16)
                     }
-                    color: isSelected? Theme.selectedBackgroundColor : "transparent"
+                    color: isSelected? Theme.tintColor : Theme.tintLightColor
+                    opacity: isSelected? 1 : .5
+
+                    Behavior on color { ColorAnimation { easing.type: Easing.OutQuad } }
+                    Behavior on opacity { NumberAnimation { easing.type: Easing.OutQuad } }
 
                     property bool isSelected: !!displayContest.currentDecision &&
                                               !!displayContest.currentDecision.opinions[index]
@@ -131,6 +136,8 @@ Column {
                             text: modelData.name
                             Layout.fillWidth: true
                             wrapMode: Text.WrapAtWordBoundaryOrAnywhere
+                            color: contestantButton.isSelected? "white" : "black"
+                            font.weight: Font.DemiBold
                         }
                         AppText {
                             id: contestantDescription
@@ -139,6 +146,7 @@ Column {
                             wrapMode: Text.WrapAtWordBoundaryOrAnywhere
                             elide: Text.ElideRight
                             maximumLineCount: 5
+                            color: contestantButton.isSelected? "white" : "black"
                         }
                         AppButton {
                             text: qsTr("Read more")
