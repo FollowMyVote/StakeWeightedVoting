@@ -237,11 +237,13 @@ Promise* ChainAdaptorWrapper::getBalancesForOwner(QString owner)
 Promise* ChainAdaptorWrapper::getContest(QString contestId)
 {
     QByteArray realContestId = QByteArray::fromHex(contestId.toLocal8Bit());
-    if (hasAdaptor())
-        return promiseConverter.convert(m_adaptor->getContest(realContestId),
-                                        [this](::Contest::Reader r) -> QVariantList {
+    if (hasAdaptor()) {
+        auto promise = m_adaptor->getContest(realContestId).then([this](::Contest::Reader r) {
             //TODO: Check signature
-            auto contest = new ContestWrapper(r.getContest(), this);
+            KJ_LOG(DBG, "Here");
+            auto contest = new ContestWrapper(r.getContest());
+            QQmlEngine::setObjectOwnership(contest, QQmlEngine::JavaScriptOwnership);
+            connect(contest, &ContestWrapper::destroyed, [] { KJ_LOG(DBG, "Bai"); });
             auto decision = new OwningWrapper<DecisionWrapper>(contest);
 
             // Defer persistence concerns until later; the contest doesn't know about the QML engine yet so we can't
@@ -268,9 +270,12 @@ Promise* ChainAdaptorWrapper::getContest(QString contestId)
                 connect(decision, &OwningWrapper<DecisionWrapper>::writeInsChanged, persist);
             });
             contest->setCurrentDecision(decision);
-
+            return contest;
+        });
+        return promiseConverter.convert(kj::mv(promise), [](ContestWrapper* contest) -> QVariantList {
             return {QVariant::fromValue<QObject*>(contest)};
         });
+    }
     return nullptr;
 }
 
