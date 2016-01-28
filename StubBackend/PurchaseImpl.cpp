@@ -22,8 +22,6 @@
 
 ::kj::Promise<void> PurchaseImpl::prices(Purchase::Server::PricesContext context)
 {
-    auto params = context.getParams();
-
     auto resultPrices = context.getResults().initPrices(m_prices.size());
     for (unsigned i = 0; i < resultPrices.size(); ++i) {
         resultPrices[i].setCoinId(m_prices[i].coinId);

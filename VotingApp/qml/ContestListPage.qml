@@ -45,7 +45,9 @@ ListPage {
         contestObject: model.contestObject
         votingStake: model.votingStake
         tracksLiveResults: model.tracksLiveResults
-        onSelected: feedPage.navigationStack.push(Qt.createComponent(Qt.resolvedUrl("ContestPage.qml")), {"contest": contest})
+        onSelected: {
+            feedPage.navigationStack.push(Qt.createComponent(Qt.resolvedUrl("ContestPage.qml")), {"contest": contest})
+        }
     }
 
     listView.spacing: window.dp(8)
@@ -98,8 +100,7 @@ ListPage {
                 id: noMoreContests
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.verticalCenter: parent.verticalCenter
-                text: "There are no more contests."
-
+                text: qsTr("There are no more contests.")
             }
         }
     }
