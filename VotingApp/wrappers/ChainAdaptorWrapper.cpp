@@ -240,10 +240,8 @@ Promise* ChainAdaptorWrapper::getContest(QString contestId)
     if (hasAdaptor()) {
         auto promise = m_adaptor->getContest(realContestId).then([this](::Contest::Reader r) {
             //TODO: Check signature
-            KJ_LOG(DBG, "Here");
             auto contest = new ContestWrapper(r.getContest());
             QQmlEngine::setObjectOwnership(contest, QQmlEngine::JavaScriptOwnership);
-            connect(contest, &ContestWrapper::destroyed, [] { KJ_LOG(DBG, "Bai"); });
             auto decision = new OwningWrapper<DecisionWrapper>(contest);
 
             // Defer persistence concerns until later; the contest doesn't know about the QML engine yet so we can't
