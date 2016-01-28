@@ -42,10 +42,10 @@ ListPage {
 
     model: contestList
     delegate: ContestCard {
-        contestId: model.contestId
+        contestObject: model.contestObject
         votingStake: model.votingStake
         tracksLiveResults: model.tracksLiveResults
-        onSelected: feedPage.push(Qt.createComponent(Qt.resolvedUrl("ContestPage.qml")), {"contest": contest})
+        onSelected: feedPage.navigationStack.push(Qt.createComponent(Qt.resolvedUrl("ContestPage.qml")), {"contest": contest})
     }
 
     listView.spacing: window.dp(8)
@@ -76,7 +76,12 @@ ListPage {
 
             contestGenerator.getContests(3).then(function (contests) {
                 contests.forEach(function(contest) {
-                    contestList.append(contest)
+                    votingSystem.adaptor.getContest(contest.contestId).then(function(contestObject) {
+                        contest.contestObject = contestObject
+                        contestList.append(contest)
+                    }, function(error) {
+                        console.log("Error when loading contest %1:\n%2".arg(contest.contestId).arg(error))
+                    })
                 })
                 if(contests.length < 3) listView.footer = noMoreContestsComponent
             })
