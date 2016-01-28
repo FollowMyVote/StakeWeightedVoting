@@ -11,21 +11,6 @@ Column {
 
     property var displayContest
 
-    RowLayout {
-        id: categoryLayout
-        width: parent.width
-
-        AppText {
-            Layout.fillWidth: true
-            text: displayContest.tags["category"]
-            color: Theme.textColor
-        }
-        Icon {
-            icon: IconType.wifi
-            color: Theme.tintColor
-        }
-    }
-    Rectangle { height: window.dp(1); width: parent.width; color: "lightgrey" }
     GridLayout {
         id: contestLayout
         anchors {
@@ -47,10 +32,10 @@ Column {
                 height: window.dp(72)
                 Layout.fillWidth: true
 
-                Image {
+                AppImage {
                     id: coinImage
-                    width: window.dp(40)
-                    height: window.dp(40)
+                    Layout.preferredWidth: window.dp(40)
+                    Layout.preferredHeight: window.dp(40)
                     source: "res/Follow-My-Vote-Logo.png"
                     fillMode: Image.PreserveAspectCrop
                 }
@@ -88,13 +73,14 @@ Column {
             rowSpacing: columnSpacing
 
             function contestantMinimumWidth() {
-                return window.pixelDensity * 50
+                return window.dp(300)
             }
 
             Repeater {
                 id: contestantRepeater
                 model: displayContest.contestants
                 delegate: Rectangle {
+                    id: contestantButton
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     Layout.preferredHeight: {
@@ -104,7 +90,11 @@ Column {
                                 maxHeight = Math.max(maxHeight, contestantRepeater.itemAt(i).contentHeight)
                         return maxHeight + window.dp(16)
                     }
-                    color: isSelected? Theme.selectedBackgroundColor : "transparent"
+                    color: isSelected? Theme.tintColor : Theme.tintLightColor
+                    opacity: isSelected? 1 : .5
+
+                    Behavior on color { ColorAnimation { easing.type: Easing.OutQuad } }
+                    Behavior on opacity { NumberAnimation { easing.type: Easing.OutQuad } }
 
                     property bool isSelected: !!displayContest.currentDecision &&
                                               !!displayContest.currentDecision.opinions[index]
@@ -131,6 +121,8 @@ Column {
                             text: modelData.name
                             Layout.fillWidth: true
                             wrapMode: Text.WrapAtWordBoundaryOrAnywhere
+                            color: contestantButton.isSelected? "white" : "black"
+                            font.weight: Font.DemiBold
                         }
                         AppText {
                             id: contestantDescription
@@ -139,12 +131,21 @@ Column {
                             wrapMode: Text.WrapAtWordBoundaryOrAnywhere
                             elide: Text.ElideRight
                             maximumLineCount: 5
+                            color: contestantButton.isSelected? "white" : "black"
                         }
                         AppButton {
                             text: qsTr("Read more")
                             visible: contestantDescription.truncated
                             Layout.fillWidth: true
-                            onClicked: contestantDetailDialog.display(modelData.name, modelData.description)
+                            onClicked: {
+                                var dlg = InputDialog.confirm(window,
+                                                              "%1\n\n%2".arg(modelData.name).arg(contestantDescription.text),
+                                                              function(){})
+                                dlg.negativeAction = false
+                                dlg.Keys.escapePressed.connect(dlg.close)
+                                dlg.focus = true
+                            }
+                            Layout.preferredHeight: contentHeight
                         }
                     }
                 }

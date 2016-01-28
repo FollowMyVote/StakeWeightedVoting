@@ -19,10 +19,7 @@
 import QtQuick 2.5
 import QtQuick.Layouts 1.1
 import QtQuick.Window 2.0
-
-import Material 0.1
-import Material.Extras 0.1
-import Material.ListItems 0.1
+import QtGraphicalEffects 1.0
 
 import FollowMyVote.StakeWeightedVoting 1.0
 
@@ -30,52 +27,36 @@ Rectangle {
     id: card
     width: parent.width - window.dp(16)
     x: window.dp(8)
-    height: visibleContestLoader.height + window.dp(32)
+    height: contestDelegate.height + window.dp(32)
+    layer.enabled: showDropShadow
+    layer.effect: DropShadow {
+        radius: 4
+        samples: 16
+        source: card
+        color: Qt.rgba(0, 0, 0, 0.5)
+        transparentBorder: true
+    }
 
-    property string contestId
     property int votingStake
     property bool tracksLiveResults
+    property var contestObject
+    property bool showDropShadow: true
 
     signal selected(Contest contest)
 
-    Behavior on height { NumberAnimation { easing.type: Easing.InOutQuad } }
-
-    Component.onCompleted: votingSystem.adaptor.getContest(contestId).then(function(contest) {
-        visibleContestLoader.setSource("ContestDelegate.qml", {"displayContest": contest})
-    }, function(message) {
-        console.log("Failed to load contest: " + message)
-        height = 0
-        visible = false
-    })
-
-    Component {
-        id: loadingPlaceholder
-
-        Item {
-            height: window.dp(120)
-
-            LoadingIndicator {
-                anchors.centerIn: parent
-                text: qsTr("Loading Contest")
-                height: parent.height * .75
-            }
-        }
-    }
-
     MouseArea {
         anchors.fill: parent
-        enabled: visibleContestLoader.status === Loader.Ready
         onClicked: card.selected(visibleContestLoader.item.displayContest)
         z: -1
     }
-    Loader {
-        id: visibleContestLoader
+    ContestDelegate {
+        id: contestDelegate
+        displayContest: contestObject
         anchors {
             left: parent.left
             right: parent.right
             top: parent.top
             margins: window.dp(16)
         }
-        sourceComponent: loadingPlaceholder
     }
 }
