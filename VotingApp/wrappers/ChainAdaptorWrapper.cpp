@@ -34,10 +34,19 @@ namespace swv {
 const static QString PERSISTENT_DECISION_KEY = QStringLiteral("persistedDecisions/%1");
 const static QString DECISION_SCHEMA = QStringLiteral("00%1");
 
-ChainAdaptorWrapper::ChainAdaptorWrapper(PromiseConverter& promiseWrapper, QObject *parent)
+ChainAdaptorWrapper::ChainAdaptorWrapper(PromiseConverter& promiseConverter, QObject *parent)
     : QObject(parent),
-      promiseConverter(promiseWrapper)
-{}
+      promiseConverter(promiseConverter)
+{
+    connect(this, &ChainAdaptorWrapper::hasAdaptorChanged, this, [this](bool haveAdaptor) {
+        if (haveAdaptor)
+            this->promiseConverter.adopt(m_adaptor->getMyAccounts().then([this](kj::Array<QString> accounts) {
+                                             m_myAccounts = convertList(kj::mv(accounts));
+                                             emit myAccountsChanged(m_myAccounts);
+                                             qDebug() << m_myAccounts;
+                                         }));
+    });
+}
 
 ChainAdaptorWrapper::~ChainAdaptorWrapper() noexcept
 {}
@@ -183,18 +192,6 @@ Promise* ChainAdaptorWrapper::getDecision(QString owner, QString contestId)
     return promiseConverter.convert(kj::mv(promise), [](OwningWrapper<swv::DecisionWrapper>* d) -> QVariantList {
         return {QVariant::fromValue<QObject*>(d)};
     });
-}
-
-Promise* ChainAdaptorWrapper::getMyAccounts() {
-    if (hasAdaptor())
-        return promiseConverter.convert(m_adaptor->getMyAccounts(),
-                                        [](kj::Array<QString> accounts) -> QVariantList {
-            QStringList results;
-            std::transform(accounts.begin(), accounts.end(), std::back_inserter(results),
-                           [](QString account) { return account; });
-            return {QVariant::fromValue(results)};
-        });
-    return nullptr;
 }
 
 Promise* ChainAdaptorWrapper::getBalance(QByteArray id)

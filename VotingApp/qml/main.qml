@@ -19,6 +19,7 @@
 import QtQuick 2.5
 import QtQuick.Layouts 1.1
 import QtQuick.Controls 1.4
+import Qt.labs.settings 1.0
 
 import VPlayApps 1.0
 
@@ -49,6 +50,10 @@ App {
         onTriggered: Qt.quit()
     }
 
+    Settings {
+        id: appSettings
+        property alias currentAccount: votingSystem.currentAccount
+    }
     VotingSystem {
        id: votingSystem
 
@@ -62,13 +67,24 @@ App {
            console.log("Error from Voting System: %1".arg(message))
            showError(qsTr("Internal Error"), message)
        }
-       onIsReadyChanged: console.log("Voting System Ready: " + isReady)
+       onIsReadyChanged: {
+           console.log("Voting System Ready: " + isReady)
+           if (isReady && !currentAccount) {
+               currentAccount = Qt.binding(function() {
+                   if (adaptor.myAccounts.length)
+                       currentAccount = adaptor.myAccounts[0]
+               })
+           }
+       }
        onCurrentAccountChanged: console.log("Current account set to " + currentAccount)
     }
 
     Navigation {
+        id: mainNavigation
+
         NavigationItem {
             title: "Feed"
+            icon: IconType.newspapero
 
             NavigationStack {
                 ContestListPage {
@@ -83,11 +99,21 @@ App {
         }
         NavigationItem {
             title: "Coin List"
+            icon: IconType.money
 
             NavigationStack {
                 CoinListPage {
                     id: coinListPage
                     Component.onCompleted: if (votingSystem.isReady) loadCoins()
+                }
+            }
+        }
+        NavigationItem {
+            title: "Settings"
+            icon: IconType.cog
+
+            NavigationStack {
+                SettingsPage {
                 }
             }
         }

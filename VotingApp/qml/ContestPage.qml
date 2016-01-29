@@ -27,7 +27,6 @@ Page {
                 anchors {
                     left: parent.left
                     right: parent.right
-                    margins: Units.dp(8)
                 }
             }
         }

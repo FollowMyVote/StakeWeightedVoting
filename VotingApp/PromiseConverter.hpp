@@ -59,6 +59,11 @@ public:
     Promise* convert(kj::Promise<PromisedType> promise, Func TConverter);
     Promise* convert(kj::Promise<void> promise);
 
+    /// @brief Take a promise and ensure it completes or report the failure, but do not convert it
+    void adopt(kj::Promise<void>&& promise) {
+        tasks.add(kj::mv(promise));
+    }
+
 private:
     kj::TaskSet& tasks;
 };
