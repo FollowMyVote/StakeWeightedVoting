@@ -37,6 +37,13 @@ App {
         Theme.colors.backgroundColor = "#e5e5e5"
     }
 
+    function showError(errorMessage) {
+        var dialog= InputDialog.confirm(window, qsTr("An error has occurred:\n%1").arg(errorMessage), function(){})
+        dialog.negativeAction = false
+        dialog.Keys.escapePressed.connect(dialog.close)
+        dialog.focus = true
+    }
+
     Action {
         shortcut: "Ctrl+Q"
         onTriggered: Qt.quit()
