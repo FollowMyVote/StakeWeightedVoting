@@ -32,12 +32,13 @@ Column {
                 height: window.dp(72)
                 Layout.fillWidth: true
 
-                AppImage {
+                RoundedImage {
                     id: coinImage
                     Layout.preferredWidth: window.dp(40)
                     Layout.preferredHeight: window.dp(40)
                     source: "res/Follow-My-Vote-Logo.png"
                     fillMode: Image.PreserveAspectCrop
+                    radius: height / 2
                 }
                 Column {
                     Layout.alignment: Qt.AlignVCenter
