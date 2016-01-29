@@ -46,7 +46,7 @@ Rectangle {
 
     MouseArea {
         anchors.fill: parent
-        onClicked: card.selected(visibleContestLoader.item.displayContest)
+        onClicked: card.selected(contestObject)
         z: -1
     }
     ContestDelegate {

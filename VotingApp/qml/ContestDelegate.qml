@@ -155,32 +155,33 @@ Column {
     Rectangle { height: window.dp(1); width: parent.width; color: "lightgrey" }
     RowLayout {
         id: contestFooter
+        spacing: window.dp(8)
         anchors {
             left: parent.left
             right: parent.right
         }
 
-        Row {
-            AppButton {
-                text: qsTr("Cast Vote")
-                visible: displayContest.currentDecision && displayContest.currentDecision.state === Decision.Pending
-                onClicked: {
-                    votingSystem.castCurrentDecision(displayContest)
-                }
+        AppButton {
+            text: qsTr("Cast Vote")
+            visible: displayContest.currentDecision && displayContest.currentDecision.state === Decision.Pending
+            Layout.preferredWidth: contentWidth
+            onClicked: {
+                votingSystem.castCurrentDecision(displayContest)
             }
-            AppButton {
-                text: qsTr("Cancel")
-                onClicked: {
-                    votingSystem.adaptor.getDecision(votingSystem.currentAccount,
-                                                     displayContest.id).then(function(decision) {
-                                                         displayContest.currentDecision = decision
-                                                     }, function() {
-                                                         console.log("No decision found, resetting opinions instead. " +
-                                                                     "The following error can be ignored.")
-                                                         displayContest.currentDecision.opinions = []
-                                                         displayContest.currentDecision.state = Decision.Pending
-                                                     })
-                }
+        }
+        AppButton {
+            text: qsTr("Cancel")
+            Layout.preferredWidth: contentWidth
+            onClicked: {
+                votingSystem.adaptor.getDecision(votingSystem.currentAccount,
+                                                 displayContest.id).then(function(decision) {
+                                                     displayContest.currentDecision = decision
+                                                 }, function() {
+                                                     console.log("No decision found, resetting opinions instead. " +
+                                                                 "The following error can be ignored.")
+                                                     displayContest.currentDecision.opinions = []
+                                                     displayContest.currentDecision.state = Decision.Pending
+                                                 })
             }
         }
         Item { height: 1; Layout.fillWidth: true }

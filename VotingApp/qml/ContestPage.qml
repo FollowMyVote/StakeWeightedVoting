@@ -13,6 +13,7 @@ Page {
 
     Flickable {
         anchors.fill: parent
+        anchors.margins: window.dp(16)
         interactive: true
         contentWidth: width
         contentHeight: contestColumn.height

@@ -27,7 +27,7 @@ import FollowMyVote.StakeWeightedVoting 1.0
 ListPage {
     id: contestListPage
     title: qsTr("All Polls")
-    pullToRefreshHandler.enabled: true
+//    pullToRefreshHandler.enabled: true
     pullToRefreshHandler.onRefresh:{
         reloadContests()
     }
@@ -46,7 +46,8 @@ ListPage {
         votingStake: model.votingStake
         tracksLiveResults: model.tracksLiveResults
         onSelected: {
-            feedPage.navigationStack.push(Qt.createComponent(Qt.resolvedUrl("ContestPage.qml")), {"contest": contest})
+            contestListPage.navigationStack.push(Qt.createComponent(Qt.resolvedUrl("ContestPage.qml")),
+                                                 {"contest": contest})
         }
     }
 
