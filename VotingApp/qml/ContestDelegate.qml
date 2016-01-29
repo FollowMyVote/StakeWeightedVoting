@@ -164,7 +164,6 @@ Column {
 
         AppButton {
             text: qsTr("Cast Vote")
-            visible: displayContest.currentDecision && displayContest.currentDecision.state === Decision.Pending
             Layout.preferredWidth: contentWidth
             onClicked: {
                 votingSystem.castCurrentDecision(displayContest)
@@ -174,14 +173,13 @@ Column {
             text: qsTr("Cancel")
             Layout.preferredWidth: contentWidth
             onClicked: {
+                // Canceling vote change -- fetch on-chain decision and set current decision to that
                 votingSystem.adaptor.getDecision(votingSystem.currentAccount,
                                                  displayContest.id).then(function(decision) {
                                                      displayContest.currentDecision = decision
                                                  }, function() {
-                                                     console.log("No decision found, resetting opinions instead. " +
-                                                                 "The following error can be ignored.")
+                                                     // No decision on chain; just reset opinions
                                                      displayContest.currentDecision.opinions = []
-                                                     displayContest.currentDecision.state = Decision.Pending
                                                  })
             }
         }
