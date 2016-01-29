@@ -34,7 +34,8 @@ Promise* PromiseConverter::convert(kj::Promise<void> promise)
     }, [result](kj::Exception&& exception) {
         result->reject({QString::fromStdString(exception.getDescription())});
         QQmlEngine::setObjectOwnership(result, QQmlEngine::JavaScriptOwnership);
-        throw exception;
+        if (!result->hasRejectHandler())
+            throw exception;
     });
     tasks.add(kj::mv(responsePromise));
 
