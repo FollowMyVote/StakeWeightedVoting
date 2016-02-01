@@ -107,15 +107,20 @@ public slots:
      * @brief Cast the current decision for the given contest
      * @param contest The contest to cast a decision for
      *
-     * If the current decision is in the Cast or Casting state, this function has no effect. If the current decision is
-     * Pending or Stale, the current decision will be submitted to the chain for broadcast and will enter the Casting
-     * state.
+     * This method will publish the currentDecision on the specified contest to the chain for the current user. If the
+     * decision cannot be cast, an error is emitted.
      *
-     * If the decision cannot be cast, an error is emitted and the current decision is not changed
-     *
-     * See also @ref resetCurrentDecision
+     * See also @ref cancelCurrentDecision
      */
     Promise* castCurrentDecision(swv::ContestWrapper* contest);
+    /**
+     * @brief Cancel changes to the decision on the given contest
+     * @param contest The contest to cancel changes on
+     *
+     * This method will set the currentDeicison on the provided contest to the decision currently on chain for that
+     * contest for the current user.
+     */
+    void cancelCurrentDecision(swv::ContestWrapper* contest);
 
     void setCurrentAccount(QString currentAccount);
 

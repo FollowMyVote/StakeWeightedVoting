@@ -52,20 +52,20 @@ App {
 
     Settings {
         id: appSettings
-        property alias currentAccount: votingSystem.currentAccount
+        property alias currentAccount: _votingSystem.currentAccount
     }
     VotingSystem {
-       id: votingSystem
+       id: _votingSystem
 
        signal connected
 
        Component.onCompleted: {
            configureChainAdaptor()
-           connectToBackend("127.0.0.1", 2572).then(votingSystem.connected)
+           connectToBackend("127.0.0.1", 2572).then(_votingSystem.connected)
        }
        onError: {
            console.log("Error from Voting System: %1".arg(message))
-           showError(qsTr("Internal Error"), message)
+           showError(message.split(";").slice(-1))
        }
        onIsReadyChanged: {
            console.log("Voting System Ready: " + isReady)
@@ -83,17 +83,35 @@ App {
         id: mainNavigation
 
         NavigationItem {
-            title: "Feed"
+            title: qsTr("My Feed")
             icon: IconType.newspapero
 
             NavigationStack {
                 ContestListPage {
                     id: feedPage
+                    title: qsTr("My Feed")
+                    votingSystem: _votingSystem
                     getContestGeneratorFunction: function() {
                         if (votingSystem.isReady)
                             return votingSystem.backend.getFeedGenerator()
                     }
                     Component.onCompleted: if (votingSystem.isReady) loadContests()
+                }
+            }
+        }
+        NavigationItem {
+            title: qsTr("My Polls")
+            icon: IconType.user
+
+            NavigationStack {
+                ContestListPage {
+                    id: myContestsPage
+                    title: qsTr("My Polls")
+                    votingSystem: _votingSystem
+                    getContestGeneratorFunction: function() {
+                        if (votingSystem.isReady)
+                            return votingSystem.backend.getContestsByCreator(votingSystem.currentAccount)
+                    }
                 }
             }
         }

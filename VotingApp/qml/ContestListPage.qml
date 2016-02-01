@@ -26,13 +26,13 @@ import FollowMyVote.StakeWeightedVoting 1.0
 
 ListPage {
     id: contestListPage
-    title: qsTr("All Polls")
 //    pullToRefreshHandler.enabled: true
     pullToRefreshHandler.onRefresh:{
         reloadContests()
     }
 
     property var getContestGeneratorFunction
+    property VotingSystem votingSystem
 
     function reloadContests() { contestList.reloadContests() }
     function loadContests() {
@@ -42,12 +42,13 @@ ListPage {
 
     model: contestList
     delegate: ContestCard {
+        votingsystem: contestListPage.votingSystem
         contestObject: model.contestObject
         votingStake: model.votingStake
         tracksLiveResults: model.tracksLiveResults
         onSelected: {
             contestListPage.navigationStack.push(Qt.createComponent(Qt.resolvedUrl("ContestPage.qml")),
-                                                 {"contest": contest})
+                                                 {"votingSystem": votingSystem, "contest": contest})
         }
     }
 

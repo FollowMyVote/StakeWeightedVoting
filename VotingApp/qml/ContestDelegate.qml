@@ -6,10 +6,20 @@ import VPlayApps 1.0
 
 import FollowMyVote.StakeWeightedVoting 1.0
 
+/**
+ * The ContestDelegate provides an interactive visual for displayContest. It shows the contest title, coin,
+ * description, and contestants, including highlighting which contestants are selected. It will update the opinions and
+ * write-ins on displayContest based on user input. ContestDelegate also provides two action buttons (Cast Vote and
+ * Cancel), as well as a share button. When these buttons are clicked, the appropriate signals are emitted.
+ */
 Column {
     spacing: window.dp(16)
 
     property var displayContest
+
+    signal castButtonClicked
+    signal cancelButtonClicked
+    signal shareButtonClicked
 
     GridLayout {
         id: contestLayout
@@ -165,23 +175,12 @@ Column {
         AppButton {
             text: qsTr("Cast Vote")
             Layout.preferredWidth: contentWidth
-            onClicked: {
-                votingSystem.castCurrentDecision(displayContest)
-            }
+            onClicked: castButtonClicked()
         }
         AppButton {
             text: qsTr("Cancel")
             Layout.preferredWidth: contentWidth
-            onClicked: {
-                // Canceling vote change -- fetch on-chain decision and set current decision to that
-                votingSystem.adaptor.getDecision(votingSystem.currentAccount,
-                                                 displayContest.id).then(function(decision) {
-                                                     displayContest.currentDecision = decision
-                                                 }, function() {
-                                                     // No decision on chain; just reset opinions
-                                                     displayContest.currentDecision.opinions = []
-                                                 })
-            }
+            onClicked: cancelButtonClicked()
         }
         Item { height: 1; Layout.fillWidth: true }
         Icon {

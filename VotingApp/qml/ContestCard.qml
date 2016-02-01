@@ -37,6 +37,7 @@ Rectangle {
         transparentBorder: true
     }
 
+    property VotingSystem votingsystem
     property int votingStake
     property bool tracksLiveResults
     property var contestObject
@@ -57,6 +58,12 @@ Rectangle {
             right: parent.right
             top: parent.top
             margins: window.dp(16)
+        }
+        onCastButtonClicked: {
+            votingSystem.castCurrentDecision(displayContest)
+        }
+        onCancelButtonClicked: {
+            votingSystem.cancelCurrentDecision(displayContest)
         }
     }
 }

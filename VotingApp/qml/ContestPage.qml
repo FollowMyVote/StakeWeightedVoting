@@ -9,6 +9,7 @@ import FollowMyVote.StakeWeightedVoting 1.0
 Page {
     title: qsTr("Contest Results")
 
+    property VotingSystem votingSystem
     property alias contest: delegate.displayContest
 
     Flickable {
@@ -28,6 +29,8 @@ Page {
                     left: parent.left
                     right: parent.right
                 }
+                onCastButtonClicked: votingSystem.castCurrentDecision(displayContest)
+                onCancelButtonClicked: votingSystem.cancelCurrentDecision(displayContest)
             }
         }
     }

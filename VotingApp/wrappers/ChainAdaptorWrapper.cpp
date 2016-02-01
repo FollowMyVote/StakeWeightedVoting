@@ -95,12 +95,21 @@ Promise* ChainAdaptorWrapper::listAllCoins()
             return {QVariant::fromValue(results)};
         });
     }
+
     return nullptr;
 }
 
 Promise* ChainAdaptorWrapper::getDecision(QString owner, QString contestId)
 {
-    if (!hasAdaptor()) return nullptr;
+    auto promise = _getDecision(kj::mv(owner), kj::mv(contestId));
+    return promiseConverter.convert(kj::mv(promise), [](OwningWrapper<swv::DecisionWrapper>* d) -> QVariantList {
+        return {QVariant::fromValue<QObject*>(d)};
+    });
+}
+
+kj::Promise<OwningWrapper<DecisionWrapper>*> ChainAdaptorWrapper::_getDecision(QString owner, QString contestId)
+{
+    if (!hasAdaptor()) return KJ_EXCEPTION(FAILED, "No blockchain adaptor is set.");
 
     using Reader = ::Balance::Reader;
     auto promise = m_adaptor->getContest(QByteArray::fromHex(contestId.toLocal8Bit())).then([=](::Contest::Reader c) {
@@ -189,9 +198,7 @@ Promise* ChainAdaptorWrapper::getDecision(QString owner, QString contestId)
         return decision.release();
     });
 
-    return promiseConverter.convert(kj::mv(promise), [](OwningWrapper<swv::DecisionWrapper>* d) -> QVariantList {
-        return {QVariant::fromValue<QObject*>(d)};
-    });
+    return kj::mv(promise);
 }
 
 Promise* ChainAdaptorWrapper::getBalance(QByteArray id)

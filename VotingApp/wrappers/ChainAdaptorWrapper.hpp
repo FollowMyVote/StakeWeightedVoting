@@ -25,6 +25,8 @@
 #include <QObject>
 #include <QtQml>
 
+#include <kj/async.h>
+
 #include <memory>
 
 class BlockchainAdaptorInterface;
@@ -162,6 +164,8 @@ public:
      * slow and will construct a new Decision on each call.
      */
     Q_INVOKABLE Promise* getDecision(QString owner, QString contestId);
+    /// @brief Identical to _getDecision, but returns a kj::Promise instead of a Promise*. For C++ use.
+    kj::Promise<OwningWrapper<DecisionWrapper>*> _getDecision(QString owner, QString contestId);
 
     /**
      * @brief Get a new datagram
