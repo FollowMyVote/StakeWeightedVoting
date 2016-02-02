@@ -37,3 +37,10 @@ inline QString convertText(capnp::Text::Reader text) {
 inline void convertText(capnp::Text::Builder target, QString source) {
     target.asString() = source.toStdString();
 }
+template <typename T>
+inline QList<T> convertList(kj::Array<T>&& kjList) {
+    QList<T> result;
+    for (const T& elem : kjList)
+        result.append(kj::mv(elem));
+    return result;
+}

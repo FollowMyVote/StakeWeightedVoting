@@ -35,29 +35,9 @@ namespace swv {
  * In addition to exposing the properties of ::UnsignedContest in a QML-accessible form, the Contest implements the
  * concept of the Current Decision for the contest. The current decision is the @ref swv::Decision which should be
  * displayed in the UI as the decision on the contest.
- *
- * The contest may be in one of several states (see @ref State), depending on the chain state and interactions from the
- * user. This state is intended to be set and used by the GUI; it is ignored by all C++ code.
  */
 class ContestWrapper : public QObject, public ::UnsignedContest::Reader
 {
-public:
-    enum State {
-        /// No decision is pending or on chain
-        NewPoll,
-        /// A decision has not been cast, or has been changed since casting.
-        Pending,
-        /// A decision has been cast, but has not yet been confirmed as stored on the chain
-        Casting,
-        /// A decision has been cast and is stored on the chain and has not been changed since
-        Cast,
-        /// A decision has been cast, but for one of various possible reasons, the decision is no longer counted
-        ActionRequired,
-        /// The scheduled "end date" of the contest has passed. Decisions can still be cast, but may not 'matter'
-        Ended
-    };
-    Q_ENUM(State)
-
 private:
     Q_OBJECT
     Q_PROPERTY(QString id READ id CONSTANT)
@@ -68,9 +48,7 @@ private:
     Q_PROPERTY(quint64 coin READ getCoin CONSTANT)
     Q_PROPERTY(QDateTime startTime READ startTime CONSTANT)
     Q_PROPERTY(swv::DecisionWrapper* currentDecision READ currentDecision WRITE setCurrentDecision NOTIFY currentDecisionChanged)
-    Q_PROPERTY(State state READ state WRITE setState NOTIFY stateChanged)
 
-    State m_state;
     OwningWrapper<DecisionWrapper>* m_currentDecision = nullptr;
 
 public:
@@ -97,24 +75,8 @@ public:
     // Otherwise, it copies newDecision into a new OwningWrapper<Decision> and calls the other overload.
     void setCurrentDecision(DecisionWrapper* newDecision);
 
-    State state() const
-    {
-        return m_state;
-    }
-
-public slots:
-    void setState(State state)
-    {
-        if (state == m_state)
-            return;
-
-        m_state = state;
-        emit stateChanged(state);
-    }
-
 signals:
     void currentDecisionChanged();
-    void stateChanged(State state);
 };
 
 } // namespace swv

@@ -34,6 +34,8 @@ public:
       return mState;
   }
 
+  bool hasRejectHandler();
+
 signals:
   void resolved(QVariantList arguments);
   void rejected(QVariantList arguments);

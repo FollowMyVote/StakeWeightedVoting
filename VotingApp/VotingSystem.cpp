@@ -165,25 +165,21 @@ bool VotingSystem::adaptorReady() const {
     return d->adaptor->hasAdaptor();
 }
 
-ChainAdaptorWrapper* VotingSystem::adaptor() {
-    Q_D(VotingSystem);
+ChainAdaptorWrapper* VotingSystem::adaptor() { Q_D(VotingSystem);
     return d->adaptor;
 }
 
-BackendWrapper* VotingSystem::backend() {
-    Q_D(VotingSystem);
+BackendWrapper* VotingSystem::backend() { Q_D(VotingSystem);
     return d->backend;
 }
 
-QString VotingSystem::currentAccount() const
-{
+QString VotingSystem::currentAccount() const {
     Q_D(const VotingSystem);
 
     return d->currentAccount;
 }
 
-Promise* VotingSystem::connectToBackend(QString hostname, quint16 port)
-{
+Promise* VotingSystem::connectToBackend(QString hostname, quint16 port) {
     Q_D(VotingSystem);
 
     Promise* connectPromise = new Promise(this);
@@ -203,8 +199,7 @@ Promise* VotingSystem::connectToBackend(QString hostname, quint16 port)
     return connectPromise;
 }
 
-void VotingSystem::configureChainAdaptor()
-{
+void VotingSystem::configureChainAdaptor() {
     Q_D(VotingSystem);
 
     //TODO: make a real implementation of this
@@ -212,9 +207,14 @@ void VotingSystem::configureChainAdaptor()
     d->adaptor->setAdaptor(kj::mv(adaptor));
 }
 
-Promise* VotingSystem::castCurrentDecision(swv::ContestWrapper* contest)
-{
+Promise* VotingSystem::castCurrentDecision(swv::ContestWrapper* contest) {
     Q_D(VotingSystem);
+
+    if (!isReady()) {
+        setLastError(tr("Unable to cast vote. Please ensure that you are online and that you have connected this app "
+                        "to the blockchain."));
+        return nullptr;
+    }
 
     if (contest == nullptr) {
         setLastError(tr("Oops! A bug is preventing your vote from being cast. "
@@ -269,8 +269,24 @@ Promise* VotingSystem::castCurrentDecision(swv::ContestWrapper* contest)
     return d->promiseConverter->convert(kj::mv(finishPromise));
 }
 
-void VotingSystem::setCurrentAccount(QString currentAccount)
-{
+void VotingSystem::cancelCurrentDecision(ContestWrapper* contest) {
+    Q_D(VotingSystem);
+
+    if (!isReady()) {
+        setLastError(tr("Unable to cancel vote. Please ensure that you are online and that you have connected this "
+                        "app to the blockchain."));
+        return;
+    }
+
+    auto promise = d->adaptor->_getDecision(currentAccount(), contest->id());
+    d->tasks.add(promise.then([contest](swv::DecisionWrapper* decision) {
+        contest->setCurrentDecision(decision);
+    }, [contest](kj::Exception) {
+        contest->currentDecision()->setOpinions({});
+    }));
+}
+
+void VotingSystem::setCurrentAccount(QString currentAccount) {
     Q_D(VotingSystem);
 
     if (d->currentAccount == currentAccount)
