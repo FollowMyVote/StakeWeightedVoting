@@ -15,6 +15,8 @@ ListPage {
         }
     ]
 
+    property VotingSystem votingSystem
+
     onItemSelected: {
         if (item.id === "account") {
             accountSelector.open()
