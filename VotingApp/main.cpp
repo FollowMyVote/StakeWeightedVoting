@@ -96,7 +96,6 @@ int main(int argc, char *argv[])
     qmlRegisterType<Promise>("FollowMyVote.StakeWeightedVoting", 1, 0, "Promise");
 
     QQmlApplicationEngine engine;
-    engine.addImportPath(QStringLiteral("../share/followmyvote/Material/Material"));
     Promise::setEngine(&engine);
     vplay.initialize(&engine);
     vplay.setMainQmlFileName(QStringLiteral("qrc:/qml/main.qml"));

@@ -33,6 +33,8 @@ ListPage {
         //iconSource: "qrc:/res/Follow-My-Vote-Logo.png"
     }
 
+    property VotingSystem votingSystem
+
     function loadCoins() {
         console.log("Loading coins...")
         coinList.loadCoins()

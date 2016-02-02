@@ -58,6 +58,7 @@ QtGuiApplication {
         "qml-promise/src/Promise.hpp",
         "vendor/QQmlVariantListModel.cpp",
         "vendor/QQmlVariantListModel.h",
+        "vendor/QQmlEnumClassHelper.h",
     ]
 
     property bool install: true
@@ -80,11 +81,5 @@ QtGuiApplication {
         fileTagsFilter: ["pkginfo"]
         qbs.install: install && bundle.isBundle
         qbs.installDir: FileInfo.joinPaths(installDir, FileInfo.path(bundle.pkgInfoPath))
-    }
-
-    Group {
-        qbs.install: install
-        qbs.installDir: FileInfo.joinPaths(installDir, "../share/followmyvote/Material")
-        files: ["vendor/Material"]
     }
 }

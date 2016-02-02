@@ -124,7 +124,8 @@ App {
             NavigationStack {
                 CoinListPage {
                     id: coinListPage
-                    Component.onCompleted: if (votingSystem.isReady) loadCoins()
+                    votingSystem: _votingSystem
+                    Component.onCompleted: if (_votingSystem.isReady) loadCoins()
                 }
             }
         }
@@ -134,6 +135,7 @@ App {
 
             NavigationStack {
                 SettingsPage {
+                    votingSystem: _votingSystem
                 }
             }
         }
