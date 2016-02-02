@@ -112,6 +112,8 @@ App {
                         if (votingSystem.isReady)
                             return votingSystem.backend.getContestsByCreator(votingSystem.currentAccount)
                     }
+                    listView.headerPositioning: ListView.PullBackHeader
+                    listView.header: CreateContestPlaceholder {}
                 }
             }
         }
