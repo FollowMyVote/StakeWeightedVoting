@@ -69,9 +69,6 @@ public:
         return !(*this == other);
     }
 
-    /// Remove all opinions of zero
-    QVariantMap canonicalizeOpinions(QVariantMap opinions);
-
 public slots:
     void setOpinions(QVariantMap newOpinions);
     void setWriteIns(QVariantList newWriteIns);
@@ -82,6 +79,9 @@ signals:
     void writeInsChanged();
 
 private:
+    /// Remove all opinions of zero
+    QVariantMap canonicalizeOpinions(QVariantMap opinions);
+
     ::Decision::Builder m_decision;
 };
 

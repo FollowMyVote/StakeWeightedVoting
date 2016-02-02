@@ -34,6 +34,10 @@
  * deleted prior to resolution; however, once the promise resolves it is set to have JavaScript Ownership so it can be
  * garbage collected by the QML runtime. The Promise remains parented to the converter, so if the QML runtime never
  * garbage collects the Promise, it will be deleted when the PromiseWrapper is deleted.
+ *
+ * If the promise is broken, the converted Promise will also break. If the converted Promise does not have a rejection
+ * handler, the exception will be propagated to the TaskSet provided to the constructor. Either way, the returned
+ * Promise will be set to Rejected.
  */
 class PromiseConverter : public QObject
 {
@@ -59,6 +63,11 @@ public:
     Promise* convert(kj::Promise<PromisedType> promise, Func TConverter);
     Promise* convert(kj::Promise<void> promise);
 
+    /// @brief Take a promise and ensure it completes or report the failure, but do not convert it
+    void adopt(kj::Promise<void>&& promise) {
+        tasks.add(kj::mv(promise));
+    }
+
 private:
     kj::TaskSet& tasks;
 };
@@ -75,7 +84,8 @@ Promise* PromiseConverter::convert(kj::Promise<T> promise, Func TConverter)
         }, [result](kj::Exception&& exception) {
             result->reject({QString::fromStdString(exception.getDescription())});
             QQmlEngine::setObjectOwnership(result, QQmlEngine::JavaScriptOwnership);
-            throw exception;
+            if (!result->hasRejectHandler())
+                throw exception;
         });
     tasks.add(kj::mv(responsePromise));
 

@@ -19,6 +19,7 @@
 import QtQuick 2.5
 import QtQuick.Layouts 1.1
 import QtQuick.Controls 1.4
+import Qt.labs.settings 1.0
 
 import VPlayApps 1.0
 
@@ -37,35 +38,59 @@ App {
         Theme.colors.backgroundColor = "#e5e5e5"
     }
 
+    function showError(errorMessage) {
+        var dialog= InputDialog.confirm(window, qsTr("An error has occurred:\n%1").arg(errorMessage), function(){})
+        dialog.negativeAction = false
+        dialog.Keys.escapePressed.connect(dialog.close)
+        dialog.focus = true
+    }
+
     Action {
         shortcut: "Ctrl+Q"
         onTriggered: Qt.quit()
     }
 
+    Settings {
+        id: appSettings
+        property alias currentAccount: _votingSystem.currentAccount
+    }
     VotingSystem {
-       id: votingSystem
+       id: _votingSystem
 
        signal connected
 
        Component.onCompleted: {
            configureChainAdaptor()
-           connectToBackend("127.0.0.1", 2572).then(votingSystem.connected)
+           connectToBackend("127.0.0.1", 2572).then(_votingSystem.connected)
        }
        onError: {
            console.log("Error from Voting System: %1".arg(message))
-           showError(qsTr("Internal Error"), message)
+           showError(message.split(";").slice(-1))
        }
-       onIsReadyChanged: console.log("Voting System Ready: " + isReady)
+       onIsReadyChanged: {
+           console.log("Voting System Ready: " + isReady)
+           if (isReady && !currentAccount) {
+               currentAccount = Qt.binding(function() {
+                   if (adaptor.myAccounts.length)
+                       currentAccount = adaptor.myAccounts[0]
+               })
+           }
+       }
        onCurrentAccountChanged: console.log("Current account set to " + currentAccount)
     }
 
     Navigation {
+        id: mainNavigation
+
         NavigationItem {
-            title: "Feed"
+            title: qsTr("My Feed")
+            icon: IconType.newspapero
 
             NavigationStack {
                 ContestListPage {
                     id: feedPage
+                    title: qsTr("My Feed")
+                    votingSystem: _votingSystem
                     getContestGeneratorFunction: function() {
                         if (votingSystem.isReady)
                             return votingSystem.backend.getFeedGenerator()
@@ -75,12 +100,40 @@ App {
             }
         }
         NavigationItem {
+            title: qsTr("My Polls")
+            icon: IconType.user
+
+            NavigationStack {
+                ContestListPage {
+                    id: myContestsPage
+                    title: qsTr("My Polls")
+                    votingSystem: _votingSystem
+                    getContestGeneratorFunction: function() {
+                        if (votingSystem.isReady)
+                            return votingSystem.backend.getContestsByCreator(votingSystem.currentAccount)
+                    }
+                    listView.headerPositioning: ListView.PullBackHeader
+                    listView.header: CreateContestPlaceholder {}
+                }
+            }
+        }
+        NavigationItem {
             title: "Coin List"
+            icon: IconType.money
 
             NavigationStack {
                 CoinListPage {
                     id: coinListPage
                     Component.onCompleted: if (votingSystem.isReady) loadCoins()
+                }
+            }
+        }
+        NavigationItem {
+            title: "Settings"
+            icon: IconType.cog
+
+            NavigationStack {
+                SettingsPage {
                 }
             }
         }

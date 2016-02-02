@@ -30,13 +30,14 @@ Rectangle {
     height: contestDelegate.height + window.dp(32)
     layer.enabled: showDropShadow
     layer.effect: DropShadow {
-        radius: 4
+        radius: 2
         samples: 16
         source: card
         color: Qt.rgba(0, 0, 0, 0.5)
         transparentBorder: true
     }
 
+    property VotingSystem votingsystem
     property int votingStake
     property bool tracksLiveResults
     property var contestObject
@@ -46,7 +47,7 @@ Rectangle {
 
     MouseArea {
         anchors.fill: parent
-        onClicked: card.selected(visibleContestLoader.item.displayContest)
+        onClicked: card.selected(contestObject)
         z: -1
     }
     ContestDelegate {
@@ -57,6 +58,12 @@ Rectangle {
             right: parent.right
             top: parent.top
             margins: window.dp(16)
+        }
+        onCastButtonClicked: {
+            votingSystem.castCurrentDecision(displayContest)
+        }
+        onCancelButtonClicked: {
+            votingSystem.cancelCurrentDecision(displayContest)
         }
     }
 }

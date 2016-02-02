@@ -6,10 +6,20 @@ import VPlayApps 1.0
 
 import FollowMyVote.StakeWeightedVoting 1.0
 
+/**
+ * The ContestDelegate provides an interactive visual for displayContest. It shows the contest title, coin,
+ * description, and contestants, including highlighting which contestants are selected. It will update the opinions and
+ * write-ins on displayContest based on user input. ContestDelegate also provides two action buttons (Cast Vote and
+ * Cancel), as well as a share button. When these buttons are clicked, the appropriate signals are emitted.
+ */
 Column {
     spacing: window.dp(16)
 
     property var displayContest
+
+    signal castButtonClicked
+    signal cancelButtonClicked
+    signal shareButtonClicked
 
     GridLayout {
         id: contestLayout
@@ -32,12 +42,13 @@ Column {
                 height: window.dp(72)
                 Layout.fillWidth: true
 
-                AppImage {
+                RoundedImage {
                     id: coinImage
                     Layout.preferredWidth: window.dp(40)
                     Layout.preferredHeight: window.dp(40)
                     source: "res/Follow-My-Vote-Logo.png"
                     fillMode: Image.PreserveAspectCrop
+                    radius: height / 2
                 }
                 Column {
                     Layout.alignment: Qt.AlignVCenter
@@ -155,33 +166,21 @@ Column {
     Rectangle { height: window.dp(1); width: parent.width; color: "lightgrey" }
     RowLayout {
         id: contestFooter
+        spacing: window.dp(8)
         anchors {
             left: parent.left
             right: parent.right
         }
 
-        Row {
-            AppButton {
-                text: qsTr("Cast Vote")
-                visible: displayContest.currentDecision && displayContest.currentDecision.state === Decision.Pending
-                onClicked: {
-                    votingSystem.castCurrentDecision(displayContest)
-                }
-            }
-            AppButton {
-                text: qsTr("Cancel")
-                onClicked: {
-                    votingSystem.adaptor.getDecision(votingSystem.currentAccount,
-                                                     displayContest.id).then(function(decision) {
-                                                         displayContest.currentDecision = decision
-                                                     }, function() {
-                                                         console.log("No decision found, resetting opinions instead. " +
-                                                                     "The following error can be ignored.")
-                                                         displayContest.currentDecision.opinions = []
-                                                         displayContest.currentDecision.state = Decision.Pending
-                                                     })
-                }
-            }
+        AppButton {
+            text: qsTr("Cast Vote")
+            Layout.preferredWidth: contentWidth
+            onClicked: castButtonClicked()
+        }
+        AppButton {
+            text: qsTr("Cancel")
+            Layout.preferredWidth: contentWidth
+            onClicked: cancelButtonClicked()
         }
         Item { height: 1; Layout.fillWidth: true }
         Icon {

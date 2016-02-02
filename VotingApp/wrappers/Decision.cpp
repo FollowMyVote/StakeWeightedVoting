@@ -85,7 +85,7 @@ QVariantMap DecisionWrapper::canonicalizeOpinions(QVariantMap opinions)
 
 void DecisionWrapper::setOpinions(QVariantMap newOpinions)
 {
-    canonicalizeOpinions(newOpinions);
+    newOpinions = canonicalizeOpinions(kj::mv(newOpinions));
 
     if (newOpinions == opinions())
         return;

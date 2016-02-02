@@ -34,10 +34,19 @@ namespace swv {
 const static QString PERSISTENT_DECISION_KEY = QStringLiteral("persistedDecisions/%1");
 const static QString DECISION_SCHEMA = QStringLiteral("00%1");
 
-ChainAdaptorWrapper::ChainAdaptorWrapper(PromiseConverter& promiseWrapper, QObject *parent)
+ChainAdaptorWrapper::ChainAdaptorWrapper(PromiseConverter& promiseConverter, QObject *parent)
     : QObject(parent),
-      promiseConverter(promiseWrapper)
-{}
+      promiseConverter(promiseConverter)
+{
+    connect(this, &ChainAdaptorWrapper::hasAdaptorChanged, this, [this](bool haveAdaptor) {
+        if (haveAdaptor)
+            this->promiseConverter.adopt(m_adaptor->getMyAccounts().then([this](kj::Array<QString> accounts) {
+                                             m_myAccounts = convertList(kj::mv(accounts));
+                                             emit myAccountsChanged(m_myAccounts);
+                                             qDebug() << m_myAccounts;
+                                         }));
+    });
+}
 
 ChainAdaptorWrapper::~ChainAdaptorWrapper() noexcept
 {}
@@ -86,12 +95,21 @@ Promise* ChainAdaptorWrapper::listAllCoins()
             return {QVariant::fromValue(results)};
         });
     }
+
     return nullptr;
 }
 
 Promise* ChainAdaptorWrapper::getDecision(QString owner, QString contestId)
 {
-    if (!hasAdaptor()) return nullptr;
+    auto promise = _getDecision(kj::mv(owner), kj::mv(contestId));
+    return promiseConverter.convert(kj::mv(promise), [](OwningWrapper<swv::DecisionWrapper>* d) -> QVariantList {
+        return {QVariant::fromValue<QObject*>(d)};
+    });
+}
+
+kj::Promise<OwningWrapper<DecisionWrapper>*> ChainAdaptorWrapper::_getDecision(QString owner, QString contestId)
+{
+    if (!hasAdaptor()) return KJ_EXCEPTION(FAILED, "No blockchain adaptor is set.");
 
     using Reader = ::Balance::Reader;
     auto promise = m_adaptor->getContest(QByteArray::fromHex(contestId.toLocal8Bit())).then([=](::Contest::Reader c) {
@@ -180,21 +198,7 @@ Promise* ChainAdaptorWrapper::getDecision(QString owner, QString contestId)
         return decision.release();
     });
 
-    return promiseConverter.convert(kj::mv(promise), [](OwningWrapper<swv::DecisionWrapper>* d) -> QVariantList {
-        return {QVariant::fromValue<QObject*>(d)};
-    });
-}
-
-Promise* ChainAdaptorWrapper::getMyAccounts() {
-    if (hasAdaptor())
-        return promiseConverter.convert(m_adaptor->getMyAccounts(),
-                                        [](kj::Array<QString> accounts) -> QVariantList {
-            QStringList results;
-            std::transform(accounts.begin(), accounts.end(), std::back_inserter(results),
-                           [](QString account) { return account; });
-            return {QVariant::fromValue(results)};
-        });
-    return nullptr;
+    return kj::mv(promise);
 }
 
 Promise* ChainAdaptorWrapper::getBalance(QByteArray id)
@@ -240,10 +244,8 @@ Promise* ChainAdaptorWrapper::getContest(QString contestId)
     if (hasAdaptor()) {
         auto promise = m_adaptor->getContest(realContestId).then([this](::Contest::Reader r) {
             //TODO: Check signature
-            KJ_LOG(DBG, "Here");
             auto contest = new ContestWrapper(r.getContest());
             QQmlEngine::setObjectOwnership(contest, QQmlEngine::JavaScriptOwnership);
-            connect(contest, &ContestWrapper::destroyed, [] { KJ_LOG(DBG, "Bai"); });
             auto decision = new OwningWrapper<DecisionWrapper>(contest);
 
             // Defer persistence concerns until later; the contest doesn't know about the QML engine yet so we can't

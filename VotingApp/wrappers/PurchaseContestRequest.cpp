@@ -63,8 +63,8 @@ PurchaseContestRequestWrapper::PurchaseContestRequestWrapper(PurchaseRequest&& r
                                                              QObject* parent)
     : QObject(parent),
       tasks(taskTracker),
-      request(kj::mv(request)),
-      converter(tasks)
+      converter(tasks),
+      request(kj::mv(request))
 {
     // When the contestants change, automatically update the request
     connect(&m_contestants, &QQmlVariantListModel::dataChanged,

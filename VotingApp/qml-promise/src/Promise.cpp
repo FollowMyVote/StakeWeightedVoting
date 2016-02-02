@@ -58,6 +58,11 @@ void Promise::reject(const QVariantList &arguments)
   }
 }
 
+bool Promise::hasRejectHandler()
+{
+    return mOnReject.isCallable();
+}
+
 bool Promise::isSettled() const
 {
   return mState == State::PENDING ? false: true;
