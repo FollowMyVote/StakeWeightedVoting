@@ -43,7 +43,6 @@ ChainAdaptorWrapper::ChainAdaptorWrapper(PromiseConverter& promiseConverter, QOb
             this->promiseConverter.adopt(m_adaptor->getMyAccounts().then([this](kj::Array<QString> accounts) {
                                              m_myAccounts = convertList(kj::mv(accounts));
                                              emit myAccountsChanged(m_myAccounts);
-                                             qDebug() << m_myAccounts;
                                          }));
     });
 }
