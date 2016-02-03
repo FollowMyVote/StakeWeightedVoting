@@ -11,7 +11,7 @@ Canvas {
     id: rectCanvas
     width: parent.width - window.dp(16)
     x: window.dp(8)
-    z: 10
+    z: 5
     height: window.dp(220)
     contextType: "2d"
     onPaint: {

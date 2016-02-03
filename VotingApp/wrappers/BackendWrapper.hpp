@@ -45,7 +45,7 @@ class ContestCreatorWrapper;
 class BackendWrapper : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(ContestCreatorWrapper* contestCreator READ contestCreator CONSTANT);
+    Q_PROPERTY(swv::ContestCreatorWrapper* contestCreator READ contestCreator CONSTANT);
 
 public:
     BackendWrapper(Backend::Client backend, PromiseConverter& promiseConverter, QObject *parent = 0);

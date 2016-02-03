@@ -79,6 +79,26 @@ App {
        onCurrentAccountChanged: console.log("Current account set to " + currentAccount)
     }
 
+    Component {
+        id: createContestPageComponent
+
+        Page {
+            id: createContestPage
+
+            property var contestCreator
+
+            PageControl {
+                anchors {
+                    horizontalCenter: parent.horizontalCenter
+                    top: parent.top
+                }
+                pages: 3
+                indicatorSize: window.dp(16)
+                enabled: false
+            }
+        }
+    }
+
     Navigation {
         id: mainNavigation
 
@@ -113,7 +133,13 @@ App {
                             return votingSystem.backend.getContestsByCreator(votingSystem.currentAccount)
                     }
                     listView.headerPositioning: ListView.PullBackHeader
-                    listView.header: CreateContestPlaceholder {}
+                    listView.header: CreateContestPlaceholder {
+                        onClicked: {
+                            console.log("Begin contest creation")
+                            myContestsPage.navigationStack.push(createContestPageComponent,
+                                                                {"contestCreator": _votingSystem.backend.contestCreator})
+                        }
+                    }
                 }
             }
         }
