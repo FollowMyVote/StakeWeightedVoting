@@ -39,7 +39,7 @@ App {
     }
 
     function showError(errorMessage) {
-        var dialog= InputDialog.confirm(window, qsTr("An error has occurred:\n%1").arg(errorMessage), function(){})
+        NativeDialog.confirm(qsTr("Error"), qsTr("An error has occurred:\n%1").arg(errorMessage), function(){})
         dialog.negativeAction = false
         dialog.Keys.escapePressed.connect(dialog.close)
         dialog.focus = true
