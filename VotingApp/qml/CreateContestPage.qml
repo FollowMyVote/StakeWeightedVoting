@@ -14,39 +14,85 @@ Page {
 
     property var contestCreator
     property VotingSystem votingSystem
+    property var purchaseRequest: contestCreator.getPurchaseContestRequest()
 
     SwipeView {
         id: swiper
         anchors.fill: parent
 
         Item {
-            ColumnLayout {
-                anchors.fill: parent
-                anchors.margins: window.dp(16)
-
-                AppTextField {
-                    Layout.fillWidth: true
-                    placeholderText: qsTr("Contest Name")
-                    maximumLength: contestCreator.contestLimits[ContestLimits.NameLength]
+            Flickable {
+                id: flickable
+                interactive: true
+                flickableDirection: Flickable.VerticalFlick
+                contentHeight: createContestFormColumn.height
+                anchors {
+                    left: parent.left
+                    right: parent.horizontalCenter
+                    top: parent.top
+                    bottom: parent.bottom
+                    margins: window.dp(16)
+                    rightMargin: window.dp(8)
                 }
-                AppTextEdit {
-                    Layout.fillWidth: true
-                    placeholderText: qsTr("Description")
-                    wrapMode: TextEdit.Wrap
-                }
-                Row {
-                    spacing: window.dp(8)
 
-                    AppText {
-                        id: weightCoinLabel
-                        text: qsTr("Coin to Poll:")
+                Column {
+                    id: createContestFormColumn
+                    width: parent.width
+
+                    AppTextField {
+                        width: parent.width
+                        placeholderText: qsTr("Contest Name")
+                        maximumLength: contestCreator.contestLimits[ContestLimits.NameLength]
                     }
-                    Controls.ComboBox {
-                        width: window.dp(120)
-                        model: ["a", "b", "c"]
-                        style: ControlStyles.ComboBoxStyle {
-                            font: weightCoinLabel.font
+                    AppTextEdit {
+                        width: parent.width
+                        placeholderText: qsTr("Description")
+                        wrapMode: TextEdit.Wrap
+                    }
+                    Row {
+                        spacing: window.dp(8)
+
+                        AppText {
+                            id: weightCoinLabel
+                            text: qsTr("Coin to Poll:")
                         }
+                        Controls.ComboBox {
+                            width: window.dp(120)
+                            model: ["a", "b", "c"]
+                            style: ControlStyles.ComboBoxStyle {
+                                font: weightCoinLabel.font
+                            }
+                        }
+                    }
+                    Column {
+                        width: parent.width
+                        Repeater {
+                            model: purchaseRequest.contestants
+                            delegate: Row {
+                                width: parent.width
+
+                                IconButton {
+                                    icon: IconType.remove
+                                    onClicked: purchaseRequest.contestants.remove(index)
+                                }
+                                IconButton {
+                                    icon: IconType.edit
+                                }
+                                ColumnLayout {
+                                    AppText {
+                                        text: modelData.name
+                                    }
+                                    AppText {
+                                        text: modelData.description
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    AppButton {
+                        text: qsTr("Add Contestant")
+
+                        onClicked: purchaseRequest.contestants.append({"name": "Joe", "description": "Joe is a candidate."})
                     }
                 }
             }

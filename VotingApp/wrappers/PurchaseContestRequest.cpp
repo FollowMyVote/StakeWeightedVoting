@@ -49,6 +49,8 @@
 // Macro to generate getter and setter for simple properties in the sponsorship options
 #define SPONSORSHIP_SIMPLE_GETTER_SETTER(property, upperProperty, type, requestField) \
     type PurchaseContestRequestWrapper::property() { \
+        if (!sponsorshipEnabled()) \
+            return {}; \
         _SIMPLE_GETTER_IMPL(Sponsorship().getOptions().get ## requestField) \
     } \
     void PurchaseContestRequestWrapper::set ## upperProperty(type property) { \

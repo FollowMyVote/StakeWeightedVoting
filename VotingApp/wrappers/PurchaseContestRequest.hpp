@@ -29,12 +29,12 @@ QML_ENUM_CLASS(TallyAlgorithm,
 class PurchaseContestRequestWrapper : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(ContestType::Type contestType READ contestType WRITE setContestType NOTIFY contestTypeChanged)
-    Q_PROPERTY(TallyAlgorithm::Type tallyAlgorithm READ tallyAlgorithm WRITE setTallyAlgorithm
+    Q_PROPERTY(swv::ContestType::Type contestType READ contestType WRITE setContestType NOTIFY contestTypeChanged)
+    Q_PROPERTY(swv::TallyAlgorithm::Type tallyAlgorithm READ tallyAlgorithm WRITE setTallyAlgorithm
                NOTIFY tallyAlgorithmChanged)
     Q_PROPERTY(QString name READ name WRITE setName NOTIFY nameChanged)
     Q_PROPERTY(QString description READ description WRITE setDescription NOTIFY descriptionChanged)
-    /// Contestants is a list of Javascript options containing "name" and "description" properties, each being strings
+    /// Contestants is a list of Javascript objects containing "name" and "description" properties, each being strings
     Q_PROPERTY(QQmlVariantListModel* contestants READ contestants CONSTANT)
     Q_PROPERTY(QQmlVariantListModel* promoCodes READ promoCodes CONSTANT)
     Q_PROPERTY(quint64 weightCoin READ weightCoin WRITE setWeightCoin NOTIFY weightCoinChanged)
