@@ -16,7 +16,7 @@
  * along with SWV.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <QGuiApplication>
+#include <QApplication>
 #include <QQmlApplicationEngine>
 #include <QtQml>
 #include <QDebug>
@@ -47,7 +47,7 @@
 
 int main(int argc, char *argv[])
 {
-    QGuiApplication app(argc, argv);
+    QApplication app(argc, argv);
     app.setApplicationName(QObject::tr("Stake Weighted Voting"));
     app.setOrganizationName(QStringLiteral("Follow My Vote"));
     app.setOrganizationDomain(QStringLiteral("followmyvote.com"));

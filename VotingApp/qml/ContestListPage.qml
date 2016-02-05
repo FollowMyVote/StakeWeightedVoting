@@ -26,8 +26,8 @@ import FollowMyVote.StakeWeightedVoting 1.0
 
 ListPage {
     id: contestListPage
-//    pullToRefreshHandler.enabled: true
-    pullToRefreshHandler.onRefresh:{
+    pullToRefreshHandler.pullToRefreshEnabled: true
+    pullToRefreshHandler.onRefresh: {
         reloadContests()
     }
 
@@ -60,7 +60,6 @@ ListPage {
     }
     listView.onCountChanged: if (listView.contentHeight < height && votingSystem.isReady)
                                  contestList.loadContests()
-
 
     ListModel {
         id: contestList
