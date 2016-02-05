@@ -20,11 +20,11 @@ Module {
   Depends {
     condition: !(qbs.targetOS.contains("winrt") || qbs.targetOS.contains("windowsphone") || qbs.targetOS.contains("ios"))
     name: "Qt"
-    submodules: ["3dcore", "3drenderer", "3dinput", "3dquick"]
+    submodules: ["3dcore", "3drender", "3dinput", "3dquick"]
   }
 
   Group {
     name: "vplay-license"
-    files: Qt.core.incPath+"/../mkspecs/common/vplay/resources_user.qrc"
+    files: product.moduleProperty("VPlay", "qtIncPath")+"/../mkspecs/common/vplay/resources_user.qrc"
   }
 }
