@@ -2,5 +2,6 @@
     <qresource prefix="/">
         <file>qml</file>
         <file>qml/res</file>
+        <file>qml/CoinListTablePage.qml</file>
     </qresource>
 </RCC>

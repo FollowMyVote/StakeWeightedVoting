@@ -27,11 +27,32 @@ ListPage {
     id: coinListPage
     title: qsTr("Coin List")
     model: coinList
-    delegate: AppText {
-        text: name
-        //subText: qsTr("%1 contests/month").arg("N")
-        //iconSource: "qrc:/res/Follow-My-Vote-Logo.png"
+    delegate: RowLayout {
+
+        spacing: window.dp(16)
+
+        RoundedImage {
+            Layout.preferredWidth: window.dp(40)
+            Layout.preferredHeight: window.dp(40)
+            source: "qrc:/qml/res/Follow-My-Vote-Logo.png"
+            fillMode: Image.PreserveAspectCrop
+            radius: height / 2
+        }
+        ColumnLayout{
+
+            AppText {
+                text: name
+            }
+            AppText {
+                text: qsTr("%1 contests/month").arg("N")
+            }
+        }
     }
+
+     listView.spacing: window.dp(16)
+     listView.leftMargin: window.dp(16)
+     listView.bottomMargin: window.dp(16)
+     listView.topMargin: window.dp(16)
 
     property VotingSystem votingSystem
 

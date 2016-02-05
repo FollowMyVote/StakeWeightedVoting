@@ -87,7 +87,8 @@ App {
             icon: IconType.newspapero
 
             NavigationStack {
-                ContestListPage {
+                 splitView: false
+                 ContestListPage {
                     id: feedPage
                     title: qsTr("My Feed")
                     votingSystem: _votingSystem
@@ -95,7 +96,10 @@ App {
                         if (votingSystem.isReady)
                             return votingSystem.backend.getFeedGenerator()
                     }
-                    Component.onCompleted: if (votingSystem.isReady) loadContests()
+                    Component.onCompleted: {
+                        if (votingSystem.isReady) loadContests()
+                        else votingSystem.connected.connect(loadContests)
+                    }
                 }
             }
         }
@@ -104,7 +108,8 @@ App {
             icon: IconType.user
 
             NavigationStack {
-                ContestListPage {
+                 splitView: false
+                 ContestListPage {
                     id: myContestsPage
                     title: qsTr("My Polls")
                     votingSystem: _votingSystem
@@ -122,6 +127,7 @@ App {
             icon: IconType.money
 
             NavigationStack {
+                splitView: false
                 CoinListPage {
                     id: coinListPage
                     votingSystem: _votingSystem
@@ -129,12 +135,14 @@ App {
                 }
             }
         }
+
         NavigationItem {
             title: "Settings"
             icon: IconType.cog
 
             NavigationStack {
-                SettingsPage {
+                 splitView: false
+                 SettingsPage {
                     votingSystem: _votingSystem
                 }
             }
