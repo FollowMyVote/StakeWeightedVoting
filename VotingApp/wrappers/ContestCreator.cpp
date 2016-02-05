@@ -3,6 +3,8 @@
 
 #include <kj/debug.h>
 
+#include <QDebug>
+
 namespace swv {
 
 void ContestCreatorWrapper::taskFailed(kj::Exception&& exception)
@@ -40,7 +42,7 @@ void ContestCreatorWrapper::refreshLimits()
     {
         m_contestLimits.clear();
         for (auto limitKeyValue : r.getLimits().getEntries())
-            m_priceSchedule[QString::number(static_cast<uint16_t>(limitKeyValue.getKey().getLimit()))] =
+            m_contestLimits[QString::number(static_cast<uint16_t>(limitKeyValue.getKey().getLimit()))] =
                     QVariant::fromValue(limitKeyValue.getValue().getValue());
         emit contestLimitsChanged(m_contestLimits);
     }));

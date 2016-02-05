@@ -115,7 +115,14 @@ App {
                             return votingSystem.backend.getContestsByCreator(votingSystem.currentAccount)
                     }
                     listView.headerPositioning: ListView.PullBackHeader
-                    listView.header: CreateContestPlaceholder {}
+                    listView.header: CreateContestPlaceholder {
+                        onClicked: {
+                            console.log("Begin contest creation")
+                            myContestsPage.navigationStack.push(Qt.resolvedUrl("CreateContestPage.qml"),
+                                                                {"contestCreator": _votingSystem.backend.contestCreator,
+                                                                 "votingSystem": _votingSystem})
+                        }
+                    }
                 }
             }
         }
