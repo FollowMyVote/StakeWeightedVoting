@@ -39,7 +39,10 @@ App {
     }
 
     function showError(errorMessage) {
-        NativeDialog.confirm(qsTr("Error"), qsTr("An error has occurred:\n%1").arg(errorMessage), function(){}, false)
+        NativeDialog.confirm(qsTr("Error"), qsTr("An error has occurred:\n%1").arg(errorMessage), function(){})
+        dialog.negativeAction = false
+        dialog.Keys.escapePressed.connect(dialog.close)
+        dialog.focus = true
     }
 
     Action {
@@ -74,6 +77,26 @@ App {
            }
        }
        onCurrentAccountChanged: console.log("Current account set to " + currentAccount)
+    }
+
+    Component {
+        id: createContestPageComponent
+
+        Page {
+            id: createContestPage
+
+            property var contestCreator
+
+            PageControl {
+                anchors {
+                    horizontalCenter: parent.horizontalCenter
+                    top: parent.top
+                }
+                pages: 3
+                indicatorSize: window.dp(16)
+                enabled: false
+            }
+        }
     }
 
     Navigation {

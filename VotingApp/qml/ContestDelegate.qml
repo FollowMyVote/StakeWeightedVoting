@@ -147,16 +147,11 @@ Column {
                         }
                         AppButton {
                             text: qsTr("Read more")
+                            backgroundColor: Qt.lighter(Theme.tintColor)
                             visible: contestantDescription.truncated
-                            Layout.fillWidth: true
-                            onClicked: {
-                                var dlg = InputDialog.confirm(window,
-                                                              "%1\n\n%2".arg(modelData.name).arg(contestantDescription.text),
-                                                              function(){})
-                                dlg.negativeAction = false
-                                dlg.Keys.escapePressed.connect(dlg.close)
-                                dlg.focus = true
-                            }
+                            Layout.alignment: Qt.AlignHCenter
+                            Layout.preferredWidth: minimumWidth
+                            onClicked: NativeDialog.confirm(modelData.name, modelData.description, function(){}, false)
                             Layout.preferredHeight: contentHeight
                         }
                     }
