@@ -39,7 +39,7 @@ App {
     }
 
     function showError(errorMessage) {
-        var dialog= InputDialog.confirm(window, qsTr("An error has occurred:\n%1").arg(errorMessage), function(){})
+        NativeDialog.confirm(qsTr("Error"), qsTr("An error has occurred:\n%1").arg(errorMessage), function(){})
         dialog.negativeAction = false
         dialog.Keys.escapePressed.connect(dialog.close)
         dialog.focus = true
@@ -77,6 +77,26 @@ App {
            }
        }
        onCurrentAccountChanged: console.log("Current account set to " + currentAccount)
+    }
+
+    Component {
+        id: createContestPageComponent
+
+        Page {
+            id: createContestPage
+
+            property var contestCreator
+
+            PageControl {
+                anchors {
+                    horizontalCenter: parent.horizontalCenter
+                    top: parent.top
+                }
+                pages: 3
+                indicatorSize: window.dp(16)
+                enabled: false
+            }
+        }
     }
 
     Navigation {
@@ -118,7 +138,14 @@ App {
                             return votingSystem.backend.getContestsByCreator(votingSystem.currentAccount)
                     }
                     listView.headerPositioning: ListView.PullBackHeader
-                    listView.header: CreateContestPlaceholder {}
+                    listView.header: CreateContestPlaceholder {
+                        onClicked: {
+                            console.log("Begin contest creation")
+                            myContestsPage.navigationStack.push(Qt.resolvedUrl("CreateContestPage.qml"),
+                                                                {"contestCreator": _votingSystem.backend.contestCreator,
+                                                                 "votingSystem": _votingSystem})
+                        }
+                    }
                 }
             }
         }

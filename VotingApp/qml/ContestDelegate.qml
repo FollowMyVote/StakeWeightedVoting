@@ -96,9 +96,10 @@ Column {
                     Layout.fillHeight: true
                     Layout.preferredHeight: {
                         var maxHeight = 0
-                        for (var i = 0; i < contestantRepeater.count; ++i)
+                        for (var i = 0; i < contestantRepeater.count; ++i) {
                             if (contestantRepeater.itemAt(i) !== null)
                                 maxHeight = Math.max(maxHeight, contestantRepeater.itemAt(i).contentHeight)
+                        }
                         return maxHeight + window.dp(16)
                     }
                     color: isSelected? Theme.tintColor : Theme.tintLightColor
@@ -146,16 +147,11 @@ Column {
                         }
                         AppButton {
                             text: qsTr("Read more")
+                            backgroundColor: Qt.lighter(Theme.tintColor)
                             visible: contestantDescription.truncated
-                            Layout.fillWidth: true
-                            onClicked: {
-                                var dlg = InputDialog.confirm(window,
-                                                              "%1\n\n%2".arg(modelData.name).arg(contestantDescription.text),
-                                                              function(){})
-                                dlg.negativeAction = false
-                                dlg.Keys.escapePressed.connect(dlg.close)
-                                dlg.focus = true
-                            }
+                            Layout.alignment: Qt.AlignHCenter
+                            Layout.preferredWidth: minimumWidth
+                            onClicked: NativeDialog.confirm(modelData.name, modelData.description, function(){}, false)
                             Layout.preferredHeight: contentHeight
                         }
                     }
