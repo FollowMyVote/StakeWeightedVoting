@@ -64,35 +64,65 @@ Page {
                             }
                         }
                     }
+
                     Column {
                         width: parent.width
                         Repeater {
+
                             model: purchaseRequest.contestants
                             delegate: Row {
                                 width: parent.width
 
                                 IconButton {
-                                    icon: IconType.remove
-                                    onClicked: purchaseRequest.contestants.remove(index)
-                                }
-                                IconButton {
                                     icon: IconType.edit
                                 }
-                                ColumnLayout {
-                                    AppText {
-                                        text: modelData.name
-                                    }
-                                    AppText {
-                                        text: modelData.description
+                                IconButton {
+                                    icon: IconType.remove
+                                    onClicked: {
+                                        purchaseRequest.contestants.remove(index)
                                     }
                                 }
+
+                                AppText {
+                                    text: modelData.name
+                                    font.pixelSize: window.dp(30)
+                                }
+                                AppText {
+                                    text: modelData.description
+                                }
+
+
                             }
                         }
                     }
-                    AppButton {
-                        text: qsTr("Add Contestant")
 
-                        onClicked: purchaseRequest.contestants.append({"name": "Joe", "description": "Joe is a candidate."})
+                    Row {
+                        width : parent.width
+                        spacing: window.dp(8)
+                        AppTextField {
+                            id: contestantName
+                            placeholderText: qsTr("Contestant Name ")
+                            width: window.dp(200)
+
+                        }
+                        AppTextEdit {
+                            id: contestantDescription
+                            placeholderText: qsTr("Contestant Description")
+                            width: window.dp(200)
+                            wrapMode: TextEdit.WrapAtWordBoundaryOrAnywhere
+                        }
+
+                        AppButton {
+                            text: qsTr("Add Contestant")
+                            width: window.dp(200)
+                            onClicked: {
+                                if (contestantName.text != "") {
+                                    purchaseRequest.contestants.append({"name": contestantName.text, "description": contestantDescription.text})
+                                    contestantName.text = ""
+                                    contestantDescription.text = ""
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -106,3 +136,4 @@ Page {
         currentPage: swiper.currentIndex
     }
 }
+
