@@ -41,14 +41,28 @@ Page {
                     width: parent.width
 
                     AppTextField {
+                        id: contestName
                         width: parent.width
                         placeholderText: qsTr("Contest Name")
                         maximumLength: contestCreator.contestLimits[ContestLimits.NameLength]
+
+                        Binding {
+                            target: purchaseRequest
+                            property: "name"
+                            value: contestName.text
+                        }
                     }
                     AppTextEdit {
+                        id: contestDescription
                         width: parent.width
                         placeholderText: qsTr("Description")
                         wrapMode: TextEdit.Wrap
+
+                        Binding {
+                            target: purchaseRequest
+                            property: "description"
+                            value: contestDescription.text
+                        }
                     }
                     Row {
                         spacing: window.dp(8)
