@@ -51,9 +51,14 @@ public:
     BackendWrapper(Backend::Client backend, PromiseConverter& promiseConverter, QObject *parent = 0);
     virtual ~BackendWrapper() noexcept;
 
+    /// @brief Get the current user's contest feed
     Q_INVOKABLE swv::ContestGeneratorWrapper* getFeedGenerator();
+    /// @brief Get the contests created by a particular account
     Q_INVOKABLE swv::ContestGeneratorWrapper* getContestsByCreator(QString creator);
+    /// @brief Get the contests weighted in a particular coin
     Q_INVOKABLE swv::ContestGeneratorWrapper* getContestsByCoin(quint64 coinId);
+    /// @brief Get the contests the current user has voted on
+    Q_INVOKABLE swv::ContestGeneratorWrapper* getVotedContests();
 
     swv::ContestCreatorWrapper* contestCreator();
 
