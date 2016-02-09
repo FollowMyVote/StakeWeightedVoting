@@ -29,7 +29,7 @@
 BackendServer::BackendServer()
 {}
 
-::kj::Promise<void> BackendServer::getContestGenerator(Backend::Server::GetContestGeneratorContext context)
+::kj::Promise<void> BackendServer::getContestFeed(GetContestFeedContext context)
 {
     context.getResults().setGenerator(kj::heap<ContestGeneratorImpl>());
     return kj::READY_NOW;

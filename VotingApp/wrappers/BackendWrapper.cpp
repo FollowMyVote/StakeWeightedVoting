@@ -43,7 +43,7 @@ BackendWrapper::~BackendWrapper() noexcept
 
 ContestGeneratorWrapper* BackendWrapper::getFeedGenerator()
 {
-    return new ContestGeneratorWrapper(backend.getContestGeneratorRequest().send().getGenerator(), promiseConverter);
+    return new ContestGeneratorWrapper(backend.getContestFeedRequest().send().getGenerator(), promiseConverter);
 }
 
 ContestGeneratorWrapper* BackendWrapper::getContestsByCreator(QString creator)
@@ -64,6 +64,15 @@ ContestGeneratorWrapper* BackendWrapper::getContestsByCoin(quint64 coinId)
     filters[0].setType(Backend::Filter::Type::CONTEST_COIN);
     auto arguments = filters[0].initArguments(1);
     arguments.set(0, std::to_string(coinId));
+
+    return new ContestGeneratorWrapper(request.send().getGenerator(), promiseConverter);
+}
+
+ContestGeneratorWrapper*BackendWrapper::getVotedContests()
+{
+    auto request = backend.searchContestsRequest();
+    auto filters = request.initFilters(1);
+    filters[0].setType(Backend::Filter::Type::CONTEST_VOTER);
 
     return new ContestGeneratorWrapper(request.send().getGenerator(), promiseConverter);
 }
