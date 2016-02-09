@@ -2,6 +2,7 @@ import QtQuick 2.5
 import QtQuick.Layouts 1.1
 import QtQuick.Controls 1.4 as Controls
 import QtQuick.Controls.Styles 1.4 as ControlStyles
+import QtQuick.Extras 1.4 as Extras
 import Qt.labs.controls 1.0
 
 import VPlayApps 1.0
@@ -94,11 +95,43 @@ Page {
 
                         onClicked: purchaseRequest.contestants.append({"name": "Joe", "description": "Joe is a candidate."})
                     }
+                    Row {
+                        spacing: window.dp(8)
+
+                        Binding {
+                            target: purchaseRequest
+                            property: "expiration"
+                            value: {
+                                if (contestEndsTime.currentIndex === 0)
+                                    return new Date(0)
+
+                                var date = new Date()
+                                if (contestEndsTime.currentIndex === 1)
+                                    date.setDate(date.getDate() + 1)
+                                else if (contestEndsTime.currentIndex === 2)
+                                    date.setDate(date.getDate() + 7)
+                                else if (contestEndsTime.currentIndex === 3)
+                                    date.setMonth(date.getMonth() + 1)
+                                return date
+                            }
+                        }
+
+                        AppText {
+                            text: qsTr("Contest Ends")
+                        }
+                        Controls.ComboBox {
+                            id: contestEndsTime
+                            width: window.dp(100)
+                            model: [qsTr("never"), qsTr("in a day"), qsTr("in a week"), qsTr("in a month")]
+                            style: ControlStyles.ComboBoxStyle {
+                                font: weightCoinLabel.font
+                            }
+                        }
+                    }
                 }
             }
         }
     }
-
     PageControl {
         anchors.top: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
