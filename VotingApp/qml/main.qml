@@ -28,8 +28,6 @@ import FollowMyVote.StakeWeightedVoting 1.0
 App {
     id: window
     title: Qt.application.name
-    width: 1280
-    height: 768
     visible: true
     minimumWidth: dp(400)
 
@@ -53,6 +51,10 @@ App {
     Settings {
         id: appSettings
         property alias currentAccount: _votingSystem.currentAccount
+        property alias windowX: window.x
+        property alias windowY: window.y
+        property alias windowHeight: window.height
+        property alias windowWidth: window.width
     }
     VotingSystem {
        id: _votingSystem
