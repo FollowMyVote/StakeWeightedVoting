@@ -80,6 +80,7 @@ int main(int argc, char *argv[])
     REGISTER_WRAPPER(PurchaseContestRequest);
     REGISTER_WRAPPER(Purchase);
 #undef REGISTER_WRAPPER
+    qmlRegisterType<swv::PurchaseContestContestantWrapper>("FollowMyVote.StakeWeightedVoting.ContestPurchase", 1, 0, "Contestant");
 
     // Register enum wrappers
 #define REGISTER_ENUM(name) \

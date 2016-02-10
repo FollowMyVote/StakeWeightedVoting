@@ -4,6 +4,7 @@ import QtQuick.Controls 1.4 as Controls
 import QtQuick.Controls.Styles 1.4 as ControlStyles
 import QtQuick.Extras 1.4 as Extras
 import Qt.labs.controls 1.0
+import QtQml 2.2
 
 import VPlayApps 1.0
 
@@ -45,6 +46,8 @@ Page {
                         width: parent.width
                         placeholderText: qsTr("Contest Name")
                         maximumLength: contestCreator.contestLimits[ContestLimits.NameLength]
+                        Component.onCompleted: forceActiveFocus()
+                        KeyNavigation.tab: contestDescription
 
                         Binding {
                             target: purchaseRequest
@@ -83,22 +86,46 @@ Page {
                         width: parent.width
                         Repeater {
                             model: purchaseRequest.contestants
-                            delegate: Row {
+                            delegate: RowLayout {
                                 width: parent.width
 
-                                IconButton {
-                                    icon: IconType.remove
-                                    onClicked: purchaseRequest.contestants.remove(index)
-                                }
-                                IconButton {
-                                    icon: IconType.edit
+                                Row {
+                                    // This row works around the fact that IconButton does not properly set implicitWidth
+                                    IconButton {
+                                        icon: IconType.remove
+                                        onClicked: purchaseRequest.contestants.remove(index)
+                                        implicitWidth: minim
+                                    }
+                                    IconButton {
+                                        icon: IconType.edit
+                                        onClicked: {
+                                            var dialog = contestantDialog.createObject(createContestPage,
+                                                                                       {"contestantName": name,
+                                                                                           "contestantDescription":
+                                                                                           description})
+
+                                            dialog.accepted.connect(function() {
+                                                name = dialog.contestantName
+                                                description = dialog.contestantDescription
+                                                dialog.close()
+                                            })
+                                            dialog.canceled.connect(dialog.close)
+
+                                            dialog.open()
+                                        }
+                                    }
                                 }
                                 ColumnLayout {
+                                    Layout.fillWidth: true
                                     AppText {
-                                        text: modelData.name
+                                        text: name
+                                        Layout.fillWidth: true
+                                        elide: Text.ElideRight
                                     }
                                     AppText {
-                                        text: modelData.description
+                                        text: description
+                                        Layout.fillWidth: true
+                                        elide: Text.ElideRight
                                     }
                                 }
                             }
@@ -107,7 +134,24 @@ Page {
                     AppButton {
                         text: qsTr("Add Contestant")
 
-                        onClicked: purchaseRequest.contestants.append({"name": "Joe", "description": "Joe is a candidate."})
+                        onClicked: {
+                            // Create a new dialog as defined by the contestDialog component
+                            var dialog = contestantDialog.createObject(createContestPage)
+
+                            // Handle dialog accepted/canceled signals
+                            dialog.accepted.connect(function() {
+                                var contestant = Qt.createQmlObject("import FollowMyVote.StakeWeightedVoting." +
+                                                                    "ContestPurchase 1.0; Contestant{}",
+                                                                    createContestPage, "ContestantCreation")
+                                contestant.name = dialog.contestantName;
+                                contestant.description = dialog.contestantDescription
+                                purchaseRequest.contestants.append(contestant)
+                                dialog.close()
+                            })
+                            dialog.canceled.connect(dialog.close)
+
+                            dialog.open()
+                        }
                     }
                     Row {
                         spacing: window.dp(8)
@@ -151,5 +195,38 @@ Page {
         anchors.horizontalCenter: parent.horizontalCenter
         pages: swiper.count
         currentPage: swiper.currentIndex
+    }
+
+    Component {
+        id: contestantDialog
+
+        Dialog {
+            title: qsTr("Edit Contestant")
+            contentHeight: window.dp(200)
+            contentWidth: window.dp(250)
+
+            property alias contestantName: contestantName.text
+            property alias contestantDescription: contestantDescription.text
+
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: window.dp(8)
+
+                AppTextField {
+                    id: contestantName
+                    placeholderText: qsTr("Name")
+                    maximumLength: contestCreator.contestLimits[ContestLimits.ContestantNameLength]
+                    Layout.fillWidth: true
+                    KeyNavigation.tab: contestantDescription
+                    Component.onCompleted: forceActiveFocus(Qt.Popup)
+                }
+                ScrollingTextEdit {
+                    id: contestantDescription
+                    Layout.fillHeight: true
+                    Layout.fillWidth: true
+                    textEdit.placeholderText: qsTr("Description")
+                }
+            }
+        }
     }
 }

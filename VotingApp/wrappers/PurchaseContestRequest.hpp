@@ -7,6 +7,7 @@
 #include <contestcreator.capnp.h>
 
 #include "vendor/QQmlEnumClassHelper.h"
+#include "vendor/QQmlObjectListModel.h"
 #include "vendor/QQmlVariantListModel.h"
 
 namespace swv {
@@ -17,6 +18,19 @@ QML_ENUM_CLASS(ContestType,
 QML_ENUM_CLASS(TallyAlgorithm,
                Plurality = static_cast<uint16_t>(::ContestCreator::TallyAlgorithms::PLURALITY)
         )
+
+class PurchaseContestContestantWrapper : public QObject {
+    Q_OBJECT
+    Q_PROPERTY(QString name MEMBER name NOTIFY nameChanged)
+    Q_PROPERTY(QString description MEMBER description NOTIFY descriptionChanged)
+
+    QString name;
+    QString description;
+
+signals:
+    void nameChanged(QString);
+    void descriptionChanged(QString);
+};
 
 /**
  * @brief The PurchaseContestRequest class provies a QML interface to manage purchasing a contest
@@ -34,8 +48,7 @@ class PurchaseContestRequestWrapper : public QObject
                NOTIFY tallyAlgorithmChanged)
     Q_PROPERTY(QString name READ name WRITE setName NOTIFY nameChanged)
     Q_PROPERTY(QString description READ description WRITE setDescription NOTIFY descriptionChanged)
-    /// Contestants is a list of Javascript objects containing "name" and "description" properties, each being strings
-    Q_PROPERTY(QQmlVariantListModel* contestants READ contestants CONSTANT)
+    QML_OBJMODEL_PROPERTY(PurchaseContestContestantWrapper, contestants)
     Q_PROPERTY(QQmlVariantListModel* promoCodes READ promoCodes CONSTANT)
     Q_PROPERTY(quint64 weightCoin READ weightCoin WRITE setWeightCoin NOTIFY weightCoinChanged)
     Q_PROPERTY(qint64 expiration READ expiration WRITE setExpiration NOTIFY expirationChanged)
@@ -47,7 +60,6 @@ class PurchaseContestRequestWrapper : public QObject
     Q_PROPERTY(qint64 sponsorIncentive READ sponsorIncentive WRITE setSponsorIncentive NOTIFY sponsorIncentiveChanged)
 
     kj::TaskSet& tasks;
-    QQmlVariantListModel m_contestants;
     QQmlVariantListModel m_promoCodes;
     PromiseConverter converter;
 
@@ -70,9 +82,6 @@ public:
     ContestType::Type contestType() const;
     TallyAlgorithm::Type tallyAlgorithm() const;
     bool sponsorshipEnabled() const;
-    QQmlVariantListModel* contestants() {
-        return &m_contestants;
-    }
     QQmlVariantListModel* promoCodes() {
         return &m_promoCodes;
     }
