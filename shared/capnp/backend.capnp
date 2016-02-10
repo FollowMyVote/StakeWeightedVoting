@@ -25,8 +25,8 @@ interface Backend {
     # This is the master API to the FMV backend. It provides services related to listing contests, getting contest
     # results, and purchasing certified reports on the contest results.
 
-    getContestGenerator @0 () -> (generator :ContestGenerator);
-    # Get a generator for a feed of contests
+    getContestFeed @0 () -> (generator :ContestGenerator);
+    # Get a generator for current user's contest feed
     searchContests @8 (filters :List(Filter)) -> (generator :ContestGenerator);
     # Search contests and get a generator for the results
     getContestResults @1 (contestId :Data) -> (results :ContestResults);
@@ -72,6 +72,8 @@ interface Backend {
             # Search for contests created by the specified account. Argument is a blockchain-specific account ID
             contestCoin @2;
             # Search for contests weighted by the specified coin. Argument is base-10 string of coin ID
+            contestVoter @3;
+            # Search for contests voted on by the current user. No argument.
         }
     }
 }

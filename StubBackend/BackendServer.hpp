@@ -36,7 +36,7 @@ public:
 
     // Backend::Server interface
 protected:
-    virtual ::kj::Promise<void> getContestGenerator(GetContestGeneratorContext context);
+    virtual ::kj::Promise<void> getContestFeed(GetContestFeedContext context);
     virtual ::kj::Promise<void> searchContests(SearchContestsContext context);
     virtual ::kj::Promise<void> getContestResults(GetContestResultsContext context);
     virtual ::kj::Promise<void> purchaseResultReport(PurchaseResultReportContext context);
