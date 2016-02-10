@@ -152,6 +152,25 @@ App {
             }
         }
         NavigationItem {
+            title: qsTr("Voted Contests")
+            icon: IconType.check
+
+            NavigationStack {
+                 splitView: false
+                 ContestListPage {
+                    id: votedContestsPage
+                    title: qsTr("Voted Contests")
+                    votingSystem: _votingSystem
+                    getContestGeneratorFunction: function() {
+                        if (votingSystem.isReady)
+                            return votingSystem.backend.getVotedContests()
+                    }
+                    listView.headerPositioning: ListView.PullBackHeader
+
+                }
+            }
+        }
+        NavigationItem {
             title: "Coin List"
             icon: IconType.money
 
