@@ -160,7 +160,6 @@ App {
                 CoinListPage {
                     id: coinListPage
                     votingSystem: _votingSystem
-                    Component.onCompleted: if (_votingSystem.isReady) loadCoins()
                 }
             }
         }
