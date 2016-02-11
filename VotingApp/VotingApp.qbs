@@ -8,10 +8,11 @@ QtGuiApplication {
     Depends { name: "StubChainAdaptor" }
     Depends { name: "Qt"; submodules: ["network", "qml"] }
     Depends { name: "VPlay" }
-    VPlay.qtIncPath: Qt.core.incPath
+    VPlay.sdkPath: original? original : Qt.incPath + "/.."
 
-    qmlImportPaths: ["/usr/local/opt/qt5/qml", path + "/qml"]
+    qmlImportPaths: [VPlay.qtIncPath + "/qml"]
     cpp.includePaths: [".", "qml-promise/src", VPlay.includePath]
+    cpp.libraryPaths: VPlay.sdkPath + "/lib"
     cpp.staticLibraries: VPlay.staticLibrary
 
     files: [

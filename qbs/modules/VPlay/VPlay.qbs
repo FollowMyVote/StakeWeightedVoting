@@ -4,7 +4,8 @@ Module {
   name: "VPlay"
 
   // include vplay header, lib and resources
-  property string qtIncPath: ""
+  property string sdkPath: qbs.getEnv("VPLAY_SDK_PATH")
+  property string qtIncPath: sdkPath + "/include"
   property string includePath: qtIncPath+"/VPlay"
   property string staticLibrary: "VPlay"
                        + (qbs.targetOS.contains("ios-simulator") ? "_iphonesimulator" : "")
@@ -25,6 +26,6 @@ Module {
 
   Group {
     name: "vplay-license"
-    files: product.moduleProperty("VPlay", "qtIncPath")+"/../mkspecs/common/vplay/resources_user.qrc"
+    files: VPlay.sdkPath+"/mkspecs/common/vplay/resources_user.qrc"
   }
 }
