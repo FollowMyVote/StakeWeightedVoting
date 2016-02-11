@@ -40,6 +40,7 @@ Page {
                 Column {
                     id: createContestFormColumn
                     width: parent.width
+                    spacing: window.dp(8)
 
                     AppTextField {
                         id: contestName
@@ -84,35 +85,32 @@ Page {
                     }
                     Column {
                         width: parent.width
+                        spacing: window.dp(8)
                         Repeater {
                             model: purchaseRequest.contestants
                             delegate: RowLayout {
                                 width: parent.width
 
-                                Row {
-                                    // This row works around the fact that IconButton does not properly set implicitWidth
-                                    IconButton {
-                                        icon: IconType.remove
-                                        onClicked: purchaseRequest.contestants.remove(index)
-                                        implicitWidth: minim
-                                    }
-                                    IconButton {
-                                        icon: IconType.edit
-                                        onClicked: {
-                                            var dialog = contestantDialog.createObject(createContestPage,
-                                                                                       {"contestantName": name,
-                                                                                           "contestantDescription":
-                                                                                           description})
+                                IconButton {
+                                    icon: IconType.remove
+                                    onClicked: purchaseRequest.contestants.remove(index)
+                                }
+                                IconButton {
+                                    icon: IconType.edit
+                                    onClicked: {
+                                        var dialog = contestantDialog.createObject(createContestPage,
+                                                                                   {"contestantName": name,
+                                                                                       "contestantDescription":
+                                                                                       description})
 
-                                            dialog.accepted.connect(function() {
-                                                name = dialog.contestantName
-                                                description = dialog.contestantDescription
-                                                dialog.close()
-                                            })
-                                            dialog.canceled.connect(dialog.close)
+                                        dialog.accepted.connect(function() {
+                                            name = dialog.contestantName
+                                            description = dialog.contestantDescription
+                                            dialog.close()
+                                        })
+                                        dialog.canceled.connect(dialog.close)
 
-                                            dialog.open()
-                                        }
+                                        dialog.open()
                                     }
                                 }
                                 ColumnLayout {
