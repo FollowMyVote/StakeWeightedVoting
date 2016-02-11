@@ -18,8 +18,8 @@ See [Architecture](Architecture.md) for more information on how the components i
 ## Build Instructions
 ### Dependencies:
 - [Cap'n Proto](https://capnproto.org) 0.5.3+
-- [Qt](https://qt.io) 5.5+ including QBS
-- [QML Material](https://github.com/papyros/qml-material)
+- [Qt](https://qt.io) 5.6+ including QBS
+- [V-Play](http://v-play.net) 2.7.0+
  
 You will also need to fetch the submodule dependencies by running `git submodule update --init`
 
