@@ -77,7 +77,8 @@ Page {
                         }
                         Controls.ComboBox {
                             width: window.dp(120)
-                            model: ["a", "b", "c"]
+                            model: votingSystem.adaptor.coins
+                            textRole: "name"
                             style: ControlStyles.ComboBoxStyle {
                                 font: weightCoinLabel.font
                             }
