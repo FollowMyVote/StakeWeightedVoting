@@ -37,10 +37,7 @@ App {
     }
 
     function showError(errorMessage) {
-        NativeDialog.confirm(qsTr("Error"), qsTr("An error has occurred:\n%1").arg(errorMessage), function(){})
-        dialog.negativeAction = false
-        dialog.Keys.escapePressed.connect(dialog.close)
-        dialog.focus = true
+        NativeDialog.confirm(qsTr("Error"), qsTr("An error has occurred:\n%1").arg(errorMessage), function(){}, false)
     }
 
     Action {
@@ -160,7 +157,6 @@ App {
                 CoinListPage {
                     id: coinListPage
                     votingSystem: _votingSystem
-                    Component.onCompleted: if (_votingSystem.isReady) loadCoins()
                 }
             }
         }

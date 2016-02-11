@@ -26,7 +26,7 @@ import FollowMyVote.StakeWeightedVoting 1.0
 ListPage {
     id: coinListPage
     title: qsTr("Coin List")
-    model: coinList
+    model: votingSystem.adaptor.coins
     delegate: RowLayout {
 
         spacing: window.dp(16)
@@ -55,22 +55,4 @@ ListPage {
      listView.topMargin: window.dp(16)
 
     property VotingSystem votingSystem
-
-    function loadCoins() {
-        console.log("Loading coins...")
-        coinList.loadCoins()
-    }
-
-    ListModel {
-        id: coinList
-
-        function loadCoins() {
-            votingSystem.adaptor.listAllCoins().then(function (coins) {
-                console.log("Coins: " + JSON.stringify(coins))
-                coins.forEach(function(coin) {
-                    coinList.append(coin)
-                })
-            })
-        }
-    }
 }
