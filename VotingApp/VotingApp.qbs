@@ -58,6 +58,8 @@ QtGuiApplication {
         "qml-promise/src/Promise.hpp",
         "vendor/QQmlVariantListModel.cpp",
         "vendor/QQmlVariantListModel.h",
+        "vendor/QQmlObjectListModel.cpp",
+        "vendor/QQmlObjectListModel.h",
         "vendor/QQmlEnumClassHelper.h",
     ]
 
