@@ -19,8 +19,12 @@
 #ifndef CHAINADAPTORWRAPPER_HPP
 #define CHAINADAPTORWRAPPER_HPP
 
+#include "capnp/coin.capnp.h"
+
+#include "wrappers/Coin.hpp"
 #include "wrappers/Contest.hpp"
 #include "wrappers/Datagram.hpp"
+#include "vendor/QQmlObjectListModel.h"
 
 #include <QObject>
 #include <QtQml>
@@ -35,7 +39,6 @@ class PromiseConverter;
 
 namespace swv {
 
-class CoinWrapper;
 class BalanceWrapper;
 
 /**
@@ -52,6 +55,8 @@ class ChainAdaptorWrapper : public QObject
     Q_OBJECT
     Q_PROPERTY(bool hasAdaptor READ hasAdaptor NOTIFY hasAdaptorChanged)
     Q_PROPERTY(QStringList myAccounts READ myAccounts NOTIFY myAccountsChanged)
+    QML_OBJMODEL_PROPERTY(CoinWrapper, coins)
+
 public:
     explicit ChainAdaptorWrapper(PromiseConverter& promiseConverter, QObject *parent = 0);
     ~ChainAdaptorWrapper() noexcept;
@@ -209,6 +214,7 @@ private:
     PromiseConverter& promiseConverter;
     kj::Own<BlockchainAdaptorInterface> m_adaptor;
     QStringList m_myAccounts;
+    kj::Array<::Coin::Reader> kjCoins;
 };
 
 } // namespace swv

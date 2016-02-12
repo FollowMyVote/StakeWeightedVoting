@@ -69,7 +69,7 @@ PurchaseContestRequestWrapper::PurchaseContestRequestWrapper(PurchaseRequest&& r
       request(kj::mv(request))
 {
     // When the contestants change, automatically update the request
-    connect(&m_contestants, &QQmlVariantListModel::dataChanged,
+    connect(m_contestants, &QQmlVariantListModel::dataChanged,
             this, &PurchaseContestRequestWrapper::updateContestants);
 }
 
@@ -112,19 +112,18 @@ SPONSORSHIP_SIMPLE_GETTER_SETTER(sponsorIncentive, SponsorIncentive, qint64, Inc
 
 // Converts a QQmlVariantListModel to a capnp list. Func is a callable taking an element of List and a QVariant as
 // arguments which copies the QVariant into the List element
-template <typename List, typename Func>
-void updateList(List target, const QQmlVariantListModel& source, Func copier) {
+template <typename List, typename ListModel, typename Func>
+void updateList(List target, const ListModel& source, Func copier) {
     for (uint i = 0; i < target.size(); ++i)
-        copier(target[i], source.get(i).toMap());
+        copier(target[i], source.get(i));
 }
 
 void PurchaseContestRequestWrapper::updateContestants()
 {
-    updateList(request.getRequest().initContestants().initEntries(m_contestants.count()), m_contestants,
-               [] (::Map<capnp::Text, capnp::Text>::Entry::Builder dest, const QVariant& src) {
-        auto srcMap = src.toMap();
-        convertText(dest.getKey(), srcMap["name"].toString());
-        convertText(dest.getValue(), srcMap["description"].toString());
+    updateList(request.getRequest().initContestants().initEntries(m_contestants->count()), *m_contestants,
+               [] (::Map<capnp::Text, capnp::Text>::Entry::Builder dest, const QObject* src) {
+        convertText(dest.getKey(), src->property("name").toString());
+        convertText(dest.getValue(), src->property("description").toString());
     });
 }
 
