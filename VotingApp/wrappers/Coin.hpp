@@ -34,12 +34,15 @@ class CoinWrapper : public QObject, public ::Coin::Reader
     Q_PROPERTY(quint64 id READ getId CONSTANT)
     Q_PROPERTY(QString name READ name CONSTANT)
     Q_PROPERTY(qint32 precision READ getPrecision CONSTANT)
-    Q_PROPERTY(bool canPayFees READ getCanPayFees CONSTANT)
+    Q_PROPERTY(QString creator READ creator CONSTANT)
 public:
     CoinWrapper(::Coin::Reader r, QObject* parent = nullptr);
 
     QString name() const {
         return QString::fromStdString(getName());
+    }
+    QString creator() const {
+        return QString::fromStdString(getCreator());
     }
 };
 
