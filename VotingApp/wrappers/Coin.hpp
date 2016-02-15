@@ -19,22 +19,48 @@
 #ifndef COIN_HPP
 #define COIN_HPP
 
+#include "vendor/QQmlVarPropertyHelpers.h"
+
 #include "coin.capnp.h"
 
 #include <QObject>
 
 namespace swv {
 
-/**
- * @brief The Coin class is a read-only wrapper for the Coin type
+/*!
+ * \qmltype Coin
+ * \instantiates CoinWrapper
+ *
+ * The Coin type provides information about a specific type of asset on the blockchain.
  */
 class CoinWrapper : public QObject, public ::Coin::Reader
 {
     Q_OBJECT
-    Q_PROPERTY(quint64 id READ getId CONSTANT)
+    /*!
+     * \qmlproperty int Coin::coinId
+     * The ID of the coin
+     */
+    Q_PROPERTY(quint64 coinId READ getId CONSTANT)
+    /*!
+     * \qmlproperty string Coin::name
+     * The name of the coin
+     */
     Q_PROPERTY(QString name READ name CONSTANT)
+    /*!
+     * \qmlproperty int Coin::precision
+     * The maximum number of digits after the decimal point in balances of the coin
+     */
     Q_PROPERTY(qint32 precision READ getPrecision CONSTANT)
+    /*!
+     * \qmlproperty string Coin::creator
+     * The name of the account which created the coin
+     */
     Q_PROPERTY(QString creator READ creator CONSTANT)
+    /*!
+     * \qmlproperty int Coin::contestCount
+     * The number of currently active contests weighted in the coin
+     */
+    QML_READONLY_VAR_PROPERTY(qint32, contestCount)
 public:
     CoinWrapper(::Coin::Reader r, QObject* parent = nullptr);
 

@@ -95,6 +95,7 @@ int main(int argc, char *argv[])
     // Other registrations
     qmlRegisterType<swv::VotingSystem>("FollowMyVote.StakeWeightedVoting", 1, 0, "VotingSystem");
     qmlRegisterType<Promise>("FollowMyVote.StakeWeightedVoting", 1, 0, "Promise");
+    qmlRegisterType<QQmlObjectListModelBase>();
 
     QQmlApplicationEngine engine;
     Promise::setEngine(&engine);

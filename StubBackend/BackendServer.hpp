@@ -39,16 +39,8 @@ protected:
     virtual ::kj::Promise<void> getContestFeed(GetContestFeedContext context);
     virtual ::kj::Promise<void> searchContests(SearchContestsContext context);
     virtual ::kj::Promise<void> getContestResults(GetContestResultsContext context);
-    virtual ::kj::Promise<void> purchaseResultReport(PurchaseResultReportContext context);
-    virtual ::kj::Promise<void> downloadResultReport(DownloadResultReportContext context);
-    virtual ::kj::Promise<void> listAvailableResultReports(ListAvailableResultReportsContext context);
-    virtual ::kj::Promise<void> purchaseAuditTrail(PurchaseAuditTrailContext context);
-    virtual ::kj::Promise<void> downloadAuditTrail(DownloadAuditTrailContext context);
-    virtual ::kj::Promise<void> listAvailableAuditTrails(ListAvailableAuditTrailsContext context);
     virtual ::kj::Promise<void> getContestCreator(GetContestCreatorContext context);
-
-    QMap<quint8, QList<QDateTime>> availableResultReports;
-    QMap<quint8, QList<QDateTime>> availableAuditTrails;
+    virtual ::kj::Promise<void> getCoinStatistics(GetCoinStatisticsContext context);
 };
 
 class ContestResultsImpl : public Backend::ContestResults::Server
