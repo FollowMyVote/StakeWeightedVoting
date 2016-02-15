@@ -40,6 +40,7 @@ protected:
     virtual ::kj::Promise<void> searchContests(SearchContestsContext context);
     virtual ::kj::Promise<void> getContestResults(GetContestResultsContext context);
     virtual ::kj::Promise<void> getContestCreator(GetContestCreatorContext context);
+    virtual ::kj::Promise<void> getCoinStatistics(GetCoinStatisticsContext context);
 };
 
 class ContestResultsImpl : public Backend::ContestResults::Server

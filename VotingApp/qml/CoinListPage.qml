@@ -26,7 +26,7 @@ import FollowMyVote.StakeWeightedVoting 1.0
 ListPage {
     id: coinListPage
     title: qsTr("Coin List")
-    model: votingSystem.adaptor.coins
+    model: votingSystem.coins
     delegate: RowLayout {
 
         spacing: window.dp(16)

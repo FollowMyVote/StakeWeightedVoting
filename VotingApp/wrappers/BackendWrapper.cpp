@@ -35,7 +35,7 @@ namespace swv {
 BackendWrapper::BackendWrapper(Backend::Client backend, PromiseConverter& promiseConverter, QObject *parent)
     : QObject(parent),
       promiseConverter(promiseConverter),
-      backend(kj::mv(backend))
+      m_backend(kj::mv(backend))
 {}
 
 BackendWrapper::~BackendWrapper() noexcept
@@ -43,12 +43,12 @@ BackendWrapper::~BackendWrapper() noexcept
 
 ContestGeneratorWrapper* BackendWrapper::getFeedGenerator()
 {
-    return new ContestGeneratorWrapper(backend.getContestFeedRequest().send().getGenerator(), promiseConverter);
+    return new ContestGeneratorWrapper(m_backend.getContestFeedRequest().send().getGenerator(), promiseConverter);
 }
 
 ContestGeneratorWrapper* BackendWrapper::getContestsByCreator(QString creator)
 {
-    auto request = backend.searchContestsRequest();
+    auto request = m_backend.searchContestsRequest();
     auto filters = request.initFilters(1);
     filters[0].setType(Backend::Filter::Type::CONTEST_CREATOR);
     auto arguments = filters[0].initArguments(1);
@@ -59,7 +59,7 @@ ContestGeneratorWrapper* BackendWrapper::getContestsByCreator(QString creator)
 
 ContestGeneratorWrapper* BackendWrapper::getContestsByCoin(quint64 coinId)
 {
-    auto request = backend.searchContestsRequest();
+    auto request = m_backend.searchContestsRequest();
     auto filters = request.initFilters(1);
     filters[0].setType(Backend::Filter::Type::CONTEST_COIN);
     auto arguments = filters[0].initArguments(1);
@@ -70,7 +70,7 @@ ContestGeneratorWrapper* BackendWrapper::getContestsByCoin(quint64 coinId)
 
 ContestGeneratorWrapper*BackendWrapper::getVotedContests()
 {
-    auto request = backend.searchContestsRequest();
+    auto request = m_backend.searchContestsRequest();
     auto filters = request.initFilters(1);
     filters[0].setType(Backend::Filter::Type::CONTEST_VOTER);
 
@@ -81,7 +81,7 @@ ContestCreatorWrapper*BackendWrapper::contestCreator()
 {
     // Lazy load the creator; most runs we will probably never need it.
     if (creator.get() == nullptr)
-        creator = kj::heap<ContestCreatorWrapper>(backend.getContestCreatorRequest().send().getCreator());
+        creator = kj::heap<ContestCreatorWrapper>(m_backend.getContestCreatorRequest().send().getCreator());
     return creator.get();
 }
 

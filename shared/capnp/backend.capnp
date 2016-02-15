@@ -35,6 +35,9 @@ interface Backend {
     getContestCreator @3 () -> (creator :ContestCreator);
     # Get a ContestCreator API
 
+    getCoinStatistics @4 (coinId :UInt64) -> (statistics :CoinStatistics);
+    # Get the statistics for the given coin
+
    interface ContestResults {
         results @0 () -> (results :List(TalliedOpinion));
         # Call results() to get the current results
@@ -61,5 +64,12 @@ interface Backend {
             contestVoter @3;
             # Search for contests voted on by the current user. No argument.
         }
+    }
+
+    struct CoinStatistics {
+        # This type contains the various statistics the server tracks on a per-coin basis
+
+        activeContestCount @0 :Int32;
+        # The total number of active contests in this coin
     }
 }

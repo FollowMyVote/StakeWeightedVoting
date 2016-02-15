@@ -65,6 +65,12 @@ BackendServer::BackendServer()
     return kj::READY_NOW;
 }
 
+::kj::Promise<void> BackendServer::getCoinStatistics(Backend::Server::GetCoinStatisticsContext context)
+{
+    context.getResults().initStatistics().setActiveContestCount(15);
+    return kj::READY_NOW;
+}
+
 ::kj::Promise<void> ContestResultsImpl::results(Backend::ContestResults::Server::ResultsContext context)
 {
     auto results = context.getResults().initResults(contestResults.size());
