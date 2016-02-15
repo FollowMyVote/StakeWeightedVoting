@@ -27,29 +27,15 @@ interface Backend {
 
     getContestFeed @0 () -> (generator :ContestGenerator);
     # Get a generator for current user's contest feed
-    searchContests @8 (filters :List(Filter)) -> (generator :ContestGenerator);
+    searchContests @1 (filters :List(Filter)) -> (generator :ContestGenerator);
     # Search contests and get a generator for the results
-    getContestResults @1 (contestId :Data) -> (results :ContestResults);
+    getContestResults @2 (contestId :Data) -> (results :ContestResults);
     # Get the instantaneous live results for the specified contest
 
-    getContestCreator @9 () -> (creator :ContestCreator);
+    getContestCreator @3 () -> (creator :ContestCreator);
     # Get a ContestCreator API
 
-    purchaseResultReport @2 (contestId :Data, timestamp :UInt32) -> (api :Purchase);
-    # Purchase a contest results report for a given time
-    downloadResultReport @3 (contestId :Data, timestamp :UInt32) -> (report :Data);
-    # Download a particular contest results report
-    listAvailableResultReports @4 (contestId :Data) -> (reports :List(UInt32));
-    # Get a list of timestamps of available reports for a given contest
-
-    purchaseAuditTrail @5 (contestId :Data, timestamp :UInt32) -> (api: Purchase);
-    # Purchase an audit trail for a result report
-    downloadAuditTrail @6 (contestId :Data, timestamp :UInt32) -> (report :Data);
-    # Download a particular report's audit trail
-    listAvailableAuditTrails @7 (contestId :Data) -> (reports :List(UInt32));
-    # Get a list of timestamps of available audit trails for a given contest
-
-    interface ContestResults {
+   interface ContestResults {
         results @0 () -> (results :List(TalliedOpinion));
         # Call results() to get the current results
         subscribe @1 (notifier :Notifier(List(TalliedOpinion))) -> ();
