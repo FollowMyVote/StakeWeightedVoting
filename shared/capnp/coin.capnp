@@ -18,7 +18,11 @@
 
 struct Coin {
     id @0 :UInt64;
+    # The coin ID
     name @1 :Text;
+    # The coin's name
     precision @2 :Int32;
-    canPayFees @3 :Bool;
+    # The maximum number of digits after the decimal point
+    creator @3 :Text;
+    # The account which created the coin
 }
