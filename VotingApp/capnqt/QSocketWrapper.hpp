@@ -30,6 +30,13 @@
 
 class QAbstractSocket;
 
+/**
+ * @brief The QSocketWrapper class implements the kj::AsyncIoStream interface on a QAbstractSocket
+ *
+ * KJ does asynchronous streaming using objects which implement the AsyncIoStream interface. Qt does the same with
+ * QAbstractSocket. This class takes a QAbstractSocket and implements an AsyncIoStream on top of it, so that Qt-based
+ * streams can be used by code which uses KJ asynchronous streams
+ */
 class QSocketWrapper : public QObject, public kj::AsyncIoStream
 {
     Q_OBJECT
@@ -42,9 +49,6 @@ public:
     virtual kj::Promise<void> write(kj::ArrayPtr<const kj::ArrayPtr<const kj::byte> > pieces);
 
     // AsyncInputStream interface
-    // NOTE: After calling read or tryRead, neither function should be called again until the returned promise from the
-    // first call has resolved. This limitation could be removed, but that's not trivial, and I don't think it's
-    // necessary
     virtual kj::Promise<size_t> read(void* buffer, size_t minBytes, size_t maxBytes);
     virtual kj::Promise<size_t> tryRead(void* buffer, size_t minBytes, size_t maxBytes);
 

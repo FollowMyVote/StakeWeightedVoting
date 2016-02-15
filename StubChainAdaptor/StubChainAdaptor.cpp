@@ -37,7 +37,7 @@ StubChainAdaptor::StubChainAdaptor(QObject* parent)
     coin.setName("BTS");
     coin.setId(0);
     coin.setPrecision(5);
-    coin.setCanPayFees(true);
+    coin.setCreator("committee-account");
     coins.emplace_back(kj::mv(coinOrphan));
 
     coinOrphan = orphanage.newOrphan<Coin>();
@@ -45,7 +45,7 @@ StubChainAdaptor::StubChainAdaptor(QObject* parent)
     coin.setName("FMV");
     coin.setId(1);
     coin.setPrecision(0);
-    coin.setCanPayFees(false);
+    coin.setCreator("follow-my-vote");
     coins.emplace_back(kj::mv(coinOrphan));
 
     coinOrphan = orphanage.newOrphan<Coin>();
@@ -53,7 +53,7 @@ StubChainAdaptor::StubChainAdaptor(QObject* parent)
     coin.setName("USD");
     coin.setId(2);
     coin.setPrecision(2);
-    coin.setCanPayFees(true);
+    coin.setCreator("committee-account");
     coins.emplace_back(kj::mv(coinOrphan));
 
     std::reference_wrapper<std::vector<capnp::Orphan<Balance>>> bals = balances["nathan"];
