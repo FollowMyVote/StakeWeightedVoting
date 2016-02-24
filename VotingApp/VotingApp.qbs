@@ -10,7 +10,7 @@ QtGuiApplication {
     Depends { name: "VPlay" }
     VPlay.sdkPath: original? original : Qt.incPath + "/.."
 
-    qmlImportPaths: [VPlay.qtIncPath + "/qml"]
+    qmlImportPaths: [VPlay.sdkPath + "/qml"]
     cpp.includePaths: [".", "qml-promise/src", VPlay.includePath]
     cpp.libraryPaths: VPlay.sdkPath + "/lib"
     cpp.staticLibraries: VPlay.staticLibrary

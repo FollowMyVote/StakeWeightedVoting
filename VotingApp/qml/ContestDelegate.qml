@@ -1,6 +1,7 @@
 import QtQuick 2.5
 import QtQuick.Layouts 1.1
 import QtQuick.Window 2.0
+import QtGraphicalEffects 1.0
 
 import VPlayApps 1.0
 
@@ -136,14 +137,12 @@ Column {
                             color: contestantButton.isSelected? "white" : "black"
                             font.weight: Font.DemiBold
                         }
-                        AppText {
+                        FadingTextBlock {
                             id: contestantDescription
-                            text: modelData.description
+                            maximumHeight: window.dp(80)
                             Layout.fillWidth: true
-                            wrapMode: Text.WrapAtWordBoundaryOrAnywhere
-                            elide: Text.ElideRight
-                            maximumLineCount: 5
-                            color: contestantButton.isSelected? "white" : "black"
+                            text: modelData.description
+                            textItem.color: contestantButton.isSelected? "white" : "black"
                         }
                         AppButton {
                             text: qsTr("Read more")

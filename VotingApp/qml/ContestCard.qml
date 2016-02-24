@@ -25,7 +25,6 @@ import FollowMyVote.StakeWeightedVoting 1.0
 
 Rectangle {
     id: card
-    width: parent.width - window.dp(16)
     x: window.dp(8)
     height: contestDelegate.height + window.dp(32)
     layer.enabled: showDropShadow

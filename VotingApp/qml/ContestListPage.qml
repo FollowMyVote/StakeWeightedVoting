@@ -46,6 +46,7 @@ ListPage {
         contestObject: model.contestObject
         votingStake: model.votingStake
         tracksLiveResults: model.tracksLiveResults
+        width: parent.width - window.dp(16)
         onSelected: {
             contestListPage.navigationStack.push(Qt.createComponent(Qt.resolvedUrl("ContestPage.qml")),
                                                  {"votingSystem": votingSystem, "contest": contest})
