@@ -19,6 +19,10 @@
 #ifndef VOTINGSYSTEM_HPP
 #define VOTINGSYSTEM_HPP
 
+#include "wrappers/Coin.hpp"
+
+#include "vendor/QQmlObjectListModel.h"
+
 #include <QObject>
 
 #include <kj/async.h>
@@ -65,6 +69,7 @@ class VotingSystem : public QObject
     Q_PROPERTY(bool isAdaptorReady READ adaptorReady NOTIFY adaptorReadyChanged)
     Q_PROPERTY(swv::ChainAdaptorWrapper* adaptor READ adaptor CONSTANT)
     Q_PROPERTY(swv::BackendWrapper* backend READ backend NOTIFY backendConnectedChanged)
+    QML_OBJMODEL_PROPERTY(CoinWrapper, coins)
 
     Q_DECLARE_PRIVATE(VotingSystem)
 

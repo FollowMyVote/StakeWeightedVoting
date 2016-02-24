@@ -48,7 +48,7 @@ class BackendWrapper : public QObject
     Q_PROPERTY(swv::ContestCreatorWrapper* contestCreator READ contestCreator CONSTANT);
 
 public:
-    BackendWrapper(Backend::Client backend, PromiseConverter& promiseConverter, QObject *parent = 0);
+    BackendWrapper(Backend::Client m_backend, PromiseConverter& promiseConverter, QObject *parent = 0);
     virtual ~BackendWrapper() noexcept;
 
     /// @brief Get the current user's contest feed
@@ -62,9 +62,11 @@ public:
 
     swv::ContestCreatorWrapper* contestCreator();
 
+    Backend::Client backend() { return m_backend; }
+
 private:
     PromiseConverter& promiseConverter;
-    Backend::Client backend;
+    Backend::Client m_backend;
     kj::Own<ContestCreatorWrapper> creator;
 };
 

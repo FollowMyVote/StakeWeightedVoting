@@ -45,17 +45,6 @@ ChainAdaptorWrapper::ChainAdaptorWrapper(PromiseConverter& promiseConverter, QOb
                                              m_myAccounts = convertList(kj::mv(accounts));
                                              emit myAccountsChanged(m_myAccounts);
                                          }));
-
-            // Fetch coin list, populate property
-            this->promiseConverter.adopt(m_adaptor->listAllCoins().then([this](kj::Array<::Coin::Reader> coins) {
-                for (int i = 0; i < m_coins->count(); ++i)
-                    m_coins->get(i)->deleteLater();
-                m_coins->clear();
-                kjCoins = kj::mv(coins);
-
-                for (const auto& reader : kjCoins)
-                    m_coins->append(new CoinWrapper(reader, this));
-            }));
         }
     });
 }

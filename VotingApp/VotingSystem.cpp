@@ -80,6 +80,7 @@ public:
     kj::Own<BackendWrapper> backend;
     kj::Own<QTcpSocket> socket;
     kj::Own<QSocketWrapper> socketWrapper;
+    kj::Array<::Coin::Reader> kjCoins;
     QString currentAccount;
 
     void completeConnection(Promise* connectionPromise) {
@@ -137,9 +138,35 @@ VotingSystem::VotingSystem(QObject *parent)
     connect(d->adaptor, &ChainAdaptorWrapper::error, this, [this](QString error) {
         setLastError(error);
     });
-    connect(this, &VotingSystem::isReadyChanged, this, [this] {
-        if (isReady())
+    connect(this, &VotingSystem::isReadyChanged, this, [this, d] {
+        if (isReady()) {
             emit ready();
+
+            // Fetch coin list, populate property
+            d->promiseConverter->adopt(d->adaptor->adaptor()->listAllCoins().then(
+                                          [this, d](kj::Array<::Coin::Reader> coins) {
+                for (int i = 0; i < m_coins->count(); ++i)
+                    m_coins->get(i)->deleteLater();
+                m_coins->clear();
+                d->kjCoins = kj::mv(coins);
+
+                // For each coin, fetch the statistics and return a promise for the coin and statistics
+                return kj::joinPromises(KJ_MAP(coin, d->kjCoins) {
+                    auto request = d->backend->backend().getCoinStatisticsRequest();
+                    request.setCoinId(coin.getId());
+                    return request.send().then([coin](capnp::Response<Backend::GetCoinStatisticsResults> r) {
+                        return std::make_tuple(coin, kj::mv(r));
+                    });
+                });
+            }).then([this, d](kj::Array<std::tuple<Coin::Reader, capnp::Response<Backend::GetCoinStatisticsResults>>> r) {
+                // Create wrappers for the coins with statistics set
+                for (const auto& tuple : r) {
+                    auto wrapper = new CoinWrapper(std::get<0>(tuple), this);
+                    wrapper->update_contestCount(std::get<1>(tuple).getStatistics().getActiveContestCount());
+                    m_coins->append(wrapper);
+                }
+            }));
+        }
     });
 }
 
