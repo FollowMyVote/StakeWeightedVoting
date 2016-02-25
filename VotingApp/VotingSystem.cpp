@@ -167,6 +167,40 @@ VotingSystem::VotingSystem(QObject *parent)
                     m_coins->append(wrapper);
                 }
             }));
+
+            // Get my accounts, populate property
+            using BalanceList = kj::Array<::Balance::Reader>;
+            d->promiseConverter->adopt(d->adaptor->adaptor()->getMyAccounts().then(
+                                           [this, d](kj::Array<QString> accountNames) {
+                auto accounts = kj::heapArrayBuilder<kj::Promise<std::tuple<QString, BalanceList>>>(accountNames.size());
+                for (QString name : accountNames)
+                    accounts.add(d->adaptor->adaptor()->getBalancesForOwner(name).then([name](BalanceList bals) {
+                                     return std::make_tuple(name, kj::mv(bals));
+                                 }));
+                return kj::joinPromises(accounts.finish());
+            }).then([this, d](kj::Array<std::tuple<QString, BalanceList>> accountsBalances) {
+                for (auto& tuple : accountsBalances) {
+                    QString name;
+                    BalanceList balances;
+                    std::tie(name, balances) = kj::mv(tuple);
+
+                    auto account = new data::Account(this);
+                    account->update_name(name);
+
+                    // Sum up balances by coin ID
+                    std::map<quint64, qint64> balanceSums;
+                    for (Balance::Reader balance : balances)
+                        balanceSums[balance.getType()] += balance.getAmount();
+                    // Store balance sums in Account object
+                    for (auto balPair : balanceSums) {
+                        data::AccountBalance balance{getCoin(balPair.first), balPair.second};
+                        account->get_balances()->append(QVariant::fromValue(balance));
+                    }
+
+                    m_myAccounts->append(account);
+                    qDebug() << m_myAccounts;
+                }
+            }));
         }
     });
 }

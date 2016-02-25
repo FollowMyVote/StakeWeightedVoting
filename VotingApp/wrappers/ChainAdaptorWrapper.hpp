@@ -21,9 +21,11 @@
 
 #include "capnp/coin.capnp.h"
 
-#include "wrappers/Coin.hpp"
-#include "wrappers/Contest.hpp"
-#include "wrappers/Datagram.hpp"
+#include "Coin.hpp"
+#include "Contest.hpp"
+#include "Datagram.hpp"
+
+#include "vendor/QQmlObjectListModel.h"
 
 #include <QObject>
 #include <QtQml>
