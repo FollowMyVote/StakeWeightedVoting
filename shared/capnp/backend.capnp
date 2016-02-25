@@ -69,6 +69,9 @@ interface Backend {
     struct CoinDetails {
         # This type contains the various details and statistics the server tracks on a per-coin basis
 
+        iconUrl @1 :Text;
+        # The URL to the icon to display for this coin (may be empty)
+
         activeContestCount @0 :Int32;
         # The total number of active contests in this coin
     }

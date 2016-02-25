@@ -17,6 +17,7 @@
  */
 
 #include "Coin.hpp"
+#include "Converters.hpp"
 
 namespace swv {
 
@@ -24,5 +25,11 @@ CoinWrapper::CoinWrapper(::Coin::Reader r, QObject* parent)
     : QObject(parent),
       ::Coin::Reader(r)
 {}
+
+void CoinWrapper::updateDetails(Backend::CoinDetails::Reader details)
+{
+    update_iconUrl(convertText(details.getIconUrl()));
+    update_contestCount(details.getActiveContestCount());
+}
 
 } // namespace swv

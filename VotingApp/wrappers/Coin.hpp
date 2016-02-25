@@ -22,8 +22,10 @@
 #include "vendor/QQmlVarPropertyHelpers.h"
 
 #include "coin.capnp.h"
+#include "backend.capnp.h"
 
 #include <QObject>
+#include <QUrl>
 
 namespace swv {
 
@@ -61,8 +63,19 @@ class CoinWrapper : public QObject, public ::Coin::Reader
      * The number of currently active contests weighted in the coin
      */
     QML_READONLY_VAR_PROPERTY(qint32, contestCount)
+    /*!
+     * \qmlproperty QUrl Coin::iconUrl
+     * The URL to the icon to display for this coin (may be empty)
+     */
+    QML_READONLY_VAR_PROPERTY(QUrl, iconUrl)
 public:
     CoinWrapper(::Coin::Reader r, QObject* parent = nullptr);
+
+    /*!
+     * \brief Update the details of the coin
+     * \param details The details to update to
+     */
+    void updateDetails(Backend::CoinDetails::Reader details);
 
     QString name() const {
         return QString::fromStdString(getName());

@@ -162,7 +162,7 @@ VotingSystem::VotingSystem(QObject *parent)
                 // Create wrappers for the coins with statistics set
                 for (const auto& tuple : r) {
                     auto wrapper = new CoinWrapper(std::get<0>(tuple), this);
-                    wrapper->update_contestCount(std::get<1>(tuple).getDetails().getActiveContestCount());
+                    wrapper->updateDetails(std::get<1>(tuple).getDetails());
                     m_coins->append(wrapper);
                 }
             }));
