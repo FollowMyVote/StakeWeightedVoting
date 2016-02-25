@@ -198,7 +198,6 @@ VotingSystem::VotingSystem(QObject *parent)
                     }
 
                     m_myAccounts->append(account);
-                    qDebug() << m_myAccounts;
                 }
             }));
         }
