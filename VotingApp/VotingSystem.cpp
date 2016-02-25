@@ -152,17 +152,17 @@ VotingSystem::VotingSystem(QObject *parent)
 
                 // For each coin, fetch the statistics and return a promise for the coin and statistics
                 return kj::joinPromises(KJ_MAP(coin, d->kjCoins) {
-                    auto request = d->backend->backend().getCoinStatisticsRequest();
+                    auto request = d->backend->backend().getCoinDetailsRequest();
                     request.setCoinId(coin.getId());
-                    return request.send().then([coin](capnp::Response<Backend::GetCoinStatisticsResults> r) {
+                    return request.send().then([coin](capnp::Response<Backend::GetCoinDetailsResults> r) {
                         return std::make_tuple(coin, kj::mv(r));
                     });
                 });
-            }).then([this, d](kj::Array<std::tuple<Coin::Reader, capnp::Response<Backend::GetCoinStatisticsResults>>> r) {
+            }).then([this, d](kj::Array<std::tuple<Coin::Reader, capnp::Response<Backend::GetCoinDetailsResults>>> r) {
                 // Create wrappers for the coins with statistics set
                 for (const auto& tuple : r) {
                     auto wrapper = new CoinWrapper(std::get<0>(tuple), this);
-                    wrapper->update_contestCount(std::get<1>(tuple).getStatistics().getActiveContestCount());
+                    wrapper->update_contestCount(std::get<1>(tuple).getDetails().getActiveContestCount());
                     m_coins->append(wrapper);
                 }
             }));
