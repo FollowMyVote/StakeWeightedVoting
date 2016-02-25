@@ -26,7 +26,7 @@
 namespace swv {
 
 /**
- * @brief The Datagram class is a read-write wrapper for the Datagram type.
+ * @brief The DatagramWrapper class is a read-write wrapper for the Datagram type.
  */
 class DatagramWrapper : public QObject
 {

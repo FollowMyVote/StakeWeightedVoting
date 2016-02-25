@@ -26,7 +26,7 @@
 namespace swv {
 
 /**
- * @brief The Balance class is a read-only wrapper for the Balance type
+ * @brief The BalanceWrapper class is a read-only wrapper for the Balance type
  */
 class BalanceWrapper : public QObject, public ::Balance::Reader
 {
