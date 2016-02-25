@@ -161,8 +161,9 @@ VotingSystem::VotingSystem(QObject *parent)
             }).then([this, d](kj::Array<std::tuple<Coin::Reader, capnp::Response<Backend::GetCoinDetailsResults>>> r) {
                 // Create wrappers for the coins with statistics set
                 for (const auto& tuple : r) {
-                    auto wrapper = new CoinWrapper(std::get<0>(tuple), this);
-                    wrapper->updateDetails(std::get<1>(tuple).getDetails());
+                    auto wrapper = new CoinWrapper(this);
+                    wrapper->updateFields(std::get<0>(tuple));
+                    wrapper->updateFields(std::get<1>(tuple).getDetails());
                     m_coins->append(wrapper);
                 }
             }));
@@ -270,13 +271,14 @@ Promise* VotingSystem::castCurrentDecision(swv::ContestWrapper* contest) {
         balances = kj::heapArray<::Balance::Reader>(balances.begin(), newEnd);
 
         if (balances.size() == 0) {
-            auto coinPromise = chain->getCoin(contest->getCoin());
-            auto results = coinPromise->wait();
-            if (coinPromise->state() == Promise::State::REJECTED)
+            auto coin = getCoin(contest->getCoin());
+            if (coin == nullptr) {
                 setLastError(tr("Unable to cast vote because the coin for the contest was not found."));
+                KJ_FAIL_REQUIRE("Couldn't cast vote because the contest weight coin was not found.");
+            }
 
             setLastError(tr("Unable to cast vote because the current account, %1, has no %2.")
-                         .arg(d->currentAccount).arg(results.first().value<swv::CoinWrapper*>()->name()));
+                         .arg(d->currentAccount).arg(coin->get_name()));
             KJ_FAIL_REQUIRE("Couldn't cast vote because voting account has no balances in the coin");
         }
 
@@ -294,6 +296,22 @@ Promise* VotingSystem::castCurrentDecision(swv::ContestWrapper* contest) {
     });
 
     return d->promiseConverter->convert(kj::mv(finishPromise));
+}
+
+CoinWrapper* VotingSystem::getCoin(quint64 id)
+{
+    for (CoinWrapper* coin : m_coins->toList())
+        if (coin->get_coinId() == id)
+            return coin;
+    return nullptr;
+}
+
+CoinWrapper* VotingSystem::getCoin(QString name)
+{
+    for (CoinWrapper* coin : m_coins->toList())
+        if (coin->get_name() == name)
+            return coin;
+    return nullptr;
 }
 
 void VotingSystem::cancelCurrentDecision(ContestWrapper* contest) {

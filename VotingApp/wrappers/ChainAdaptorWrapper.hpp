@@ -90,31 +90,6 @@ public:
     }
 
     /**
-     * @brief Get a coin by ID
-     * @param id ID of the coin to retrieve
-     * @return Coin having the provided ID, or nullptr if adaptor is not set or coin not found
-     *
-     * The wrapper maintains ownership of the returned object.
-     */
-    Q_INVOKABLE Promise* getCoin(quint64 id);
-    /**
-     * @brief Get a coin by symbol
-     * @param symbol Symbol of the coin to retrieve
-     * @return Coin having the provided symbol, or nullptr if adaptor is not set or coin not found
-     *
-     * The wrapper maintains ownership of the returned object.
-     */
-    Q_INVOKABLE Promise* getCoin(QString symbol);
-    /**
-     * @brief Get a list of all coins
-     * @return A list of all coins known to the system (could be large; avoid calling this frequently)
-     *
-     * The wrapper maintains ownership of the returned objects. The returned list will be empty if the adaptor is not
-     * set.
-     */
-    Q_INVOKABLE Promise* listAllCoins();
-
-    /**
      * @brief Get a balance by ID
      * @param id ID of the balance to retrieve
      * @return Balance having the provided ID, or nullptr if adaptor is not set or balance not found

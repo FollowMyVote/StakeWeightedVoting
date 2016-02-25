@@ -21,13 +21,18 @@
 
 namespace swv {
 
-CoinWrapper::CoinWrapper(::Coin::Reader r, QObject* parent)
-    : QObject(parent),
-      ::Coin::Reader(r)
+CoinWrapper::CoinWrapper(QObject* parent)
+    : QObject(parent)
 {}
 
-void CoinWrapper::updateDetails(Backend::CoinDetails::Reader details)
-{
+void CoinWrapper::updateFields(Coin::Reader coin) {
+    update_coinId(coin.getId());
+    update_creator(convertText(coin.getCreator()));
+    update_name(convertText(coin.getName()));
+    update_precision(coin.getPrecision());
+}
+
+void CoinWrapper::updateFields(Backend::CoinDetails::Reader details) {
     update_iconUrl(convertText(details.getIconUrl()));
     update_contestCount(details.getActiveContestCount());
 }
