@@ -142,7 +142,7 @@ public:
      * slow and will construct a new Decision on each call.
      */
     Q_INVOKABLE Promise* getDecision(QString owner, QString contestId);
-    /// @brief Identical to _getDecision, but returns a kj::Promise instead of a Promise*. For C++ use.
+    /// @brief Identical to getDecision, but returns a kj::Promise instead of a Promise*. For C++ use.
     kj::Promise<OwningWrapper<DecisionWrapper>*> _getDecision(QString owner, QString contestId);
 
     /**
