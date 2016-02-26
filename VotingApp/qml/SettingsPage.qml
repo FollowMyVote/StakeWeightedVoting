@@ -35,10 +35,11 @@ ListPage {
             anchors.fill: parent
             model: votingSystem.myAccounts
             delegate: SimpleRow {
-                text: model.name
-                active: votingSystem.currentAccount === model.name
+                property Account account: votingSystem.myAccounts.get(index)
+                text: account.name
+                active: votingSystem.currentAccount === account
                 onSelected: {
-                    votingSystem.currentAccount = model.name
+                    votingSystem.currentAccount = account
                     accountSelector.close()
                 }
             }
