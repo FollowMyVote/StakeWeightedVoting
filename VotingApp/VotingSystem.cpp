@@ -81,7 +81,7 @@ public:
     kj::Own<QTcpSocket> socket;
     kj::Own<QSocketWrapper> socketWrapper;
     kj::Array<::Coin::Reader> kjCoins;
-    QString currentAccount;
+    swv::data::Account* currentAccount = nullptr;
 
     void completeConnection(Promise* connectionPromise) {
         Q_Q(VotingSystem);
@@ -134,6 +134,14 @@ VotingSystem::VotingSystem(QObject *parent)
 
     PREPARE_SORTABLE_OBJMODEL(coins);
 
+    // Persist the current account
+    QObject::connect(this, &VotingSystem::currentAccountChanged, [](swv::data::Account* account) {
+        if (account && !account->get_name().isEmpty())
+            QSettings().setValue("currentAccount", account->get_name());
+        else
+            QSettings().remove("currentAccount");
+    });
+
     connect(this, &VotingSystem::backendConnectedChanged, this, &VotingSystem::isReadyChanged);
     connect(this, &VotingSystem::adaptorReadyChanged, this, &VotingSystem::isReadyChanged);
     connect(d->adaptor, &ChainAdaptorWrapper::hasAdaptorChanged, this, &VotingSystem::adaptorReadyChanged);
@@ -174,13 +182,19 @@ VotingSystem::VotingSystem(QObject *parent)
             using BalanceList = kj::Array<::Balance::Reader>;
             d->promiseConverter->adopt(d->adaptor->adaptor()->getMyAccounts().then(
                                            [this, d](kj::Array<QString> accountNames) {
-                auto accounts = kj::heapArrayBuilder<kj::Promise<std::tuple<QString, BalanceList>>>(accountNames.size());
+                // Get balances for each account
+                auto accounts = kj::heapArrayBuilder<kj::Promise<std::tuple<QString,
+                                                                            BalanceList>>>(accountNames.size());
                 for (QString name : accountNames)
                     accounts.add(d->adaptor->adaptor()->getBalancesForOwner(name).then([name](BalanceList bals) {
                                      return std::make_tuple(name, kj::mv(bals));
                                  }));
                 return kj::joinPromises(accounts.finish());
             }).then([this, d](kj::Array<std::tuple<QString, BalanceList>> accountsBalances) {
+                // Get the persisted current account name, if any
+                auto currentAccountName = QSettings().value("currentAccount").toString();
+
+                // Create Account object with AccountBalances populated, add them to myAccounts list
                 for (auto& tuple : accountsBalances) {
                     QString name;
                     BalanceList balances;
@@ -200,6 +214,9 @@ VotingSystem::VotingSystem(QObject *parent)
                     }
 
                     m_myAccounts->append(account);
+                    // If this account is the persisted current account, set that too
+                    if (account->get_name() == currentAccountName)
+                        setCurrentAccount(account);
                 }
             }));
         }
@@ -236,7 +253,7 @@ BackendWrapper* VotingSystem::backend() { Q_D(VotingSystem);
     return d->backend;
 }
 
-QString VotingSystem::currentAccount() const {
+data::Account* VotingSystem::currentAccount() const {
     Q_D(const VotingSystem);
 
     return d->currentAccount;
@@ -298,7 +315,7 @@ Promise* VotingSystem::castCurrentDecision(swv::ContestWrapper* contest) {
     }
 
     // Get all balances for current account, filter out the ones in a coin other than this contest's coin
-    auto future = chain->adaptor()->getBalancesForOwner(d->currentAccount);
+    auto future = chain->adaptor()->getBalancesForOwner(d->currentAccount->get_name());
     auto finishPromise = future.then([this, d, decision, chain, contest](kj::Array<::Balance::Reader> balances) {
         auto newEnd = std::remove_if(balances.begin(), balances.end(), [contest](::Balance::Reader b) {
                            return b.getType() != contest->getCoin();
@@ -313,7 +330,7 @@ Promise* VotingSystem::castCurrentDecision(swv::ContestWrapper* contest) {
             }
 
             setLastError(tr("Unable to cast vote because the current account, %1, has no %2.")
-                         .arg(d->currentAccount).arg(coin->get_name()));
+                         .arg(d->currentAccount->get_name()).arg(coin->get_name()));
             KJ_FAIL_REQUIRE("Couldn't cast vote because voting account has no balances in the coin");
         }
 
@@ -349,6 +366,14 @@ CoinWrapper* VotingSystem::getCoin(QString name)
     return nullptr;
 }
 
+data::Account*VotingSystem::getAccount(QString name)
+{
+    for (auto account : m_myAccounts->toList())
+        if (account->get_name() == name)
+            return account;
+    return nullptr;
+}
+
 void VotingSystem::cancelCurrentDecision(ContestWrapper* contest) {
     Q_D(VotingSystem);
 
@@ -358,7 +383,7 @@ void VotingSystem::cancelCurrentDecision(ContestWrapper* contest) {
         return;
     }
 
-    auto promise = d->adaptor->_getDecision(currentAccount(), contest->id());
+    auto promise = d->adaptor->_getDecision(currentAccount()->get_name(), contest->id());
     d->tasks.add(promise.then([contest](swv::DecisionWrapper* decision) {
         contest->setCurrentDecision(decision);
     }, [contest](kj::Exception) {
@@ -366,7 +391,7 @@ void VotingSystem::cancelCurrentDecision(ContestWrapper* contest) {
     }));
 }
 
-void VotingSystem::setCurrentAccount(QString currentAccount) {
+void VotingSystem::setCurrentAccount(data::Account* currentAccount) {
     Q_D(VotingSystem);
 
     if (d->currentAccount == currentAccount)

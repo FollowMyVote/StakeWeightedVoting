@@ -47,7 +47,6 @@ App {
 
     Settings {
         id: appSettings
-        property alias currentAccount: _votingSystem.currentAccount
         property alias windowX: window.x
         property alias windowY: window.y
         property alias windowHeight: window.height
@@ -68,14 +67,8 @@ App {
        }
        onIsReadyChanged: {
            console.log("Voting System Ready: " + isReady)
-           if (isReady && !currentAccount) {
-               currentAccount = Qt.binding(function() {
-                   if (adaptor.myAccounts.length)
-                       currentAccount = adaptor.myAccounts[0]
-               })
-           }
        }
-       onCurrentAccountChanged: console.log("Current account set to " + currentAccount)
+       onCurrentAccountChanged: console.log("Current account set to " + currentAccount.name)
     }
 
     Component {
