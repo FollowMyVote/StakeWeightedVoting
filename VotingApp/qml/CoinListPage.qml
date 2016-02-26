@@ -41,8 +41,11 @@ Page {
             id: coinColumn
             title: "Coin"
             role: 'name'
+            width: window.dp(150)
+            resizable: false
 
             delegate: RowLayout {
+                id: coinLayout
 
                 spacing: window.dp(12)
                 Item { Layout.preferredHeight: 1; Layout.preferredWidth: window.dp(8) }
@@ -56,7 +59,8 @@ Page {
                 }
                 AppText {
                     text: styleData.value
-                    //Layout.fillWidth: true
+                    Layout.fillWidth: true
+                    elide: Text.ElideRight
                 }
                 Item { Layout.preferredHeight: 1; Layout.preferredWidth: window.dp(8) }
             }
@@ -88,7 +92,7 @@ Page {
 
             width: parent.width - window.dp(16)
             x: window.dp(8)
-            height: 50;
+            height: window.dp(56);
             color: "white";
 
             Rectangle {
@@ -102,29 +106,28 @@ Page {
                 color: "#ccc"
             }
         }
-        headerDelegate: Rectangle {
+        headerDelegate: Item {
             height: textItem.implicitHeight * 2
             width: textItem.implicitWidth
-            color: "white"
 
-            Text {
-                id: textItem
+            RowLayout {
                 anchors.fill: parent
-                verticalAlignment: Text.AlignVCenter
-                horizontalAlignment: styleData.textAlignment
-                anchors.leftMargin: 12
-                text: styleData.value
-                elide: Text.ElideRight
-                renderType: Text.NativeRendering
-            }
+                anchors.leftMargin: window.dp(8)
 
-            Icon {
-                anchors.right: textItem.left
-                anchors.verticalCenter: textItem.verticalCenter
-                visible: tableView.sortIndicatorVisible && styleData.column === tableView.sortIndicatorColumn
-                anchors.rightMargin: window.dp(5)
-                rotation: tableView.sortIndicatorOrder === Qt.AscendingOrder ? 180 : 0
-                icon: IconType.sortasc
+                Icon {
+                    visible: tableView.sortIndicatorVisible && styleData.column === tableView.sortIndicatorColumn
+                    rotation: tableView.sortIndicatorOrder === Qt.AscendingOrder ? 180 : 0
+                    icon: IconType.sortasc
+                }
+                Text {
+                    id: textItem
+                    Layout.fillWidth: true
+                    verticalAlignment: Text.AlignVCenter
+                    horizontalAlignment: styleData.textAlignment
+                    text: styleData.value
+                    elide: Text.ElideRight
+                    renderType: Text.NativeRendering
+                }
             }
 
             Rectangle {
