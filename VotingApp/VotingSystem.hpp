@@ -70,7 +70,7 @@ class VotingSystem : public QObject
     Q_PROPERTY(bool isAdaptorReady READ adaptorReady NOTIFY adaptorReadyChanged)
     Q_PROPERTY(swv::ChainAdaptorWrapper* adaptor READ adaptor CONSTANT)
     Q_PROPERTY(swv::BackendWrapper* backend READ backend NOTIFY backendConnectedChanged)
-    QML_OBJMODEL_PROPERTY(CoinWrapper, coins)
+    QML_SORTABLE_OBJMODEL_PROPERTY(CoinWrapper, coins)
     QML_OBJMODEL_PROPERTY(swv::data::Account, myAccounts)
 
     Q_DECLARE_PRIVATE(VotingSystem)

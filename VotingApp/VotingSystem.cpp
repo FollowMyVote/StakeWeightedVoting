@@ -132,6 +132,8 @@ VotingSystem::VotingSystem(QObject *parent)
 {
     Q_D(VotingSystem);
 
+    PREPARE_SORTABLE_OBJMODEL(coins);
+
     connect(this, &VotingSystem::backendConnectedChanged, this, &VotingSystem::isReadyChanged);
     connect(this, &VotingSystem::adaptorReadyChanged, this, &VotingSystem::isReadyChanged);
     connect(d->adaptor, &ChainAdaptorWrapper::hasAdaptorChanged, this, &VotingSystem::adaptorReadyChanged);
