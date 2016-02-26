@@ -33,12 +33,12 @@ ListPage {
 
         AppListView {
             anchors.fill: parent
-            model: votingSystem.adaptor.myAccounts
+            model: votingSystem.myAccounts
             delegate: SimpleRow {
-                text: modelData
-                active: votingSystem.currentAccount === modelData
+                text: model.name
+                active: votingSystem.currentAccount === model.name
                 onSelected: {
-                    votingSystem.currentAccount = modelData
+                    votingSystem.currentAccount = model.name
                     accountSelector.close()
                 }
             }

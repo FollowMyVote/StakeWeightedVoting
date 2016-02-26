@@ -30,7 +30,7 @@
 namespace swv {
 
 /**
- * @brief The Contest class is a read-only wrapper for the Contest type
+ * @brief The ContestWrapper class is a read-only wrapper for the Contest type
  *
  * In addition to exposing the properties of ::UnsignedContest in a QML-accessible form, the Contest implements the
  * concept of the Current Decision for the contest. The current decision is the @ref swv::Decision which should be

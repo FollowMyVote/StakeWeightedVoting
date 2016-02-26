@@ -22,8 +22,10 @@
 #include "vendor/QQmlVarPropertyHelpers.h"
 
 #include "coin.capnp.h"
+#include "backend.capnp.h"
 
 #include <QObject>
+#include <QUrl>
 
 namespace swv {
 
@@ -33,43 +35,52 @@ namespace swv {
  *
  * The Coin type provides information about a specific type of asset on the blockchain.
  */
-class CoinWrapper : public QObject, public ::Coin::Reader
+class CoinWrapper : public QObject
 {
     Q_OBJECT
     /*!
      * \qmlproperty int Coin::coinId
      * The ID of the coin
      */
-    Q_PROPERTY(quint64 coinId READ getId CONSTANT)
+    QML_READONLY_VAR_PROPERTY(quint64, coinId)
     /*!
      * \qmlproperty string Coin::name
      * The name of the coin
      */
-    Q_PROPERTY(QString name READ name CONSTANT)
+    QML_READONLY_VAR_PROPERTY(QString, name)
     /*!
      * \qmlproperty int Coin::precision
      * The maximum number of digits after the decimal point in balances of the coin
      */
-    Q_PROPERTY(qint32 precision READ getPrecision CONSTANT)
+    QML_READONLY_VAR_PROPERTY(qint32, precision)
     /*!
      * \qmlproperty string Coin::creator
      * The name of the account which created the coin
      */
-    Q_PROPERTY(QString creator READ creator CONSTANT)
+    QML_READONLY_VAR_PROPERTY(QString, creator)
     /*!
      * \qmlproperty int Coin::contestCount
      * The number of currently active contests weighted in the coin
      */
     QML_READONLY_VAR_PROPERTY(qint32, contestCount)
+    /*!
+     * \qmlproperty QUrl Coin::iconUrl
+     * The URL to the icon to display for this coin (may be empty)
+     */
+    QML_READONLY_VAR_PROPERTY(QUrl, iconUrl)
 public:
-    CoinWrapper(::Coin::Reader r, QObject* parent = nullptr);
+    CoinWrapper(QObject* parent = nullptr);
 
-    QString name() const {
-        return QString::fromStdString(getName());
-    }
-    QString creator() const {
-        return QString::fromStdString(getCreator());
-    }
+    /*!
+     * \brief Update the fields on the Coin
+     * \param coin The new coin
+     */
+    void updateFields(Coin::Reader coin);
+    /*!
+     * \brief Update the fields on the Coin
+     * \param details The new details
+     */
+    void updateFields(Backend::CoinDetails::Reader details);
 };
 
 } // namespace swv

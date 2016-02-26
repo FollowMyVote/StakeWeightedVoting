@@ -27,6 +27,7 @@
 #include <kj/debug.h>
 #include <kj/async-io.h>
 
+#include <DataStructures/Account.hpp>
 #include "wrappers/Coin.hpp"
 #include "wrappers/Balance.hpp"
 #include "wrappers/Contest.hpp"
@@ -64,6 +65,9 @@ int main(int argc, char *argv[])
     QQmlDebuggingEnabler debugEnabler;
 #endif
 
+    // Register data structures
+    qmlRegisterType<swv::data::Account>("FollowMyVote.StakeWeightedVoting", 1, 0, "Account");
+
     // Register data/API wrappers
 #define REGISTER_WRAPPER(name) \
     qmlRegisterUncreatableType<swv::name ## Wrapper>("FollowMyVote.StakeWeightedVoting", 1, 0, #name, \
@@ -96,6 +100,7 @@ int main(int argc, char *argv[])
     qmlRegisterType<swv::VotingSystem>("FollowMyVote.StakeWeightedVoting", 1, 0, "VotingSystem");
     qmlRegisterType<Promise>("FollowMyVote.StakeWeightedVoting", 1, 0, "Promise");
     qmlRegisterType<QQmlObjectListModelBase>();
+    qmlRegisterType<QSortFilterProxyModel>();
 
     QQmlApplicationEngine engine;
     Promise::setEngine(&engine);

@@ -37,17 +37,7 @@ const static QString DECISION_SCHEMA = QStringLiteral("00%1");
 ChainAdaptorWrapper::ChainAdaptorWrapper(PromiseConverter& promiseConverter, QObject *parent)
     : QObject(parent),
       promiseConverter(promiseConverter)
-{
-    connect(this, &ChainAdaptorWrapper::hasAdaptorChanged, this, [this](bool haveAdaptor) {
-        if (haveAdaptor) {
-            // Fetch account list, populate property
-            this->promiseConverter.adopt(m_adaptor->getMyAccounts().then([this](kj::Array<QString> accounts) {
-                                             m_myAccounts = convertList(kj::mv(accounts));
-                                             emit myAccountsChanged(m_myAccounts);
-                                         }));
-        }
-    });
-}
+{}
 
 ChainAdaptorWrapper::~ChainAdaptorWrapper() noexcept
 {}
@@ -62,42 +52,6 @@ kj::Own<BlockchainAdaptorInterface> ChainAdaptorWrapper::takeAdaptor() {
     auto tmp = std::move(m_adaptor);
     emit hasAdaptorChanged(false);
     return tmp;
-}
-
-Promise* ChainAdaptorWrapper::getCoin(quint64 id)
-{
-    if (hasAdaptor())
-        return promiseConverter.convert(m_adaptor->getCoin(id),
-                                        [](::Coin::Reader r) -> QVariantList {
-            return {QVariant::fromValue<QObject*>(new CoinWrapper(r))};
-        });
-    return nullptr;
-}
-
-Promise* ChainAdaptorWrapper::getCoin(QString symbol)
-{
-    if (hasAdaptor())
-        return promiseConverter.convert(m_adaptor->getCoin(symbol),
-                                        [](::Coin::Reader r) -> QVariantList {
-            return {QVariant::fromValue<QObject*>(new CoinWrapper(r))};
-        });
-   return nullptr;
-}
-
-Promise* ChainAdaptorWrapper::listAllCoins()
-{
-    if (hasAdaptor()) {
-        return promiseConverter.convert(m_adaptor->listAllCoins(),
-                                        [](kj::Array<::Coin::Reader> coins) -> QVariantList {
-            QVariantList results;
-            std::transform(coins.begin(), coins.end(), std::back_inserter(results),
-                           [](::Coin::Reader r) { return QVariant::fromValue((QObject*)new CoinWrapper(r)); });
-
-            return {QVariant::fromValue(results)};
-        });
-    }
-
-    return nullptr;
 }
 
 Promise* ChainAdaptorWrapper::getDecision(QString owner, QString contestId)

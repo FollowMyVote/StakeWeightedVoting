@@ -21,9 +21,11 @@
 
 #include "capnp/coin.capnp.h"
 
-#include "wrappers/Coin.hpp"
-#include "wrappers/Contest.hpp"
-#include "wrappers/Datagram.hpp"
+#include "Coin.hpp"
+#include "Contest.hpp"
+#include "Datagram.hpp"
+
+#include "vendor/QQmlObjectListModel.h"
 
 #include <QObject>
 #include <QtQml>
@@ -53,10 +55,9 @@ class ChainAdaptorWrapper : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(bool hasAdaptor READ hasAdaptor NOTIFY hasAdaptorChanged)
-    Q_PROPERTY(QStringList myAccounts READ myAccounts NOTIFY myAccountsChanged)
 
 public:
-    explicit ChainAdaptorWrapper(PromiseConverter& promiseConverter, QObject *parent = 0);
+    ChainAdaptorWrapper(PromiseConverter& promiseConverter, QObject *parent = 0);
     ~ChainAdaptorWrapper() noexcept;
 
     /**
@@ -88,31 +89,6 @@ public:
     bool hasAdaptor() const {
         return m_adaptor.get() != nullptr;
     }
-
-    /**
-     * @brief Get a coin by ID
-     * @param id ID of the coin to retrieve
-     * @return Coin having the provided ID, or nullptr if adaptor is not set or coin not found
-     *
-     * The wrapper maintains ownership of the returned object.
-     */
-    Q_INVOKABLE Promise* getCoin(quint64 id);
-    /**
-     * @brief Get a coin by symbol
-     * @param symbol Symbol of the coin to retrieve
-     * @return Coin having the provided symbol, or nullptr if adaptor is not set or coin not found
-     *
-     * The wrapper maintains ownership of the returned object.
-     */
-    Q_INVOKABLE Promise* getCoin(QString symbol);
-    /**
-     * @brief Get a list of all coins
-     * @return A list of all coins known to the system (could be large; avoid calling this frequently)
-     *
-     * The wrapper maintains ownership of the returned objects. The returned list will be empty if the adaptor is not
-     * set.
-     */
-    Q_INVOKABLE Promise* listAllCoins();
 
     /**
      * @brief Get a balance by ID
@@ -167,7 +143,7 @@ public:
      * slow and will construct a new Decision on each call.
      */
     Q_INVOKABLE Promise* getDecision(QString owner, QString contestId);
-    /// @brief Identical to _getDecision, but returns a kj::Promise instead of a Promise*. For C++ use.
+    /// @brief Identical to getDecision, but returns a kj::Promise instead of a Promise*. For C++ use.
     kj::Promise<OwningWrapper<DecisionWrapper>*> _getDecision(QString owner, QString contestId);
 
     /**
@@ -191,11 +167,6 @@ public:
      */
     Q_INVOKABLE Promise* getDatagram(QString balanceId, QString schema = QString::null);
 
-    QStringList myAccounts() const
-    {
-        return m_myAccounts;
-    }
-
 signals:
     void hasAdaptorChanged(bool);
     void error(QString message);
@@ -206,12 +177,9 @@ signals:
     /// forked out of the blockchain, etc.
     void contestActionRequired(QString contestId);
 
-    void myAccountsChanged(QStringList myAccounts);
-
 private:
     PromiseConverter& promiseConverter;
     kj::Own<BlockchainAdaptorInterface> m_adaptor;
-    QStringList m_myAccounts;
 };
 
 } // namespace swv

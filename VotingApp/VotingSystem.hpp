@@ -19,6 +19,7 @@
 #ifndef VOTINGSYSTEM_HPP
 #define VOTINGSYSTEM_HPP
 
+#include "DataStructures/Account.hpp"
 #include "wrappers/Coin.hpp"
 
 #include "vendor/QQmlObjectListModel.h"
@@ -69,7 +70,8 @@ class VotingSystem : public QObject
     Q_PROPERTY(bool isAdaptorReady READ adaptorReady NOTIFY adaptorReadyChanged)
     Q_PROPERTY(swv::ChainAdaptorWrapper* adaptor READ adaptor CONSTANT)
     Q_PROPERTY(swv::BackendWrapper* backend READ backend NOTIFY backendConnectedChanged)
-    QML_OBJMODEL_PROPERTY(CoinWrapper, coins)
+    QML_SORTABLE_OBJMODEL_PROPERTY(CoinWrapper, coins)
+    QML_OBJMODEL_PROPERTY(swv::data::Account, myAccounts)
 
     Q_DECLARE_PRIVATE(VotingSystem)
 
@@ -87,15 +89,6 @@ public:
 
     QString currentAccount() const;
 
-signals:
-    void error(QString message);
-    void isReadyChanged();
-    void ready();
-    void backendConnectedChanged(bool backendConnected);
-    void adaptorReadyChanged(bool adaptorReady);
-    void currentAccountChanged(QString currentAccount);
-
-public slots:
     /**
      * @brief Connect to the backend at the specified network endpoint
      * @param hostname Host name or IP of the Follow My Vote server
@@ -105,8 +98,7 @@ public slots:
      * The VotingSystem does not retain ownership of the returned promise; it is the caller's responsibility to delete
      * it. The returned promise does not resolve to any value; it has the semantics of a void promise.
      */
-    Promise* connectToBackend(QString hostname, quint16 port);
-    void configureChainAdaptor();
+    Q_INVOKABLE Promise* connectToBackend(QString hostname, quint16 port);
 
     /**
      * @brief Cast the current decision for the given contest
@@ -117,7 +109,22 @@ public slots:
      *
      * See also @ref cancelCurrentDecision
      */
-    Promise* castCurrentDecision(swv::ContestWrapper* contest);
+    Q_INVOKABLE Promise* castCurrentDecision(swv::ContestWrapper* contest);
+
+    Q_INVOKABLE CoinWrapper* getCoin(quint64 id);
+    Q_INVOKABLE CoinWrapper* getCoin(QString name);
+
+signals:
+    void error(QString message);
+    void isReadyChanged();
+    void ready();
+    void backendConnectedChanged(bool backendConnected);
+    void adaptorReadyChanged(bool adaptorReady);
+    void currentAccountChanged(QString currentAccount);
+
+public slots:
+    void configureChainAdaptor();
+
     /**
      * @brief Cancel changes to the decision on the given contest
      * @param contest The contest to cancel changes on

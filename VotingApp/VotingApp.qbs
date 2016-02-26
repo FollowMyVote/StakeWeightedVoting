@@ -16,6 +16,8 @@ QtGuiApplication {
     cpp.staticLibraries: VPlay.staticLibrary
 
     files: [
+        "DataStructures/Account.cpp",
+        "DataStructures/Account.hpp",
         "PromiseConverter.cpp",
         "PromiseConverter.hpp",
         "TwoPartyClient.cpp",
