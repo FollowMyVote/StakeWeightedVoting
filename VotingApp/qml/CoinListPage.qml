@@ -17,42 +17,193 @@
  */
 import QtQuick 2.5
 import QtQuick.Layouts 1.1
+import QtQuick.Controls 1.4
 import QtQuick.Window 2.0
 
 import VPlayApps 1.0
 
 import FollowMyVote.StakeWeightedVoting 1.0
 
-ListPage {
+Page {
     id: coinListPage
     title: qsTr("Coin List")
-    model: votingSystem.coins
-    delegate: RowLayout {
 
-        spacing: window.dp(16)
 
-        RoundedImage {
-            Layout.preferredWidth: window.dp(40)
-            Layout.preferredHeight: window.dp(40)
-            source: "qrc:/qml/res/Follow-My-Vote-Logo.png"
-            fillMode: Image.PreserveAspectCrop
-            radius: height / 2
-        }
-        ColumnLayout{
+    property VotingSystem votingSystem
 
-            AppText {
-                text: name
+    TableView {
+        id: tableView
+        anchors.fill: parent
+
+        TableViewColumn {
+            id: coinColumn
+            title: "Coin"
+            role: 'name'
+
+            delegate: RowLayout {
+
+                spacing: window.dp(12)
+                Item { Layout.preferredHeight: 1; Layout.preferredWidth: window.dp(8) }
+                RoundedImage {
+
+                    Layout.preferredWidth: window.dp(30)
+                    Layout.preferredHeight: window.dp(30)
+                    source: "qrc:/qml/res/Follow-My-Vote-Logo.png"
+                    fillMode: Image.PreserveAspectCrop
+                    radius: height / 2
+                }
+                AppText {
+                    text: styleData.value
+                    //Layout.fillWidth: true
+                }
+                Item { Layout.preferredHeight: 1; Layout.preferredWidth: window.dp(8) }
             }
-            AppText {
-                text: qsTr("%1 contests/month").arg("N")
+        }
+        TableViewColumn {
+            id: creator
+            title: "Creator"
+            role: 'creator'
+//            Layout.maximumWidth: tableView.viewport.width / 5
+            width: tableView.viewport.width / 5
+        }
+        TableViewColumn {
+            id: numActivePolls
+            title: 'Number of active polls'
+//            Layout.maximumWidth: tableView.viewport.width / 5
+            width: tableView.viewport.width / 5
+        }
+        TableViewColumn {
+            id: numVotes
+            title: 'Number of votes'
+//            Layout.maximumWidth: tableView.viewport.width / 5
+            width: tableView.viewport.width / 5
+        }
+        TableViewColumn {
+            id: eligible
+            title: 'Eligible'
+//            Layout.maximumWidth: tableView.viewport.width / 5
+            width: tableView.viewport.width / 5
+        }
+
+        model: votingSystem.coins
+        rowDelegate: Rectangle {
+            //anchors.leftMargin: 12
+            width: parent.width - window.dp(16)
+            x: window.dp(8)
+            height: 50;
+            color: "white";
+
+            Rectangle {
+                anchors.right: parent.right
+                anchors.left: parent.left
+
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: 1
+
+                height: 1
+                color: "#ccc"
+            }
+        }
+        headerDelegate: Rectangle {
+            height: textItem.implicitHeight * 2
+            width: textItem.implicitWidth
+            color: "white"
+            Text {
+                id: textItem
+                anchors.fill: parent
+                verticalAlignment: Text.AlignVCenter
+                horizontalAlignment: styleData.textAlignment
+                anchors.leftMargin: 12
+                text: styleData.value
+                elide: Text.ElideRight
+                renderType: Text.NativeRendering
+            }
+            Rectangle {
+                anchors.right: parent.right
+                anchors.left: parent.left
+
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: 1
+
+                height: 2
+                color: "#ccc"
             }
         }
     }
-
-     listView.spacing: window.dp(16)
-     listView.leftMargin: window.dp(16)
-     listView.bottomMargin: window.dp(16)
-     listView.topMargin: window.dp(16)
-
-    property VotingSystem votingSystem
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+//ListPage {
+//    id: coinListPage
+//    title: qsTr("Coin List")
+//    listView.header: RowLayout {
+//        AppText {
+//            text: "Coin"
+//        }
+//        AppText {
+//            text: "Creator"
+//        }
+//        AppText {
+//            text: "Number of Active Polls"
+//        }
+//        AppText {
+//            text: "Number of Votes"
+//        }
+//        AppText {
+//            text: "Eligible"
+//        }
+//    }
+
+//    model: votingSystem.adaptor.coins
+//    delegate: RowLayout {
+
+//        spacing: window.dp(16)
+
+//        RoundedImage {
+//            Layout.preferredWidth: window.dp(40)
+//            Layout.preferredHeight: window.dp(40)
+//            source: "qrc:/qml/res/Follow-My-Vote-Logo.png"
+//            fillMode: Image.PreserveAspectCrop
+//            radius: height / 2
+//        }
+//        RowLayout{
+//            ColumnLayout{
+
+//                AppText {
+//                    text: name
+//                }
+//                AppText {
+//                    text: creator
+//                }
+//            }
+//            AppText {
+//                text: name
+//            }
+//        }
+//    }
+
+//     listView.spacing: window.dp(16)
+//     listView.leftMargin: window.dp(16)
+//     listView.bottomMargin: window.dp(16)
+//     listView.topMargin: window.dp(16)
+
+//    property VotingSystem votingSystem
+
+// ListModel {
+//     id: listModel
+//     ListElement {
+
+//     }
+// }
+//}
