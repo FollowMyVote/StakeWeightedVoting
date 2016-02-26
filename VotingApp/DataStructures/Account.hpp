@@ -40,7 +40,9 @@ class Account : public QObject
     /*!
      * \qmlproperty Account::balances
      * The total balances controlled by the account. There is one entry per coin the account owns, and the amount on
-     * each balance is the sum of all tokens the account holds in that coin.
+     * each balance is the sum of all tokens the account holds in that coin. Each element is a AccountBalance object.
+     *
+     * \sa AccountBalance
      */
     QML_CONSTANT_VAR_PROPERTY(QQmlVariantListModel*, balances)
 public:
