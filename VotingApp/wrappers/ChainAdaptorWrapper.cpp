@@ -64,42 +64,6 @@ kj::Own<BlockchainAdaptorInterface> ChainAdaptorWrapper::takeAdaptor() {
     return tmp;
 }
 
-Promise* ChainAdaptorWrapper::getCoin(quint64 id)
-{
-    if (hasAdaptor())
-        return promiseConverter.convert(m_adaptor->getCoin(id),
-                                        [](::Coin::Reader r) -> QVariantList {
-            return {QVariant::fromValue<QObject*>(new CoinWrapper(r))};
-        });
-    return nullptr;
-}
-
-Promise* ChainAdaptorWrapper::getCoin(QString symbol)
-{
-    if (hasAdaptor())
-        return promiseConverter.convert(m_adaptor->getCoin(symbol),
-                                        [](::Coin::Reader r) -> QVariantList {
-            return {QVariant::fromValue<QObject*>(new CoinWrapper(r))};
-        });
-   return nullptr;
-}
-
-Promise* ChainAdaptorWrapper::listAllCoins()
-{
-    if (hasAdaptor()) {
-        return promiseConverter.convert(m_adaptor->listAllCoins(),
-                                        [](kj::Array<::Coin::Reader> coins) -> QVariantList {
-            QVariantList results;
-            std::transform(coins.begin(), coins.end(), std::back_inserter(results),
-                           [](::Coin::Reader r) { return QVariant::fromValue((QObject*)new CoinWrapper(r)); });
-
-            return {QVariant::fromValue(results)};
-        });
-    }
-
-    return nullptr;
-}
-
 Promise* ChainAdaptorWrapper::getDecision(QString owner, QString contestId)
 {
     auto promise = _getDecision(kj::mv(owner), kj::mv(contestId));

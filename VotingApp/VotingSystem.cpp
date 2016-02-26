@@ -132,6 +132,8 @@ VotingSystem::VotingSystem(QObject *parent)
 {
     Q_D(VotingSystem);
 
+    PREPARE_SORTABLE_OBJMODEL(coins);
+
     connect(this, &VotingSystem::backendConnectedChanged, this, &VotingSystem::isReadyChanged);
     connect(this, &VotingSystem::adaptorReadyChanged, this, &VotingSystem::isReadyChanged);
     connect(d->adaptor, &ChainAdaptorWrapper::hasAdaptorChanged, this, &VotingSystem::adaptorReadyChanged);
@@ -152,18 +154,52 @@ VotingSystem::VotingSystem(QObject *parent)
 
                 // For each coin, fetch the statistics and return a promise for the coin and statistics
                 return kj::joinPromises(KJ_MAP(coin, d->kjCoins) {
-                    auto request = d->backend->backend().getCoinStatisticsRequest();
+                    auto request = d->backend->backend().getCoinDetailsRequest();
                     request.setCoinId(coin.getId());
-                    return request.send().then([coin](capnp::Response<Backend::GetCoinStatisticsResults> r) {
+                    return request.send().then([coin](capnp::Response<Backend::GetCoinDetailsResults> r) {
                         return std::make_tuple(coin, kj::mv(r));
                     });
                 });
-            }).then([this, d](kj::Array<std::tuple<Coin::Reader, capnp::Response<Backend::GetCoinStatisticsResults>>> r) {
+            }).then([this, d](kj::Array<std::tuple<Coin::Reader, capnp::Response<Backend::GetCoinDetailsResults>>> r) {
                 // Create wrappers for the coins with statistics set
                 for (const auto& tuple : r) {
-                    auto wrapper = new CoinWrapper(std::get<0>(tuple), this);
-                    wrapper->update_contestCount(std::get<1>(tuple).getStatistics().getActiveContestCount());
+                    auto wrapper = new CoinWrapper(this);
+                    wrapper->updateFields(std::get<0>(tuple));
+                    wrapper->updateFields(std::get<1>(tuple).getDetails());
                     m_coins->append(wrapper);
+                }
+            }));
+
+            // Get my accounts, populate property
+            using BalanceList = kj::Array<::Balance::Reader>;
+            d->promiseConverter->adopt(d->adaptor->adaptor()->getMyAccounts().then(
+                                           [this, d](kj::Array<QString> accountNames) {
+                auto accounts = kj::heapArrayBuilder<kj::Promise<std::tuple<QString, BalanceList>>>(accountNames.size());
+                for (QString name : accountNames)
+                    accounts.add(d->adaptor->adaptor()->getBalancesForOwner(name).then([name](BalanceList bals) {
+                                     return std::make_tuple(name, kj::mv(bals));
+                                 }));
+                return kj::joinPromises(accounts.finish());
+            }).then([this, d](kj::Array<std::tuple<QString, BalanceList>> accountsBalances) {
+                for (auto& tuple : accountsBalances) {
+                    QString name;
+                    BalanceList balances;
+                    std::tie(name, balances) = kj::mv(tuple);
+
+                    auto account = new data::Account(this);
+                    account->update_name(name);
+
+                    // Sum up balances by coin ID
+                    std::map<quint64, qint64> balanceSums;
+                    for (Balance::Reader balance : balances)
+                        balanceSums[balance.getType()] += balance.getAmount();
+                    // Store balance sums in Account object
+                    for (auto balPair : balanceSums) {
+                        data::AccountBalance balance{getCoin(balPair.first), balPair.second};
+                        account->get_balances()->append(QVariant::fromValue(balance));
+                    }
+
+                    m_myAccounts->append(account);
                 }
             }));
         }
@@ -270,13 +306,14 @@ Promise* VotingSystem::castCurrentDecision(swv::ContestWrapper* contest) {
         balances = kj::heapArray<::Balance::Reader>(balances.begin(), newEnd);
 
         if (balances.size() == 0) {
-            auto coinPromise = chain->getCoin(contest->getCoin());
-            auto results = coinPromise->wait();
-            if (coinPromise->state() == Promise::State::REJECTED)
+            auto coin = getCoin(contest->getCoin());
+            if (coin == nullptr) {
                 setLastError(tr("Unable to cast vote because the coin for the contest was not found."));
+                KJ_FAIL_REQUIRE("Couldn't cast vote because the contest weight coin was not found.");
+            }
 
             setLastError(tr("Unable to cast vote because the current account, %1, has no %2.")
-                         .arg(d->currentAccount).arg(results.first().value<swv::CoinWrapper*>()->name()));
+                         .arg(d->currentAccount).arg(coin->get_name()));
             KJ_FAIL_REQUIRE("Couldn't cast vote because voting account has no balances in the coin");
         }
 
@@ -294,6 +331,22 @@ Promise* VotingSystem::castCurrentDecision(swv::ContestWrapper* contest) {
     });
 
     return d->promiseConverter->convert(kj::mv(finishPromise));
+}
+
+CoinWrapper* VotingSystem::getCoin(quint64 id)
+{
+    for (CoinWrapper* coin : m_coins->toList())
+        if (coin->get_coinId() == id)
+            return coin;
+    return nullptr;
+}
+
+CoinWrapper* VotingSystem::getCoin(QString name)
+{
+    for (CoinWrapper* coin : m_coins->toList())
+        if (coin->get_name() == name)
+            return coin;
+    return nullptr;
 }
 
 void VotingSystem::cancelCurrentDecision(ContestWrapper* contest) {

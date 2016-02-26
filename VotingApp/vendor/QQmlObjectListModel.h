@@ -4,6 +4,7 @@
 #define QQMLOBJECTLISTMODEL_H
 
 #include <QAbstractListModel>
+#include <QSortFilterProxyModel>
 #include <QByteArray>
 #include <QChar>
 #include <QDebug>
@@ -446,5 +447,15 @@ private: // data members
     private: QQmlObjectListModel<type> * m_##name = new QQmlObjectListModel<type>(this); \
     public: QQmlObjectListModel<type> * get_##name (void) const { return m_##name; } \
     private:
+
+#define QML_SORTABLE_OBJMODEL_PROPERTY(type, name) \
+    protected: Q_PROPERTY (QSortFilterProxyModel * name READ get_##name CONSTANT) \
+    private: QQmlObjectListModel<type> * m_##name = new QQmlObjectListModel<type>(this); \
+             QSortFilterProxyModel * m_sortable_##name = new QSortFilterProxyModel(this); \
+    public: QSortFilterProxyModel * get_##name (void) const { return m_sortable_##name; } \
+    private:
+// One of these must be added to the constructor of the class containing sortable models for each sortable model
+#define PREPARE_SORTABLE_OBJMODEL(name) \
+    m_sortable_##name->setSourceModel(m_##name)
 
 #endif // QQMLOBJECTLISTMODEL_H

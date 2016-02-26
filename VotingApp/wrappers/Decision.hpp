@@ -29,7 +29,7 @@
 namespace swv {
 
 /**
- * @brief The Decision class is a read-write wrapper for the Decision type.
+ * @brief The DecisionWrapper class is a read-write wrapper for the Decision type.
  */
 class DecisionWrapper : public QObject
 {
