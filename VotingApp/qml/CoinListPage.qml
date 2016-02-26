@@ -20,6 +20,7 @@ import QtQuick.Layouts 1.1
 import QtQuick.Controls 1.4
 import QtQuick.Window 2.0
 
+
 import VPlayApps 1.0
 
 import FollowMyVote.StakeWeightedVoting 1.0
@@ -34,6 +35,7 @@ Page {
     TableView {
         id: tableView
         anchors.fill: parent
+        sortIndicatorVisible: true
 
         TableViewColumn {
             id: coinColumn
@@ -63,31 +65,27 @@ Page {
             id: creator
             title: "Creator"
             role: 'creator'
-//            Layout.maximumWidth: tableView.viewport.width / 5
             width: tableView.viewport.width / 5
         }
         TableViewColumn {
             id: numActivePolls
             title: 'Number of active polls'
-//            Layout.maximumWidth: tableView.viewport.width / 5
             width: tableView.viewport.width / 5
         }
         TableViewColumn {
             id: numVotes
             title: 'Number of votes'
-//            Layout.maximumWidth: tableView.viewport.width / 5
             width: tableView.viewport.width / 5
         }
         TableViewColumn {
             id: eligible
             title: 'Eligible'
-//            Layout.maximumWidth: tableView.viewport.width / 5
             width: tableView.viewport.width / 5
         }
 
         model: votingSystem.coins
         rowDelegate: Rectangle {
-            //anchors.leftMargin: 12
+
             width: parent.width - window.dp(16)
             x: window.dp(8)
             height: 50;
@@ -108,6 +106,7 @@ Page {
             height: textItem.implicitHeight * 2
             width: textItem.implicitWidth
             color: "white"
+
             Text {
                 id: textItem
                 anchors.fill: parent
@@ -118,6 +117,16 @@ Page {
                 elide: Text.ElideRight
                 renderType: Text.NativeRendering
             }
+
+            Icon {
+                anchors.right: textItem.left
+                anchors.verticalCenter: textItem.verticalCenter
+                visible: tableView.sortIndicatorVisible && styleData.column === tableView.sortIndicatorColumn
+                anchors.rightMargin: window.dp(5)
+                rotation: tableView.sortIndicatorOrder === Qt.AscendingOrder ? 180 : 0
+                icon: IconType.sortasc
+            }
+
             Rectangle {
                 anchors.right: parent.right
                 anchors.left: parent.left
