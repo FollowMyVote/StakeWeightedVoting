@@ -18,7 +18,9 @@ namespace data {
  * The AccountBalance type represents an account's total balance in a particular coin
  */
 struct AccountBalance {
-    swv::CoinWrapper* coin;
+    Q_PROPERTY(quint64 coinId MEMBER coinId)
+    Q_PROPERTY(qint64 amount MEMBER amount)
+    quint64 coinId;
     qint64 amount;
     Q_GADGET
 };

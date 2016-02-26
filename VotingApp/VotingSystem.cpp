@@ -209,7 +209,7 @@ VotingSystem::VotingSystem(QObject *parent)
                         balanceSums[balance.getType()] += balance.getAmount();
                     // Store balance sums in Account object
                     for (auto balPair : balanceSums) {
-                        data::AccountBalance balance{getCoin(balPair.first), balPair.second};
+                        data::AccountBalance balance{balPair.first, balPair.second};
                         account->get_balances()->append(QVariant::fromValue(balance));
                     }
 
