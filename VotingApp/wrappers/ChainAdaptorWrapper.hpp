@@ -55,10 +55,9 @@ class ChainAdaptorWrapper : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(bool hasAdaptor READ hasAdaptor NOTIFY hasAdaptorChanged)
-    Q_PROPERTY(QStringList myAccounts READ myAccounts NOTIFY myAccountsChanged)
 
 public:
-    explicit ChainAdaptorWrapper(PromiseConverter& promiseConverter, QObject *parent = 0);
+    ChainAdaptorWrapper(PromiseConverter& promiseConverter, QObject *parent = 0);
     ~ChainAdaptorWrapper() noexcept;
 
     /**
@@ -168,11 +167,6 @@ public:
      */
     Q_INVOKABLE Promise* getDatagram(QString balanceId, QString schema = QString::null);
 
-    QStringList myAccounts() const
-    {
-        return m_myAccounts;
-    }
-
 signals:
     void hasAdaptorChanged(bool);
     void error(QString message);
@@ -183,12 +177,9 @@ signals:
     /// forked out of the blockchain, etc.
     void contestActionRequired(QString contestId);
 
-    void myAccountsChanged(QStringList myAccounts);
-
 private:
     PromiseConverter& promiseConverter;
     kj::Own<BlockchainAdaptorInterface> m_adaptor;
-    QStringList m_myAccounts;
 };
 
 } // namespace swv

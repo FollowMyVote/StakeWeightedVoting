@@ -37,17 +37,7 @@ const static QString DECISION_SCHEMA = QStringLiteral("00%1");
 ChainAdaptorWrapper::ChainAdaptorWrapper(PromiseConverter& promiseConverter, QObject *parent)
     : QObject(parent),
       promiseConverter(promiseConverter)
-{
-    connect(this, &ChainAdaptorWrapper::hasAdaptorChanged, this, [this](bool haveAdaptor) {
-        if (haveAdaptor) {
-            // Fetch account list, populate property
-            this->promiseConverter.adopt(m_adaptor->getMyAccounts().then([this](kj::Array<QString> accounts) {
-                                             m_myAccounts = convertList(kj::mv(accounts));
-                                             emit myAccountsChanged(m_myAccounts);
-                                         }));
-        }
-    });
-}
+{}
 
 ChainAdaptorWrapper::~ChainAdaptorWrapper() noexcept
 {}
