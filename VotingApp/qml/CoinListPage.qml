@@ -85,6 +85,15 @@ Page {
             id: eligible
             title: 'Eligible'
             width: tableView.viewport.width / 5
+            role: 'coinId'
+
+            delegate: Icon {
+                // Filter the currentAccount's balances for one in this coin
+                property var balance: votingSystem.currentAccount.balances.list().filter(function(bal) {
+                    return bal.coinId === styleData.value
+                })[0]
+                icon: balance && balance.amount > 0? IconType.checkcircleo : IconType.circleo
+            }
         }
 
         model: votingSystem.coins
