@@ -73,8 +73,9 @@ Page {
         }
         TableViewColumn {
             id: numActivePolls
-            title: 'Number of active polls'
+            title: 'Active polls'
             width: tableView.viewport.width / 5
+            role: 'contestCount'
         }
         TableViewColumn {
             id: numVotes
