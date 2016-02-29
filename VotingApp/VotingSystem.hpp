@@ -63,7 +63,7 @@ class VotingSystemPrivate;
 class VotingSystem : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(QString currentAccount READ currentAccount WRITE setCurrentAccount NOTIFY currentAccountChanged)
+    Q_PROPERTY(swv::data::Account* currentAccount READ currentAccount WRITE setCurrentAccount NOTIFY currentAccountChanged)
     Q_PROPERTY(QString lastError READ lastError NOTIFY error)
     Q_PROPERTY(bool isReady READ isReady NOTIFY isReadyChanged)
     Q_PROPERTY(bool isBackendConnected READ backendConnected NOTIFY backendConnectedChanged)
@@ -87,7 +87,7 @@ public:
     ChainAdaptorWrapper* adaptor();
     BackendWrapper* backend();
 
-    QString currentAccount() const;
+    swv::data::Account* currentAccount() const;
 
     /**
      * @brief Connect to the backend at the specified network endpoint
@@ -114,13 +114,15 @@ public:
     Q_INVOKABLE CoinWrapper* getCoin(quint64 id);
     Q_INVOKABLE CoinWrapper* getCoin(QString name);
 
+    Q_INVOKABLE swv::data::Account* getAccount(QString name);
+
 signals:
     void error(QString message);
     void isReadyChanged();
     void ready();
     void backendConnectedChanged(bool backendConnected);
     void adaptorReadyChanged(bool adaptorReady);
-    void currentAccountChanged(QString currentAccount);
+    void currentAccountChanged(swv::data::Account* currentAccount);
 
 public slots:
     void configureChainAdaptor();
@@ -134,7 +136,7 @@ public slots:
      */
     void cancelCurrentDecision(swv::ContestWrapper* contest);
 
-    void setCurrentAccount(QString currentAccount);
+    void setCurrentAccount(swv::data::Account* currentAccount);
 
 protected slots:
     void setLastError(QString message);
