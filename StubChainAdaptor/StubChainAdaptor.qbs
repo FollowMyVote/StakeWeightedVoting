@@ -9,6 +9,8 @@ DynamicLibrary {
     Depends { name: "Qt"; submodules: ["core"] }
 
     files: [
+        "BackendStub.cpp",
+        "BackendStub.hpp",
         "StubChainAdaptor.cpp",
         "StubChainAdaptor.hpp",
         "StubChainAdaptor_global.hpp",

@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with SWV.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "StubChainAdaptor.hpp"
+#include "BackendStub.hpp"
 
 #include <capnp/dynamic.h>
 
@@ -159,6 +159,11 @@ StubChainAdaptor::StubChainAdaptor(QObject* parent)
 }
 
 StubChainAdaptor::~StubChainAdaptor() noexcept {}
+
+StubChainAdaptor::BackendStub StubChainAdaptor::getBackendStub()
+{
+    return BackendStub(*this);
+}
 
 kj::Promise<Coin::Reader> StubChainAdaptor::getCoin(quint64 id) const
 {

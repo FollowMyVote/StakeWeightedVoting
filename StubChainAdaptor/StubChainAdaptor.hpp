@@ -37,8 +37,12 @@ class STUBCHAINADAPTORSHARED_EXPORT StubChainAdaptor : public QObject, public Bl
     Q_OBJECT
 
 public:
+    class BackendStub;
+
     StubChainAdaptor(QObject* parent = nullptr);
     virtual ~StubChainAdaptor() noexcept;
+
+    BackendStub getBackendStub();
 
     virtual kj::Promise<Coin::Reader> getCoin(quint64 id) const;
     virtual kj::Promise<Coin::Reader> getCoin(QString symbol) const;
