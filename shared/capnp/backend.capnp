@@ -35,8 +35,10 @@ interface Backend {
     getContestCreator @3 () -> (creator :ContestCreator);
     # Get a ContestCreator API
 
-    getCoinDetails @4 (coinId :UInt64) -> (details :CoinDetails);
+    getCoinDetails @4 (coinId :UInt64, volumeHistoryLength :Int32 = -1) -> (details :CoinDetails);
     # Get the details for the given coin
+    # volumeHistoryLength is the number of hours to get voting volume history for. If this is nonpositive, no history
+    # will be returned.
 
    interface ContestResults {
         results @0 () -> (results :List(TalliedOpinion));
@@ -71,8 +73,18 @@ interface Backend {
 
         iconUrl @1 :Text;
         # The URL to the icon to display for this coin (may be empty)
-
         activeContestCount @0 :Int32;
         # The total number of active contests in this coin
+
+        volumeHistory :union {
+            noHistory @2 :Void;
+            history :group {
+                histogram @3 :List(Int64);
+                # A histogram of voting volume. Each element records the volume during a one hour period of time.
+                historyEndTimestamp @4 :Int64;
+                # Timestamp of the last sample in the histogram. Each sample histogram_n is timestamped exactly one hour
+                # prior to sample histogram_n+1
+            }
+        }
     }
 }
