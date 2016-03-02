@@ -35,6 +35,11 @@ void CoinWrapper::updateFields(Coin::Reader coin) {
 void CoinWrapper::updateFields(Backend::CoinDetails::Reader details) {
     update_iconUrl(convertText(details.getIconUrl()));
     update_contestCount(details.getActiveContestCount());
+
+    if (details.getVolumeHistory().isHistory()) {
+        // TODO: copy history into a QLineSeries property
+        // Will do when we integrate Qt Charts into the project
+    }
 }
 
 } // namespace swv

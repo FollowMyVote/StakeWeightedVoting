@@ -21,7 +21,7 @@ See [Architecture](Architecture.md) for more information on how the components i
 - [Qt](https://qt.io) 5.6+ including QBS
 - [V-Play](http://v-play.net) 2.7.0+
  
-You will also need to fetch the submodule dependencies by running `git submodule update --init`
+A video showing how to set up the development environment is available [here](https://drive.google.com/file/d/0BxT8fpuOgKV8dzJ1dWtyakFKWGM/view?usp=sharing)
 
 Once the dependencies are installed, building the application is as simple as running `qbs` in the top-level directory. If this doesn't work, probably qbs is not configured yet or Cap'n Proto is not in PATH. If you use the QtCreator IDE, you can skip configuring qbs manually as QtCreator does this automatically. QtCreator also allows you to customize PATH (and other environment variables) in the Projects pane.
 

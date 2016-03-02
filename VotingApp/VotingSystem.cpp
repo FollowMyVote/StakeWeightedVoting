@@ -162,12 +162,14 @@ VotingSystem::VotingSystem(QObject *parent)
 
                 // For each coin, fetch the statistics and return a promise for the coin and statistics
                 return kj::joinPromises(KJ_MAP(coin, d->kjCoins) {
-                    auto request = d->backend->backend().getCoinDetailsRequest();
-                    request.setCoinId(coin.getId());
-                    return request.send().then([coin](capnp::Response<Backend::GetCoinDetailsResults> r) {
-                        return std::make_tuple(coin, kj::mv(r));
-                    });
-                });
+                         auto request = d->backend->backend().getCoinDetailsRequest();
+                         request.setCoinId(coin.getId());
+                         // Get one week of volume history
+                         request.setVolumeHistoryLength(24 * 7);
+                         return request.send().then([coin](capnp::Response<Backend::GetCoinDetailsResults> r) {
+                             return std::make_tuple(coin, kj::mv(r));
+                         });
+                     });
             }).then([this, d](kj::Array<std::tuple<Coin::Reader, capnp::Response<Backend::GetCoinDetailsResults>>> r) {
                 // Create wrappers for the coins with statistics set
                 for (const auto& tuple : r) {
@@ -209,7 +211,7 @@ VotingSystem::VotingSystem(QObject *parent)
                         balanceSums[balance.getType()] += balance.getAmount();
                     // Store balance sums in Account object
                     for (auto balPair : balanceSums) {
-                        data::AccountBalance balance{getCoin(balPair.first), balPair.second};
+                        data::AccountBalance balance{balPair.first, balPair.second};
                         account->get_balances()->append(QVariant::fromValue(balance));
                     }
 
