@@ -219,6 +219,10 @@ VotingSystem::VotingSystem(QObject *parent)
                     // If this account is the persisted current account, set that too
                     if (account->get_name() == currentAccountName)
                         setCurrentAccount(account);
+                    // If no account is set yet, go ahead and set the first one we find (we should set a current
+                    // account at startup if at all possible)
+                    else if (d->currentAccount == nullptr)
+                        setCurrentAccount(account);
                 }
             }));
         }
@@ -295,6 +299,13 @@ Promise* VotingSystem::castCurrentDecision(swv::ContestWrapper* contest) {
     if (!isReady()) {
         setLastError(tr("Unable to cast vote. Please ensure that you are online and that you have connected this app "
                         "to the blockchain."));
+        return nullptr;
+    }
+
+    if (d->currentAccount == nullptr) {
+        // If this ever happens, it's probably a bug, but better to give an error than crash.
+        setLastError(tr("Unable to cast vote because current account is not set. "
+                        "Please set your account in the settings and try again."));
         return nullptr;
     }
 
@@ -382,6 +393,12 @@ void VotingSystem::cancelCurrentDecision(ContestWrapper* contest) {
     if (!isReady()) {
         setLastError(tr("Unable to cancel vote. Please ensure that you are online and that you have connected this "
                         "app to the blockchain."));
+        return;
+    }
+    if (d->currentAccount == nullptr) {
+        // If this ever happens, it's probably a bug. Log it, and just reset the decisions.
+        KJ_LOG(ERROR, "Current account was unset while canceling a decision. This probably shouldn't be possible.");
+        contest->currentDecision()->setOpinions({});
         return;
     }
 
