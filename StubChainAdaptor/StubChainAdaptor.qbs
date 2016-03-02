@@ -11,6 +11,8 @@ DynamicLibrary {
     files: [
         "BackendStub.cpp",
         "BackendStub.hpp",
+        "ContestGenerator.cpp",
+        "ContestGenerator.hpp",
         "StubChainAdaptor.cpp",
         "StubChainAdaptor.hpp",
         "StubChainAdaptor_global.hpp",
