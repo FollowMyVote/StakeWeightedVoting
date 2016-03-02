@@ -46,14 +46,15 @@ ListPage {
         contestObject: model.contestObject
         votingStake: model.votingStake
         tracksLiveResults: model.tracksLiveResults
-        width: parent.width - window.dp(16)
+        width: parent.width - window.dp(32)
         onSelected: {
             contestListPage.navigationStack.push(Qt.createComponent(Qt.resolvedUrl("ContestPage.qml")),
                                                  {"votingSystem": votingSystem, "contest": contest})
         }
     }
-
-    listView.spacing: window.dp(8)
+    listView.rightMargin: window.dp(16)
+    listView.topMargin: window.dp(16)
+    listView.spacing: window.dp(16)
     listView.onAtYEndChanged: {
         if(listView.atYEnd && votingSystem.isReady) {
             contestList.loadContests()

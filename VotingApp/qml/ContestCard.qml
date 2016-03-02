@@ -25,16 +25,8 @@ import FollowMyVote.StakeWeightedVoting 1.0
 
 Rectangle {
     id: card
-    x: window.dp(8)
+    x: window.dp(16)
     height: contestDelegate.height + window.dp(32)
-    layer.enabled: showDropShadow
-    layer.effect: DropShadow {
-        radius: 2
-        samples: 16
-        source: card
-        color: Qt.rgba(0, 0, 0, 0.5)
-        transparentBorder: true
-    }
 
     property VotingSystem votingsystem
     property int votingStake
