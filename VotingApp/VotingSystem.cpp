@@ -27,7 +27,6 @@
 #include "wrappers/Balance.hpp"
 #include "wrappers/Contest.hpp"
 #include "wrappers/Decision.hpp"
-#include "wrappers/Datagram.hpp"
 #include "wrappers/BackendWrapper.hpp"
 #include "wrappers/OwningWrapper.hpp"
 #include "wrappers/Converters.hpp"
@@ -347,12 +346,14 @@ Promise* VotingSystem::castCurrentDecision(swv::ContestWrapper* contest) {
             KJ_FAIL_REQUIRE("Couldn't cast vote because voting account has no balances in the coin");
         }
 
-        QString serialDecision = decision->serialize().toHex();
+        auto serialDecision = decision->serialize();
         auto promises = kj::heapArrayBuilder<kj::Promise<void>>(balances.size());
         for (auto balance : balances) {
-            auto dgram = chain->getDatagram();
-            dgram->setSchema(DECISION_SCHEMA + contest->id());
-            dgram->setContent(serialDecision);
+            auto dgram = chain->getNewDatagram();
+            dgram.initIndex().setType(Datagram::DatagramType::DECISION);
+            auto binaryId = QByteArray::fromHex(contest->id().toLocal8Bit());
+            dgram.getIndex().setKey(convertBlob(binaryId));
+            dgram.setContent(convertBlob(serialDecision));
 
             promises.add(chain->adaptor()->publishDatagram(convertBlob(balance.getId())));
         }

@@ -19,7 +19,6 @@
 #include "ChainAdaptorWrapper.hpp"
 #include "wrappers/Coin.hpp"
 #include "wrappers/Balance.hpp"
-#include "wrappers/Datagram.hpp"
 #include "wrappers/OwningWrapper.hpp"
 #include "wrappers/Converters.hpp"
 #include "Promise.hpp"
@@ -32,7 +31,6 @@
 namespace swv {
 
 const static QString PERSISTENT_DECISION_KEY = QStringLiteral("persistedDecisions/%1");
-const static QString DECISION_SCHEMA = QStringLiteral("00%1");
 
 ChainAdaptorWrapper::ChainAdaptorWrapper(PromiseConverter& promiseConverter, QObject *parent)
     : QObject(parent),
@@ -69,11 +67,12 @@ kj::Promise<OwningWrapper<DecisionWrapper>*> ChainAdaptorWrapper::_getDecision(Q
     using Reader = ::Balance::Reader;
     auto promise = m_adaptor->getContest(QByteArray::fromHex(contestId.toLocal8Bit())).then([=](::Contest::Reader c) {
         return m_adaptor->getBalancesForOwner(owner).then([c](kj::Array<Reader> balances) {
-            return std::make_pair(c, kj::mv(balances));
+            return std::make_tuple(c, kj::mv(balances));
         });
-    }).then([=](std::pair<::Contest::Reader, kj::Array<Reader>> pair) {
-        auto contest = kj::mv(pair.first);
-        auto balances = kj::mv(pair.second);
+    }).then([=](std::tuple<::Contest::Reader, kj::Array<Reader>> contestAndBalances) {
+        ::Contest::Reader contest;
+        kj::Array<Reader> balances;
+        std::tie(contest, balances) = kj::mv(contestAndBalances);
 
         auto newEnd = std::remove_if(balances.begin(), balances.end(), [contest](Reader balance) {
             return balance.getType() != contest.getContest().getCoin();
@@ -82,7 +81,7 @@ kj::Promise<OwningWrapper<DecisionWrapper>*> ChainAdaptorWrapper::_getDecision(Q
 
         // This struct is basically a lambda on steroids. I'm using it to transform the array of balances into an array
         // of datagrams containing the decision I want on each of those balances. Also, make sure the newest balance's
-        // decision is in the front (I don't care about preserving order)
+        // decision is in the front (I don't care about preserving order) so that the newest decision will be returned.
         struct {
             // Capture this
             ChainAdaptorWrapper* wrapper;
@@ -100,7 +99,8 @@ kj::Promise<OwningWrapper<DecisionWrapper>*> ChainAdaptorWrapper::_getDecision(Q
 
                 // Start a lookup for the datagram and store the promise.
                 auto promise = wrapper->m_adaptor->getDatagram(convertBlob(balance.getId()),
-                                                               DECISION_SCHEMA.arg(contestId));
+                                                               Datagram::DatagramType::DECISION,
+                                                               contestId);
                 datagramPromises.add(promise.then([](::Datagram::Reader r) -> kj::Maybe<::Datagram::Reader> {
                         return r;
                     }, [](kj::Exception e) -> kj::Maybe<::Datagram::Reader> {
@@ -236,10 +236,10 @@ Promise* ChainAdaptorWrapper::getContest(QString contestId)
     return nullptr;
 }
 
-DatagramWrapper* ChainAdaptorWrapper::getDatagram()
+Datagram::Builder ChainAdaptorWrapper::getNewDatagram()
 {
     if (hasAdaptor())
-        return new DatagramWrapper(m_adaptor->createDatagram(), this);
+        return m_adaptor->createDatagram();
     return nullptr;
 }
 
@@ -247,17 +247,6 @@ Promise* ChainAdaptorWrapper::publishDatagram(QByteArray payerBalanceId, QByteAr
 {
     if (hasAdaptor())
         return promiseConverter.convert(m_adaptor->publishDatagram(payerBalanceId, publisherBalanceId));
-    return nullptr;
-}
-
-Promise* ChainAdaptorWrapper::getDatagram(QString balanceId, QString schema)
-{
-    if (hasAdaptor()) {
-        return promiseConverter.convert(m_adaptor->getDatagram(QByteArray::fromHex(balanceId.toLocal8Bit()), schema),
-                                        [this](::Datagram::Reader r) -> QVariantList {
-            return {QVariant::fromValue<QObject*>(new OwningWrapper<DatagramWrapper>(r, this))};
-        });
-    }
     return nullptr;
 }
 

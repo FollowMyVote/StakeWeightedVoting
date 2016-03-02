@@ -32,7 +32,6 @@
 #include "wrappers/Balance.hpp"
 #include "wrappers/Contest.hpp"
 #include "wrappers/Decision.hpp"
-#include "wrappers/Datagram.hpp"
 #include "wrappers/ContestGeneratorWrapper.hpp"
 #include "wrappers/PurchaseContestRequest.hpp"
 #include "wrappers/PurchaseWrapper.hpp"
@@ -76,7 +75,6 @@ int main(int argc, char *argv[])
     REGISTER_WRAPPER(Decision);
     REGISTER_WRAPPER(Contest);
     REGISTER_WRAPPER(Coin);
-    REGISTER_WRAPPER(Datagram);
     REGISTER_WRAPPER(Backend);
     REGISTER_WRAPPER(ChainAdaptor);
     REGISTER_WRAPPER(ContestGenerator);

@@ -54,14 +54,16 @@ public:
 
     virtual ::Datagram::Builder createDatagram();
     virtual kj::Promise<void> publishDatagram(QByteArray payerBalanceId, QByteArray publisherBalanceId);
-    virtual kj::Promise<::Datagram::Reader> getDatagram(QByteArray balanceId, QString schema) const;
+    virtual kj::Promise<::Datagram::Reader> getDatagram(QByteArray balanceId,
+                                                        Datagram::DatagramType type,
+                                                        QString key) const;
 
 protected:
     capnp::MallocMessageBuilder message;
     std::vector<capnp::Orphan<Coin>> coins;
     std::vector<capnp::Orphan<Contest>> contests;
     std::map<QString, std::vector<capnp::Orphan<Balance>>> balances;
-    std::map<QByteArray, capnp::Orphan<::Datagram>> datagrams;
+    std::map<std::tuple<QByteArray, Datagram::DatagramType, std::vector<kj::byte>>, capnp::Orphan<::Datagram>> datagrams;
     kj::Maybe<capnp::Orphan<::Datagram>> pendingDatagram;
 
     kj::Maybe<capnp::Orphan<Balance>&> getBalanceOrphan(QByteArray id);

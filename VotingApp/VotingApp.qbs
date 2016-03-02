@@ -45,8 +45,6 @@ QtGuiApplication {
         "wrappers/ContestCreator.hpp",
         "wrappers/ContestGeneratorWrapper.cpp",
         "wrappers/ContestGeneratorWrapper.hpp",
-        "wrappers/Datagram.cpp",
-        "wrappers/Datagram.hpp",
         "wrappers/Decision.cpp",
         "wrappers/Decision.hpp",
         "wrappers/OwningWrapper.cpp",

@@ -240,7 +240,6 @@ kj::Promise<void> StubChainAdaptor::publishDatagram(QByteArray payerBalanceId, Q
                                                               "Call createDatagram first!"));
     pendingDatagram = nullptr;
 
-    Datagram::Reader reader = dgram.getReader();
     auto maybePayerBalance = getBalanceOrphan(payerBalanceId);
     auto maybePublisherBalance = getBalanceOrphan(publisherBalanceId);
     KJ_IF_MAYBE(payerBalance, maybePayerBalance) {
@@ -250,10 +249,10 @@ kj::Promise<void> StubChainAdaptor::publishDatagram(QByteArray payerBalanceId, Q
             KJ_REQUIRE(builder.getAmount() >= 10, "The specified balance cannot pay the fee");
             builder.setAmount(builder.getAmount() - 10);
 
-            auto schema = reader.getSchema();
-            auto key = publisherBalanceId.append(QByteArray::fromRawData(reinterpret_cast<const char*>(schema.begin()),
-                                                                         static_cast<int>(schema.size())));
-            datagrams[key] = kj::mv(dgram);
+            auto index = dgram.getReader().getIndex();
+            KJ_LOG(DBG, "Publishing datagram.", publisherBalanceId.toHex().toStdString(), static_cast<uint16_t>(index.getType()), index.getKey());
+            std::vector<kj::byte> key(index.getKey().begin(), index.getKey().end());
+            datagrams[std::make_tuple(publisherBalanceId, index.getType(), kj::mv(key))] = kj::mv(dgram);
             return kj::READY_NOW;
         } else {
             KJ_FAIL_REQUIRE("Could not find the publisher balance");
@@ -264,13 +263,17 @@ kj::Promise<void> StubChainAdaptor::publishDatagram(QByteArray payerBalanceId, Q
     KJ_UNREACHABLE;
 }
 
-kj::Promise<Datagram::Reader> StubChainAdaptor::getDatagram(QByteArray balanceId, QString schema) const
+kj::Promise<Datagram::Reader> StubChainAdaptor::getDatagram(QByteArray balanceId,
+                                                            Datagram::DatagramType type,
+                                                            QString key) const
 {
-    auto key = balanceId;
-    auto itr = datagrams.find(key.append(QByteArray::fromHex(schema.toLocal8Bit())));
+    auto binaryKey = QByteArray::fromHex(key.toLocal8Bit());
+    std::vector<kj::byte> keyVector(binaryKey.begin(), binaryKey.end());
+    auto itr = datagrams.find(std::make_tuple(balanceId, type, kj::mv(keyVector)));
     if (itr == datagrams.end())
-        return KJ_EXCEPTION(FAILED, "No datagram belonging to the specified balance with the specified schema found.",
-                            balanceId.toHex().data(), schema.toStdString());
+        return KJ_EXCEPTION(FAILED, "No datagram belonging to the specified balance "
+                                    "with the specified type and key found.",
+                            balanceId.toHex().data(), static_cast<uint16_t>(type), key.toStdString());
     return itr->second.getReader();
 }
 

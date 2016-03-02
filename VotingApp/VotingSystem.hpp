@@ -35,8 +35,6 @@ class BackendWrapper;
 class DecisionWrapper;
 class ContestWrapper;
 
-const static QString DECISION_SCHEMA = QStringLiteral("00");
-
 class VotingSystemPrivate;
 /**
  * @brief The VotingSystem class is the high-level interface to the voting system.
