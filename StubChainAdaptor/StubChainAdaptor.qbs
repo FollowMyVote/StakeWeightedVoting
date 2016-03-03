@@ -13,6 +13,8 @@ DynamicLibrary {
         "BackendStub.hpp",
         "ContestGenerator.cpp",
         "ContestGenerator.hpp",
+        "ContestResults.cpp",
+        "ContestResults.hpp",
         "StubChainAdaptor.cpp",
         "StubChainAdaptor.hpp",
         "StubChainAdaptor_global.hpp",

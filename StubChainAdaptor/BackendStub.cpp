@@ -17,6 +17,11 @@
  */
 #include "BackendStub.hpp"
 #include "ContestGenerator.hpp"
+#include "ContestResults.hpp"
+
+#include "decision.capnp.h"
+
+#include <capnp/serialize.h>
 
 namespace swv {
 
@@ -54,7 +59,66 @@ StubChainAdaptor::BackendStub::~BackendStub()
 
 ::kj::Promise<void> StubChainAdaptor::BackendStub::getContestResults(Backend::Server::GetContestResultsContext context)
 {
+    auto contestId = context.getParams().getContestId();
+    auto contest = adaptor.getContest(contestId).getContest();
+    std::map<int32_t, int64_t> contestantTallies;
+    std::map<kj::String, int64_t> writeInTallies;
 
+    for (const auto& datagramPair : adaptor.datagrams) {
+        auto datagram = datagramPair.second.getReader();
+        // If this is a decision on the contest we're tallying...
+        if (datagram.getIndex().getType() == Datagram::DatagramType::DECISION &&
+                datagram.getIndex().getKey() == contestId) {
+            // Read the decsision out of the datagram
+            kj::ArrayInputStream datagramStream(datagram.getContent());
+            capnp::InputStreamMessageReader message(datagramStream);
+            auto decision = message.getRoot<Decision>();
+
+            if (decision.getContest() != contestId) {
+                KJ_LOG(WARNING,
+                       "Datagram claiming to be relevant to one contest contains a decision for a different contest",
+                       contestId, decision.getContest());
+                continue;
+            }
+            if (decision.getOpinions().size() != 1) {
+                KJ_LOG(WARNING, "Decision does not have exactly one opinion. This is currently unsupported",
+                       decision);
+                continue;
+            }
+
+            auto contestant = decision.getOpinions()[0].getContestant();
+            if (contestant < 0 ||
+                    contestant >= contest.getContestants().getEntries().size() +
+                    decision.getWriteIns().getEntries().size()) {
+                KJ_LOG(WARNING, "Decision specifies a contestant which does not exist", decision, contest);
+                continue;
+            }
+
+            KJ_IF_MAYBE(balancePointer, adaptor.getBalanceOrphan(std::get<0>(datagramPair.first))) {
+                auto balance = balancePointer->getReader();
+
+                if (balance.getType() != contest.getCoin()) {
+                    KJ_LOG(WARNING, "Decision is published on balance which has a different coin than contest",
+                           decision, balance);
+                    continue;
+                }
+                if (contestant < contest.getContestants().getEntries().size())
+                    contestantTallies[contestant] += balance.getAmount();
+                else {
+                    contestant -= contest.getContestants().getEntries().size();
+                    auto contestantName = kj::heapString(decision.getWriteIns().getEntries()[contestant].getKey());
+                    writeInTallies[kj::mv(contestantName)] += balance.getAmount();
+                }
+            } else {
+                KJ_LOG(WARNING, "Unable to find balance for decision",
+                       decision, std::get<0>(datagramPair.first).toHex().toStdString());
+                continue;
+            }
+        }
+    }
+
+    context.initResults().setResults(kj::heap<ContestResults>(kj::mv(contestantTallies), kj::mv(writeInTallies)));
+    return kj::READY_NOW;
 }
 
 ::kj::Promise<void> StubChainAdaptor::BackendStub::getContestCreator(Backend::Server::GetContestCreatorContext context)

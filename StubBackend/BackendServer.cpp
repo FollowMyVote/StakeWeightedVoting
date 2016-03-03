@@ -97,7 +97,7 @@ BackendServer::BackendServer()
     auto results = context.getResults().initResults(contestResults.size());
     auto mapResults = contestResults;
     for (unsigned i = 0; i < results.size(); ++i) {
-        results[i].setContestant(mapResults.firstKey());
+        results[i].initContestant().setContestant(mapResults.firstKey());
         results[i].setTally(mapResults.take(mapResults.firstKey()));
     }
     return kj::READY_NOW;

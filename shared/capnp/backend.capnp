@@ -47,7 +47,10 @@ interface Backend {
         # Subscribe to changes to the results. Notifications will be sent until the ContestResults is destroyed.
 
         struct TalliedOpinion {
-            contestant @0 :Int32;
+            contestant :union {
+                contestant @0 :Int32;
+                writeIn @2 :Text;
+            }
             tally @1 :Int64;
         }
     }

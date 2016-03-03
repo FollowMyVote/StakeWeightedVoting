@@ -51,6 +51,7 @@ public:
     virtual kj::Promise<Balance::Reader> getBalance(QByteArray id) const;
     virtual kj::Promise<kj::Array<Balance::Reader>> getBalancesForOwner(QString owner) const;
     virtual kj::Promise<::Contest::Reader> getContest(QByteArray contestId) const;
+    ::Contest::Reader getContest(capnp::Data::Reader contestId) const;
 
     virtual ::Datagram::Builder createDatagram();
     virtual kj::Promise<void> publishDatagram(QByteArray payerBalanceId, QByteArray publisherBalanceId);

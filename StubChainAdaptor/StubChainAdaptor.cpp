@@ -216,6 +216,13 @@ kj::Promise<kj::Array<Balance::Reader>> StubChainAdaptor::getBalancesForOwner(QS
     return results.finish();
 }
 
+Contest::Reader StubChainAdaptor::getContest(capnp::Data::Reader contestId) const
+{
+    if (contestId.size() != 1 || char(contestId[0]) < 0 || char(contestId[0]) > 9)
+        KJ_FAIL_REQUIRE("Could not find the specified contest", contestId);
+    return contests[static_cast<size_t>(contestId[0])].getReader();
+}
+
 Datagram::Builder StubChainAdaptor::createDatagram()
 {
     KJ_IF_MAYBE(KJ_UNUSED d, pendingDatagram) {
