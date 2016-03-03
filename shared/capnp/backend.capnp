@@ -32,13 +32,13 @@ interface Backend {
     getContestResults @2 (contestId :Data) -> (results :ContestResults);
     # Get the instantaneous live results for the specified contest
 
-    getContestCreator @3 () -> (creator :ContestCreator);
-    # Get a ContestCreator API
-
     getCoinDetails @4 (coinId :UInt64, volumeHistoryLength :Int32 = -1) -> (details :CoinDetails);
     # Get the details for the given coin
     # volumeHistoryLength is the number of hours to get voting volume history for. If this is nonpositive, no history
     # will be returned.
+
+    createContest @3 () -> (creator :ContestCreator);
+    # Get a ContestCreator API
 
    interface ContestResults {
         results @0 () -> (results :List(TalliedOpinion));

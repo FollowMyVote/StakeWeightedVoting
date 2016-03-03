@@ -32,8 +32,7 @@ StubChainAdaptor::BackendStub::BackendStub(StubChainAdaptor &adaptor)
 StubChainAdaptor::BackendStub::~BackendStub()
 {}
 
-::kj::Promise<void> StubChainAdaptor::BackendStub::getContestFeed(Backend::Server::GetContestFeedContext context)
-{
+::kj::Promise<void> StubChainAdaptor::BackendStub::getContestFeed(Backend::Server::GetContestFeedContext context) {
     std::vector<Contest::Reader> feedContests;
     feedContests.reserve(adaptor.contests.size());
 
@@ -44,8 +43,7 @@ StubChainAdaptor::BackendStub::~BackendStub()
     return kj::READY_NOW;
 }
 
-::kj::Promise<void> StubChainAdaptor::BackendStub::searchContests(Backend::Server::SearchContestsContext context)
-{
+::kj::Promise<void> StubChainAdaptor::BackendStub::searchContests(Backend::Server::SearchContestsContext context) {
     std::vector<Contest::Reader> feedContests;
     feedContests.reserve(adaptor.contests.size());
 
@@ -57,8 +55,7 @@ StubChainAdaptor::BackendStub::~BackendStub()
     return kj::READY_NOW;
 }
 
-::kj::Promise<void> StubChainAdaptor::BackendStub::getContestResults(Backend::Server::GetContestResultsContext context)
-{
+::kj::Promise<void> StubChainAdaptor::BackendStub::getContestResults(Backend::Server::GetContestResultsContext context) {
     auto contestId = context.getParams().getContestId();
     auto contest = adaptor.getContest(contestId).getContest();
     std::map<int32_t, int64_t> contestantTallies;
@@ -121,13 +118,11 @@ StubChainAdaptor::BackendStub::~BackendStub()
     return kj::READY_NOW;
 }
 
-::kj::Promise<void> StubChainAdaptor::BackendStub::getContestCreator(Backend::Server::GetContestCreatorContext context)
-{
+::kj::Promise<void> StubChainAdaptor::BackendStub::createContest(Backend::Server::CreateContestContext context) {
 
 }
 
-::kj::Promise<void> StubChainAdaptor::BackendStub::getCoinDetails(Backend::Server::GetCoinDetailsContext context)
-{
+::kj::Promise<void> StubChainAdaptor::BackendStub::getCoinDetails(Backend::Server::GetCoinDetailsContext context) {
 
 }
 

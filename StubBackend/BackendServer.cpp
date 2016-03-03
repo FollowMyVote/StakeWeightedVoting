@@ -60,12 +60,6 @@ BackendServer::BackendServer()
     return kj::READY_NOW;
 }
 
-::kj::Promise<void> BackendServer::getContestCreator(Backend::Server::GetContestCreatorContext context)
-{
-    context.getResults().setCreator(kj::heap<ContestCreatorImpl>());
-    return kj::READY_NOW;
-}
-
 ::kj::Promise<void> BackendServer::getCoinDetails(Backend::Server::GetCoinDetailsContext context)
 {
     auto results = context.getResults().initDetails();
@@ -89,6 +83,12 @@ BackendServer::BackendServer()
         for (int i = 0; i < historyLength; ++i)
             histogram.set(i, 1000000);
     }
+    return kj::READY_NOW;
+}
+
+::kj::Promise<void> BackendServer::createContest(Backend::Server::CreateContestContext context)
+{
+    context.getResults().setCreator(kj::heap<ContestCreatorImpl>());
     return kj::READY_NOW;
 }
 

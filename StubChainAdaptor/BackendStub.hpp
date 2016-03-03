@@ -37,8 +37,8 @@ protected:
     ::kj::Promise<void> getContestFeed(GetContestFeedContext context);
     ::kj::Promise<void> searchContests(SearchContestsContext context);
     ::kj::Promise<void> getContestResults(GetContestResultsContext context);
-    ::kj::Promise<void> getContestCreator(GetContestCreatorContext context);
     ::kj::Promise<void> getCoinDetails(GetCoinDetailsContext context);
+    ::kj::Promise<void> createContest(CreateContestContext context);
 
 private:
     // Only StubChainAdaptor::getBackendStub() can instantiate a BackendStub.
