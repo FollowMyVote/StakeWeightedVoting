@@ -31,6 +31,7 @@ QtGuiApplication {
         "main.cpp",
         "qml.qrc",
         "qml/*.qml",
+        "qml/CustomControls/*",
         "wrappers/ChainAdaptorWrapper.cpp",
         "wrappers/ChainAdaptorWrapper.hpp",
         "wrappers/BackendWrapper.cpp",
