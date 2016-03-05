@@ -2,7 +2,7 @@
 
 This document describes the software architecture used for the Stake-Weighed Voting application. Only the application is documented here; external components such as the server and the blockchain adaptor are documented in their respective repositories.
 
-The interface to the server is defined [here](../shared/capnp/backend.capnp) and `BlockchainAdaptorInterface` is defined [here](../shared/BlockchainAdaptorInterface.hpp)
+The interface to the server is defined [here](shared/capnp/backend.capnp) and `BlockchainAdaptorInterface` is defined [here](shared/BlockchainAdaptorInterface.hpp)
 
 ![Architecture Diagram](Architecture.png)
 
