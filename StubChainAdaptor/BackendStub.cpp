@@ -24,6 +24,8 @@
 
 #include <capnp/serialize.h>
 
+#include <chrono>
+
 namespace swv {
 
 StubChainAdaptor::BackendStub::BackendStub(StubChainAdaptor &adaptor)
@@ -125,7 +127,28 @@ StubChainAdaptor::BackendStub::~BackendStub()
 }
 
 ::kj::Promise<void> StubChainAdaptor::BackendStub::getCoinDetails(Backend::Server::GetCoinDetailsContext context) {
+    auto results = context.getResults().initDetails();
+    results.setIconUrl("https://followmyvote.com/wp-content/uploads"
+                                                  "/2014/02/Follow-My-Vote-Logo.png");
+    results.setActiveContestCount(15);
 
+    auto historyLength = context.getParams().getVolumeHistoryLength();
+    if (historyLength <= 0)
+        results.getVolumeHistory().setNoHistory();
+    else {
+        auto history = results.getVolumeHistory().initHistory();
+        // Get current time, rewound to the most recent hour
+        history.setHistoryEndTimestamp(
+                    std::chrono::duration_cast<std::chrono::milliseconds>(
+                        std::chrono::system_clock::now().time_since_epoch()
+                    ).count() / (1000 * 60 * 60) * (1000 * 60 * 60));
+        // TODO: test that this logic for getting the timestamp is correct
+        KJ_LOG(DBG, history.getHistoryEndTimestamp());
+        auto histogram = history.initHistogram(historyLength);
+        for (int i = 0; i < historyLength; ++i)
+            histogram.set(i, 1000000);
+    }
+    return kj::READY_NOW;
 }
 
 }
