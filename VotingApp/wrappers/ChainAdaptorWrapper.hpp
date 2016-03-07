@@ -20,10 +20,10 @@
 #define CHAINADAPTORWRAPPER_HPP
 
 #include "capnp/coin.capnp.h"
+#include "capnp/datagram.capnp.h"
 
 #include "Coin.hpp"
 #include "Contest.hpp"
-#include "Datagram.hpp"
 
 #include "vendor/QQmlObjectListModel.h"
 
@@ -150,7 +150,7 @@ public:
      * @brief Get a new datagram
      * @return A wrapped datagram, suitable for populating and passing to @ref publishDatagram
      */
-    Q_INVOKABLE DatagramWrapper* getDatagram();
+    Datagram::Builder getNewDatagram();
     /**
      * @brief Publish a datagram to the blockchain
      * @param payer Balance which will be used to pay for the publication
@@ -158,14 +158,6 @@ public:
      * be confirmed or included!)
      */
     Promise* publishDatagram(QByteArray payerBalanceId, QByteArray publisherBalanceId);
-    /**
-     * @brief Get datagram with specified schema belonging to specified balance
-     * @param balanceId Hex-encoded ID of the balance to get datagram for
-     * @param schema Schema of the datagram to retrieve
-     * @return Promise for the requested datagram or nullptr if adaptor is not ready. Promise will be broken if
-     * datagram is not found.
-     */
-    Q_INVOKABLE Promise* getDatagram(QString balanceId, QString schema = QString::null);
 
 signals:
     void hasAdaptorChanged(bool);

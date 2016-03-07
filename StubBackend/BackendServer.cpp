@@ -60,12 +60,6 @@ BackendServer::BackendServer()
     return kj::READY_NOW;
 }
 
-::kj::Promise<void> BackendServer::getContestCreator(Backend::Server::GetContestCreatorContext context)
-{
-    context.getResults().setCreator(kj::heap<ContestCreatorImpl>());
-    return kj::READY_NOW;
-}
-
 ::kj::Promise<void> BackendServer::getCoinDetails(Backend::Server::GetCoinDetailsContext context)
 {
     auto results = context.getResults().initDetails();
@@ -92,12 +86,18 @@ BackendServer::BackendServer()
     return kj::READY_NOW;
 }
 
+::kj::Promise<void> BackendServer::createContest(Backend::Server::CreateContestContext context)
+{
+    context.getResults().setCreator(kj::heap<ContestCreatorImpl>());
+    return kj::READY_NOW;
+}
+
 ::kj::Promise<void> ContestResultsImpl::results(Backend::ContestResults::Server::ResultsContext context)
 {
     auto results = context.getResults().initResults(contestResults.size());
     auto mapResults = contestResults;
     for (unsigned i = 0; i < results.size(); ++i) {
-        results[i].setContestant(mapResults.firstKey());
+        results[i].initContestant().setContestant(mapResults.firstKey());
         results[i].setTally(mapResults.take(mapResults.firstKey()));
     }
     return kj::READY_NOW;

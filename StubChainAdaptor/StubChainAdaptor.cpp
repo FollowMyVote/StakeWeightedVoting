@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with SWV.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "StubChainAdaptor.hpp"
+#include "BackendStub.hpp"
 
 #include <capnp/dynamic.h>
 
@@ -106,9 +106,6 @@ StubChainAdaptor::StubChainAdaptor(QObject* parent)
     ucontest.setDescription("Where should we go for lunch?");
     ucontest.setStartTime(static_cast<uint64_t>(QDateTime::fromString("2015-09-20T12:00:00",
                                                                       Qt::ISODate).toMSecsSinceEpoch()));
-    auto tags = ucontest.initTags().initEntries(1);
-    tags[0].setKey("category");
-    tags[0].setValue("food");
     auto contestants = ucontest.initContestants().initEntries(3);
     contestants[0].setKey("Wikiteria");
     contestants[0].setValue("Cafeteria on the CRC campus");
@@ -129,9 +126,6 @@ StubChainAdaptor::StubChainAdaptor(QObject* parent)
                             "using the Graphene Toolkit?");
     ucontest.setStartTime(static_cast<uint64_t>(QDateTime::fromString("2015-09-11T12:00:00",
                                                                       Qt::ISODate).toMSecsSinceEpoch()));
-    tags = ucontest.initTags().initEntries(1);
-    tags[0].setKey("category");
-    tags[0].setValue("hard-forks");
     contestants = ucontest.initContestants().initEntries(2);
     contestants[0].setKey("Yes");
     contestants[0].setValue("Accept the upgrade, and hard-fork to BitShares 2.0");
@@ -159,6 +153,11 @@ StubChainAdaptor::StubChainAdaptor(QObject* parent)
 }
 
 StubChainAdaptor::~StubChainAdaptor() noexcept {}
+
+::Backend::Client StubChainAdaptor::getBackendStub()
+{
+    return kj::heap<BackendStub>(*this);
+}
 
 kj::Promise<Coin::Reader> StubChainAdaptor::getCoin(quint64 id) const
 {
@@ -211,6 +210,13 @@ kj::Promise<kj::Array<Balance::Reader>> StubChainAdaptor::getBalancesForOwner(QS
     return results.finish();
 }
 
+Contest::Reader StubChainAdaptor::getContest(capnp::Data::Reader contestId) const
+{
+    if (contestId.size() != 1 || char(contestId[0]) < 0 || char(contestId[0]) > contests.size())
+        KJ_FAIL_REQUIRE("Could not find the specified contest", contestId);
+    return contests[static_cast<size_t>(contestId[0])].getReader();
+}
+
 Datagram::Builder StubChainAdaptor::createDatagram()
 {
     KJ_IF_MAYBE(KJ_UNUSED d, pendingDatagram) {
@@ -235,7 +241,6 @@ kj::Promise<void> StubChainAdaptor::publishDatagram(QByteArray payerBalanceId, Q
                                                               "Call createDatagram first!"));
     pendingDatagram = nullptr;
 
-    Datagram::Reader reader = dgram.getReader();
     auto maybePayerBalance = getBalanceOrphan(payerBalanceId);
     auto maybePublisherBalance = getBalanceOrphan(publisherBalanceId);
     KJ_IF_MAYBE(payerBalance, maybePayerBalance) {
@@ -245,10 +250,10 @@ kj::Promise<void> StubChainAdaptor::publishDatagram(QByteArray payerBalanceId, Q
             KJ_REQUIRE(builder.getAmount() >= 10, "The specified balance cannot pay the fee");
             builder.setAmount(builder.getAmount() - 10);
 
-            auto schema = reader.getSchema();
-            auto key = publisherBalanceId.append(QByteArray::fromRawData(reinterpret_cast<const char*>(schema.begin()),
-                                                                         static_cast<int>(schema.size())));
-            datagrams[key] = kj::mv(dgram);
+            auto index = dgram.getReader().getIndex();
+            KJ_LOG(DBG, "Publishing datagram.", publisherBalanceId.toHex().toStdString(), static_cast<uint16_t>(index.getType()), index.getKey());
+            std::vector<kj::byte> key(index.getKey().begin(), index.getKey().end());
+            datagrams[std::make_tuple(publisherBalanceId, index.getType(), kj::mv(key))] = kj::mv(dgram);
             return kj::READY_NOW;
         } else {
             KJ_FAIL_REQUIRE("Could not find the publisher balance");
@@ -259,13 +264,17 @@ kj::Promise<void> StubChainAdaptor::publishDatagram(QByteArray payerBalanceId, Q
     KJ_UNREACHABLE;
 }
 
-kj::Promise<Datagram::Reader> StubChainAdaptor::getDatagram(QByteArray balanceId, QString schema) const
+kj::Promise<Datagram::Reader> StubChainAdaptor::getDatagram(QByteArray balanceId,
+                                                            Datagram::DatagramType type,
+                                                            QString key) const
 {
-    auto key = balanceId;
-    auto itr = datagrams.find(key.append(QByteArray::fromHex(schema.toLocal8Bit())));
+    auto binaryKey = QByteArray::fromHex(key.toLocal8Bit());
+    std::vector<kj::byte> keyVector(binaryKey.begin(), binaryKey.end());
+    auto itr = datagrams.find(std::make_tuple(balanceId, type, kj::mv(keyVector)));
     if (itr == datagrams.end())
-        return KJ_EXCEPTION(FAILED, "No datagram belonging to the specified balance with the specified schema found.",
-                            balanceId.toHex().data(), schema.toStdString());
+        return KJ_EXCEPTION(FAILED, "No datagram belonging to the specified balance "
+                                    "with the specified type and key found.",
+                            balanceId.toHex().data(), static_cast<uint16_t>(type), key.toStdString());
     return itr->second.getReader();
 }
 
@@ -297,6 +306,12 @@ kj::Maybe<const capnp::Orphan<Balance>&> StubChainAdaptor::getBalanceOrphan(QByt
             return *itr;
     }
     return {};
+}
+
+Contest::Builder StubChainAdaptor::createContest()
+{
+    contests.emplace_back(message.getOrphanage().newOrphan<::Contest>());
+    return contests.back().get();
 }
 
 } // namespace swv

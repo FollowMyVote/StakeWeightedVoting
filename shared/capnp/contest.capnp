@@ -28,6 +28,9 @@ struct UnsignedContest {
     # Map of name to description
     coin @5 :UInt64;
     startTime @6 :UInt64;
+    # Millisecond timestamp of contest beginning
+    endTime @7 :UInt64;
+    # Millisecond timestamp of contest end
 }
 
 struct Contest {

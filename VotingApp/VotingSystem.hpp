@@ -35,8 +35,6 @@ class BackendWrapper;
 class DecisionWrapper;
 class ContestWrapper;
 
-const static QString DECISION_SCHEMA = QStringLiteral("00");
-
 class VotingSystemPrivate;
 /**
  * @brief The VotingSystem class is the high-level interface to the voting system.
@@ -125,7 +123,7 @@ signals:
     void currentAccountChanged(swv::data::Account* currentAccount);
 
 public slots:
-    void configureChainAdaptor();
+    void configureChainAdaptor(bool useTestingBackend = false);
 
     /**
      * @brief Cancel changes to the decision on the given contest

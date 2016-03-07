@@ -81,7 +81,7 @@ interface ContestCreator {
         # Maximum permissible length of a contestant description
         maxEndDate @7;
         # Maximum end date of a finite-duration contest. A value of zero allows infinite contest duration; any other
-        # value is the microsecond timestamp of the latest allowable end date
+        # value is the millisecond timestamp of the latest allowable end date
     }
     struct ContestLimit {
     # Wrap the ContestLimit in a struct
@@ -114,7 +114,7 @@ interface ContestCreator {
         contestants @5 :Map(Text, Text);
         # Map of contestant name to description
         contestExpiration @6 :Int64;
-        # Microsecond timestamp of end date; zero indicates no end
+        # Millisecond timestamp of end date; zero indicates no end
         sponsorship :union {
             noSponsorship @7 :Void;
             options :group {

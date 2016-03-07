@@ -15,3 +15,29 @@
  * You should have received a copy of the GNU General Public License
  * along with SWV.  If not, see <http://www.gnu.org/licenses/>.
  */
+#ifndef CONTESTCREATOR_HPP
+#define CONTESTCREATOR_HPP
+
+#include "StubChainAdaptor.hpp"
+
+#include "capnp/contestcreator.capnp.h"
+
+namespace swv {
+
+class StubChainAdaptor::ContestCreator : public ::ContestCreator::Server {
+public:
+    ContestCreator(StubChainAdaptor& adaptor);
+    virtual ~ContestCreator();
+
+protected:
+    // ContestCreator::Server interface
+    ::kj::Promise<void> getPriceSchedule(GetPriceScheduleContext context);
+    ::kj::Promise<void> getContestLimits(GetContestLimitsContext context);
+    ::kj::Promise<void> purchaseContest(PurchaseContestContext context);
+
+private:
+    StubChainAdaptor& adaptor;
+};
+
+}
+#endif // CONTESTCREATOR_HPP
