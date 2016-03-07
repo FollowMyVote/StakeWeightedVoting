@@ -19,6 +19,8 @@ DynamicLibrary {
         "ContestResults.hpp",
         "StubChainAdaptor.cpp",
         "StubChainAdaptor.hpp",
+        "Purchase.cpp",
+        "Purchase.hpp",
         "StubChainAdaptor_global.hpp",
     ]
 

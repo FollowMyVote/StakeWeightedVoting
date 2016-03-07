@@ -18,11 +18,25 @@
 #ifndef CONTESTCREATOR_HPP
 #define CONTESTCREATOR_HPP
 
+#include "capnp/contestcreator.capnp.h"
 
-class ContestCreator : public ContestCreator::Server
-{
+namespace swv {
+class StubChainAdaptor;
+
+class ContestCreator : public ::ContestCreator::Server {
 public:
-    ContestCreator();
+    ContestCreator(StubChainAdaptor& adaptor);
+    virtual ~ContestCreator();
+
+protected:
+    // ContestCreator::Server interface
+    ::kj::Promise<void> getPriceSchedule(GetPriceScheduleContext context);
+    ::kj::Promise<void> getContestLimits(GetContestLimitsContext context);
+    ::kj::Promise<void> purchaseContest(PurchaseContestContext context);
+
+private:
+    StubChainAdaptor& adaptor;
 };
 
+}
 #endif // CONTESTCREATOR_HPP

@@ -16,10 +16,18 @@
  * along with SWV.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "ContestCreator.hpp"
+#include "Purchase.hpp"
+
+#include <kj/debug.h>
+#include <capnp/serialize-packed.h>
+
+#include <chrono>
+#include <map>
 
 namespace swv {
 
-ContestCreator::ContestCreator()
+ContestCreator::ContestCreator(StubChainAdaptor& adaptor)
+    : adaptor(adaptor)
 {}
 
 ContestCreator::~ContestCreator()
@@ -69,7 +77,87 @@ ContestCreator::~ContestCreator()
 }
 
 ::kj::Promise<void> ContestCreator::purchaseContest(ContestCreator::Server::PurchaseContestContext context) {
-    // TODO
+    int64_t price = 0;
+    auto creationRequest = context.getParams().getRequest();
+    bool longText = false;
+
+    // Check limits
+    KJ_REQUIRE(creationRequest.getContestName().size() <= 100, "Contest name is too long", creationRequest);
+    KJ_REQUIRE(creationRequest.getContestDescription().size() <= 10240,
+               "Contest description is too long", creationRequest);
+    if (creationRequest.getContestDescription().size() > 500)
+        longText = true;
+    KJ_REQUIRE(creationRequest.getContestants().getEntries().size() <= 8,
+               "Contest has too many contestants", creationRequest);
+    for (auto contestant : creationRequest.getContestants().getEntries()) {
+        KJ_REQUIRE(contestant.getKey().size() <= 30, "Contestant name is too long", contestant);
+        KJ_REQUIRE(contestant.getValue().size() <= 10240, "Contestant description is too long", contestant);
+        if (contestant.getValue().size() > 500)
+            longText = true;
+    }
+    auto minimumEndDate = std::chrono::duration_cast<std::chrono::milliseconds>(
+                              std::chrono::system_clock::now().time_since_epoch() +
+                              std::chrono::minutes(10)
+                          ).count();
+    KJ_REQUIRE(creationRequest.getContestExpiration() == 0 || creationRequest.getContestExpiration() > minimumEndDate,
+               "Contest expiration must be at least 10 minutes in the future.", creationRequest);
+
+    switch(creationRequest.getContestType()) {
+    case ::ContestCreator::ContestTypes::ONE_OF_N:
+        price += 40000;
+        break;
+    }
+
+    // Count up the base cost
+    switch(creationRequest.getTallyAlgorithm()) {
+    case ::ContestCreator::TallyAlgorithms::PLURALITY:
+        price += 10000;
+        break;
+    }
+
+    switch(creationRequest.getContestants().getEntries().size()) {
+    default: price += (creationRequest.getContestants().getEntries().size() - 6) * 2000; [[clang::fallthrough]];
+    case 6: price += 2500; [[clang::fallthrough]];
+    case 5: price += 2500; [[clang::fallthrough]];
+    case 4: price += 5000; [[clang::fallthrough]];
+    case 3: price += 5000; [[clang::fallthrough]];
+    case 2:
+    case 1:
+        break;
+    }
+
+    if (creationRequest.getContestExpiration() == 0)
+        price += 50000;
+
+    // Add any surcharges
+    std::map<std::string, int64_t> surcharges;
+    if (longText) {
+        auto charge = ((creationRequest.totalSize().wordCount * capnp::BYTES_PER_WORD) / 1024) * 10000;
+        price += charge;
+        surcharges["Long descriptions"] = charge;
+    }
+    for (auto code : creationRequest.getPromoCodes())
+        if (code == "TAKE10") {
+            int64_t credit = price * .1;
+            price -= credit;
+            surcharges["Coupon TAKE10"] = -credit;
+        }
+
+    auto finalSurcharges = context.getResults().initSurcharges().initEntries(surcharges.size());
+    auto index = 0;
+    for (auto surcharge : surcharges) {
+        auto finalSurcharge = finalSurcharges[index++];
+        finalSurcharge.setKey(surcharge.first);
+        finalSurcharge.initValue().setPrice(surcharge.second);
+    }
+
+    std::vector<Purchase::Price> finalPrices;
+    finalPrices.emplace_back(0, price, kj::heapString("follow-my-vote"));
+    context.getResults().setPurchaseApi(kj::heap<Purchase>(kj::mv(finalPrices), [&adaptor = adaptor] {
+        // TODO: Actually create the contest in adaptor
+    }));
+
+    return kj::READY_NOW;
 }
 
 } // namespace swv

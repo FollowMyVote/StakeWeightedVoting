@@ -18,6 +18,7 @@
 #include "BackendStub.hpp"
 #include "ContestGenerator.hpp"
 #include "ContestResults.hpp"
+#include "ContestCreator.hpp"
 
 #include "decision.capnp.h"
 
@@ -119,7 +120,8 @@ StubChainAdaptor::BackendStub::~BackendStub()
 }
 
 ::kj::Promise<void> StubChainAdaptor::BackendStub::createContest(Backend::Server::CreateContestContext context) {
-
+    context.getResults().setCreator(kj::heap<ContestCreator>(adaptor));
+    return kj::READY_NOW;
 }
 
 ::kj::Promise<void> StubChainAdaptor::BackendStub::getCoinDetails(Backend::Server::GetCoinDetailsContext context) {
