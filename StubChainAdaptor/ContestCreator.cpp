@@ -17,6 +17,7 @@
  */
 #include "ContestCreator.hpp"
 #include "Purchase.hpp"
+#include "StubChainAdaptor.hpp"
 
 #include <kj/debug.h>
 #include <capnp/serialize-packed.h>
@@ -26,14 +27,14 @@
 
 namespace swv {
 
-ContestCreator::ContestCreator(StubChainAdaptor& adaptor)
+StubChainAdaptor::ContestCreator::ContestCreator(StubChainAdaptor& adaptor)
     : adaptor(adaptor)
 {}
 
-ContestCreator::~ContestCreator()
+StubChainAdaptor::ContestCreator::~ContestCreator()
 {}
 
-::kj::Promise<void> ContestCreator::getPriceSchedule(ContestCreator::Server::GetPriceScheduleContext context) {
+::kj::Promise<void> StubChainAdaptor::ContestCreator::getPriceSchedule(ContestCreator::Server::GetPriceScheduleContext context) {
     auto entries = context.getResults().getSchedule().initEntries(8);
     entries[0].getKey().setItem(::ContestCreator::LineItems::CONTEST_TYPE_ONE_OF_N);
     entries[0].getValue().setPrice(40000);
@@ -55,7 +56,7 @@ ContestCreator::~ContestCreator()
 
 }
 
-::kj::Promise<void> ContestCreator::getContestLimits(ContestCreator::Server::GetContestLimitsContext context) {
+::kj::Promise<void> StubChainAdaptor::ContestCreator::getContestLimits(ContestCreator::Server::GetContestLimitsContext context) {
     auto entries = context.getResults().getLimits().initEntries(8);
     entries[0].getKey().setLimit(::ContestCreator::ContestLimits::NAME_LENGTH);
     entries[0].getValue().setValue(100);
@@ -76,7 +77,7 @@ ContestCreator::~ContestCreator()
     return kj::READY_NOW;
 }
 
-::kj::Promise<void> ContestCreator::purchaseContest(ContestCreator::Server::PurchaseContestContext context) {
+::kj::Promise<void> StubChainAdaptor::ContestCreator::purchaseContest(ContestCreator::Server::PurchaseContestContext context) {
     int64_t price = 0;
     auto creationRequest = context.getParams().getRequest();
     bool longText = false;
@@ -116,11 +117,12 @@ ContestCreator::~ContestCreator()
     }
 
     switch(creationRequest.getContestants().getEntries().size()) {
-    default: price += (creationRequest.getContestants().getEntries().size() - 6) * 2000; [[clang::fallthrough]];
-    case 6: price += 2500; [[clang::fallthrough]];
-    case 5: price += 2500; [[clang::fallthrough]];
-    case 4: price += 5000; [[clang::fallthrough]];
-    case 3: price += 5000; [[clang::fallthrough]];
+    // Fall-through is intentional
+    default: price += (creationRequest.getContestants().getEntries().size() - 6) * 2000;
+    case 6: price += 2500;
+    case 5: price += 2500;
+    case 4: price += 5000;
+    case 3: price += 5000;
     case 2:
     case 1:
         break;
@@ -153,8 +155,17 @@ ContestCreator::~ContestCreator()
 
     std::vector<Purchase::Price> finalPrices;
     finalPrices.emplace_back(0, price, kj::heapString("follow-my-vote"));
-    context.getResults().setPurchaseApi(kj::heap<Purchase>(kj::mv(finalPrices), [&adaptor = adaptor] {
-        // TODO: Actually create the contest in adaptor
+    context.getResults().setPurchaseApi(kj::heap<Purchase>(kj::mv(finalPrices),
+                                                           [&adaptor = adaptor, creationRequest] {
+        auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
+                       std::chrono::steady_clock::now().time_since_epoch()).count();
+        auto contest = adaptor.createContest().initContest();
+        contest.setCoin(creationRequest.getWeightCoin());
+        contest.setDescription(creationRequest.getContestDescription());
+        contest.initId(1).front() = adaptor.contests.size() - 1;
+        contest.setName(creationRequest.getContestName());
+        contest.setStartTime(now);
+        contest.setEndTime(creationRequest.getContestExpiration());
     }));
 
     return kj::READY_NOW;

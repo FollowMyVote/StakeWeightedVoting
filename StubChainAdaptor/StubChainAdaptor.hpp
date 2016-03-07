@@ -38,6 +38,7 @@ class STUBCHAINADAPTORSHARED_EXPORT StubChainAdaptor : public QObject, public Bl
 
 public:
     class BackendStub;
+    class ContestCreator;
 
     StubChainAdaptor(QObject* parent = nullptr);
     virtual ~StubChainAdaptor() noexcept;
@@ -69,6 +70,7 @@ protected:
 
     kj::Maybe<capnp::Orphan<Balance>&> getBalanceOrphan(QByteArray id);
     kj::Maybe<const capnp::Orphan<Balance>&> getBalanceOrphan(QByteArray id) const;
+    ::Contest::Builder createContest();
 };
 
 } // namespace swv

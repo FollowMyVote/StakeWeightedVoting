@@ -18,12 +18,13 @@
 #ifndef CONTESTCREATOR_HPP
 #define CONTESTCREATOR_HPP
 
+#include "StubChainAdaptor.hpp"
+
 #include "capnp/contestcreator.capnp.h"
 
 namespace swv {
-class StubChainAdaptor;
 
-class ContestCreator : public ::ContestCreator::Server {
+class StubChainAdaptor::ContestCreator : public ::ContestCreator::Server {
 public:
     ContestCreator(StubChainAdaptor& adaptor);
     virtual ~ContestCreator();

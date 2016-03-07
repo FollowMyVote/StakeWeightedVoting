@@ -106,9 +106,6 @@ StubChainAdaptor::StubChainAdaptor(QObject* parent)
     ucontest.setDescription("Where should we go for lunch?");
     ucontest.setStartTime(static_cast<uint64_t>(QDateTime::fromString("2015-09-20T12:00:00",
                                                                       Qt::ISODate).toMSecsSinceEpoch()));
-    auto tags = ucontest.initTags().initEntries(1);
-    tags[0].setKey("category");
-    tags[0].setValue("food");
     auto contestants = ucontest.initContestants().initEntries(3);
     contestants[0].setKey("Wikiteria");
     contestants[0].setValue("Cafeteria on the CRC campus");
@@ -129,9 +126,6 @@ StubChainAdaptor::StubChainAdaptor(QObject* parent)
                             "using the Graphene Toolkit?");
     ucontest.setStartTime(static_cast<uint64_t>(QDateTime::fromString("2015-09-11T12:00:00",
                                                                       Qt::ISODate).toMSecsSinceEpoch()));
-    tags = ucontest.initTags().initEntries(1);
-    tags[0].setKey("category");
-    tags[0].setValue("hard-forks");
     contestants = ucontest.initContestants().initEntries(2);
     contestants[0].setKey("Yes");
     contestants[0].setValue("Accept the upgrade, and hard-fork to BitShares 2.0");
@@ -218,7 +212,7 @@ kj::Promise<kj::Array<Balance::Reader>> StubChainAdaptor::getBalancesForOwner(QS
 
 Contest::Reader StubChainAdaptor::getContest(capnp::Data::Reader contestId) const
 {
-    if (contestId.size() != 1 || char(contestId[0]) < 0 || char(contestId[0]) > 9)
+    if (contestId.size() != 1 || char(contestId[0]) < 0 || char(contestId[0]) > contests.size())
         KJ_FAIL_REQUIRE("Could not find the specified contest", contestId);
     return contests[static_cast<size_t>(contestId[0])].getReader();
 }
@@ -312,6 +306,12 @@ kj::Maybe<const capnp::Orphan<Balance>&> StubChainAdaptor::getBalanceOrphan(QByt
             return *itr;
     }
     return {};
+}
+
+Contest::Builder StubChainAdaptor::createContest()
+{
+    contests.emplace_back(message.getOrphanage().newOrphan<::Contest>());
+    return contests.back().get();
 }
 
 } // namespace swv
