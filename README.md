@@ -10,7 +10,7 @@ In this repo are 4 components:
 
 - The `shared` folder contains code shared between the other components
 - The `StubChainAdaptor` folder contains a shared library implementing a dummy blockchain, used by the application
-- The `StubBackend` folder contains a dummy server daemon which the application will connect to. This daemon should be running before launching the application
+- The `StubBackend` folder contains a dummy server daemon which the application can connect to, though by default it is unused
 - The `VotingApp` folder contains the voting application itself
 
 See [Architecture](Architecture.md) for more information on how the components interact.
@@ -30,11 +30,7 @@ To configure qbs, make sure your compiler is in PATH and run `qbs-setup-toolchai
 Binaries will be placed in a build folder created by qbs, probably named `qt5-debug/install-root` or similar, in the top level directory.
 
 ### Running:
-qbs only runs one binary at a time, so run the backend separately:
-
-	./qt5-debug/install-root/bin/StubBackend
-	
-You may then use qbs to run the app itself:
+You may use qbs to run the app:
 
 	qbs run -p VotingApp
 	
