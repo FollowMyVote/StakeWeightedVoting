@@ -18,6 +18,8 @@
 #ifndef STUBCHAINADAPTOR_H
 #define STUBCHAINADAPTOR_H
 
+#include "capnp/backend.capnp.h"
+
 #include <QObject>
 #include <QMap>
 
@@ -43,7 +45,7 @@ public:
     StubChainAdaptor(QObject* parent = nullptr);
     virtual ~StubChainAdaptor() noexcept;
 
-    BackendStub getBackendStub();
+    ::Backend::Client getBackendStub();
 
     virtual kj::Promise<Coin::Reader> getCoin(quint64 id) const;
     virtual kj::Promise<Coin::Reader> getCoin(QString symbol) const;

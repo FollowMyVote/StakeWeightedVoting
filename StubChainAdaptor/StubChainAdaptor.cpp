@@ -154,9 +154,9 @@ StubChainAdaptor::StubChainAdaptor(QObject* parent)
 
 StubChainAdaptor::~StubChainAdaptor() noexcept {}
 
-StubChainAdaptor::BackendStub StubChainAdaptor::getBackendStub()
+::Backend::Client StubChainAdaptor::getBackendStub()
 {
-    return BackendStub(*this);
+    return kj::heap<BackendStub>(*this);
 }
 
 kj::Promise<Coin::Reader> StubChainAdaptor::getCoin(quint64 id) const

@@ -284,11 +284,15 @@ Promise* VotingSystem::connectToBackend(QString hostname, quint16 port) {
     return connectPromise;
 }
 
-void VotingSystem::configureChainAdaptor() {
+void VotingSystem::configureChainAdaptor(bool useTestingBackend) {
     Q_D(VotingSystem);
 
     //TODO: make a real implementation of this
     auto adaptor = kj::heap<StubChainAdaptor>(d->adaptor);
+    if (useTestingBackend) {
+        d->backend = kj::heap<BackendWrapper>(adaptor->getBackendStub(), *d->promiseConverter);
+        emit backendConnectedChanged(true);
+    }
     d->adaptor->setAdaptor(kj::mv(adaptor));
 }
 

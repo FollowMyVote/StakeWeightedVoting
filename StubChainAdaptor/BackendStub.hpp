@@ -30,6 +30,7 @@ namespace swv {
 class StubChainAdaptor::BackendStub : public ::Backend::Server
 {
 public:
+    BackendStub(StubChainAdaptor& adaptor);
     virtual ~BackendStub();
 
     // Backend::Server interface
@@ -41,10 +42,6 @@ protected:
     ::kj::Promise<void> createContest(CreateContestContext context);
 
 private:
-    // Only StubChainAdaptor::getBackendStub() can instantiate a BackendStub.
-    friend BackendStub StubChainAdaptor::getBackendStub();
-    BackendStub(StubChainAdaptor& adaptor);
-
     StubChainAdaptor& adaptor;
 };
 
