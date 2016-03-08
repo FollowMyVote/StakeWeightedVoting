@@ -21,12 +21,14 @@ import QtQuick.Layouts 1.1
 import QtQuick.Window 2.0
 import QtGraphicalEffects 1.0
 
+import QtQmlTricks.UiElements 2.0
+
 import FollowMyVote.StakeWeightedVoting 1.0
 
 Rectangle {
     id: card
     x: window.dp(16)
-    height: contestDelegate.height + window.dp(32)
+    height: contestDelegate.y + contestDelegate.height + window.dp(16)
 
     property VotingSystem votingsystem
     property int votingStake
@@ -44,17 +46,9 @@ Rectangle {
     ContestDelegate {
         id: contestDelegate
         displayContest: contestObject
-        anchors {
-            left: parent.left
-            right: parent.right
-            top: parent.top
-            margins: window.dp(16)
-        }
-        onCastButtonClicked: {
-            votingSystem.castCurrentDecision(displayContest)
-        }
-        onCancelButtonClicked: {
-            votingSystem.cancelCurrentDecision(displayContest)
-        }
+        ExtraAnchors.topDock: parent
+        anchors.margins: window.dp(16)
+        onCastButtonClicked: votingSystem.castCurrentDecision(displayContest)
+        onCancelButtonClicked: votingSystem.cancelCurrentDecision(displayContest)
     }
 }

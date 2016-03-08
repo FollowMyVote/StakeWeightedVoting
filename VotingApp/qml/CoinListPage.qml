@@ -20,6 +20,7 @@ import QtQuick.Layouts 1.1
 import QtQuick.Controls 1.4
 import QtQuick.Window 2.0
 
+import QtQmlTricks.UiElements 2.0
 
 import VPlayApps 1.0
 
@@ -106,10 +107,7 @@ Page {
             color: "white";
 
             Rectangle {
-                anchors.right: parent.right
-                anchors.left: parent.left
-
-                anchors.bottom: parent.bottom
+                ExtraAnchors.bottomDock: parent
                 anchors.bottomMargin: 1
 
                 height: 1
@@ -141,10 +139,7 @@ Page {
             }
 
             Rectangle {
-                anchors.right: parent.right
-                anchors.left: parent.left
-
-                anchors.bottom: parent.bottom
+                ExtraAnchors.bottomDock: parent
                 anchors.bottomMargin: 1
 
                 height: 2

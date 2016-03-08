@@ -8,6 +8,8 @@ import QtQml 2.2
 
 import VPlayApps 1.0
 
+import QtQmlTricks.UiElements 2.0
+
 import FollowMyVote.StakeWeightedVoting 1.0
 
 Page {
@@ -28,14 +30,10 @@ Page {
                 interactive: true
                 flickableDirection: Flickable.VerticalFlick
                 contentHeight: createContestFormColumn.height
-                anchors {
-                    left: parent.left
-                    right: parent.horizontalCenter
-                    top: parent.top
-                    bottom: parent.bottom
-                    margins: window.dp(16)
-                    rightMargin: window.dp(8)
-                }
+
+                ExtraAnchors.leftDock: parent
+                anchors.right: parent.horizontalCenter
+                anchors.rightMargin: window.dp(8)
 
                 Column {
                     id: createContestFormColumn
