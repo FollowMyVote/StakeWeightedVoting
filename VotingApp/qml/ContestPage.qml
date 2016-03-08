@@ -4,6 +4,8 @@ import QtQuick.Window 2.0
 
 import VPlayApps 1.0
 
+import QtQmlTricks.UiElements 2.0
+
 import FollowMyVote.StakeWeightedVoting 1.0
 
 Page {
@@ -25,10 +27,8 @@ Page {
 
             ContestDelegate {
                 id: delegate
-                anchors {
-                    left: parent.left
-                    right: parent.right
-                }
+
+                ExtraAnchors.horizontalFill: parent
                 onCastButtonClicked: votingSystem.castCurrentDecision(displayContest)
                 onCancelButtonClicked: votingSystem.cancelCurrentDecision(displayContest)
             }

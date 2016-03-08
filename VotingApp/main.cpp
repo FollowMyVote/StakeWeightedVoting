@@ -43,6 +43,8 @@
 
 #include <capnqt/QtEventPort.hpp>
 
+#include <QtQmlTricksPlugin.h>
+
 #include <VPApplication>
 
 int main(int argc, char *argv[])
@@ -101,6 +103,7 @@ int main(int argc, char *argv[])
     qmlRegisterType<QSortFilterProxyModel>();
 
     QQmlApplicationEngine engine;
+    registerQtQmlTricksUiElements(&engine);
     Promise::setEngine(&engine);
     vplay.initialize(&engine);
     vplay.setMainQmlFileName(QStringLiteral("qrc:/qml/main.qml"));

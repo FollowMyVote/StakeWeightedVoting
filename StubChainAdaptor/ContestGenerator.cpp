@@ -17,6 +17,8 @@
  */
 #include "ContestGenerator.hpp"
 
+#include <kj/debug.h>
+
 swv::ContestGenerator::ContestGenerator(std::vector<Contest::Reader> contests)
     : contests(kj::mv(contests))
 {}
@@ -26,6 +28,7 @@ swv::ContestGenerator::~ContestGenerator()
 
 ::kj::Promise<void> swv::ContestGenerator::getContest(ContestGenerator::Server::GetContestContext context)
 {
+    KJ_REQUIRE(!contests.empty(), "No more contests available.");
     auto contest = context.initResults().initNextContest();
     contest.setContestId(contests.back().getContest().getId());
     contests.pop_back();
@@ -36,7 +39,8 @@ swv::ContestGenerator::~ContestGenerator()
 
 ::kj::Promise<void> swv::ContestGenerator::getContests(ContestGenerator::Server::GetContestsContext context)
 {
-    auto resultContests = context.initResults().initNextContests(context.getParams().getCount());
+    auto contestCount = std::min<int>(contests.size(), context.getParams().getCount());
+    auto resultContests = context.initResults().initNextContests(contestCount);
     for (auto contest : resultContests) {
         contest.setContestId(contests.back().getContest().getId());
         contests.pop_back();

@@ -28,6 +28,23 @@
 
 namespace swv {
 
+// -------------------------------------------------------------------
+// --- Reversed iterable
+// --- Taken from http://stackoverflow.com/questions/8542591/c11-reverse-range-based-for-loop
+using namespace std; // for rbegin() and rend()
+
+template <typename T>
+struct reversion_wrapper { T& iterable; };
+
+template <typename T>
+auto begin (reversion_wrapper<T> w) { return rbegin(w.iterable); }
+
+template <typename T>
+auto end (reversion_wrapper<T> w) { return rend(w.iterable); }
+
+template <typename T>
+reversion_wrapper<T> reverse (T&& iterable) { return { iterable }; }
+
 StubChainAdaptor::BackendStub::BackendStub(StubChainAdaptor &adaptor)
     : adaptor(adaptor)
 {}
@@ -39,7 +56,7 @@ StubChainAdaptor::BackendStub::~BackendStub()
     std::vector<Contest::Reader> feedContests;
     feedContests.reserve(adaptor.contests.size());
 
-    for (const auto& contest : adaptor.contests)
+    for (const auto& contest : reverse(adaptor.contests))
         feedContests.emplace_back(contest.getReader());
 
     context.initResults().setGenerator(kj::heap<swv::ContestGenerator>(kj::mv(feedContests)));
