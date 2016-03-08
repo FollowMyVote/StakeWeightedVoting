@@ -23,7 +23,8 @@ See [Architecture](Architecture.md) for more information on how the components i
  
 A video showing how to set up the development environment is available [here](https://drive.google.com/file/d/0BxT8fpuOgKV8dzJ1dWtyakFKWGM/view?usp=sharing)
 
-Note that we now use submodules, so be sure to run `git submodule update --init` after cloning and `git submodule update` when the submodules are updated.
+> ###### Note
+> We use submodules, so be sure to run `git submodule update --init` after cloning and `git submodule update` when the submodules are updated.
 
 Once the dependencies are installed, building the application is as simple as running `qbs` in the top-level directory. If this doesn't work, probably qbs is not configured yet or Cap'n Proto is not in PATH. If you use the QtCreator IDE, you can skip configuring qbs manually as QtCreator does this automatically. QtCreator also allows you to customize PATH (and other environment variables) in the Projects pane.
 
