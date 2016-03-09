@@ -109,8 +109,8 @@ public:
      */
     Q_INVOKABLE Promise* castCurrentDecision(swv::ContestWrapper* contest);
 
-    Q_INVOKABLE CoinWrapper* getCoin(quint64 id);
-    Q_INVOKABLE CoinWrapper* getCoin(QString name);
+    Q_INVOKABLE swv::CoinWrapper* getCoin(quint64 id);
+    Q_INVOKABLE swv::CoinWrapper* getCoin(QString name);
 
     Q_INVOKABLE swv::data::Account* getAccount(QString name);
 

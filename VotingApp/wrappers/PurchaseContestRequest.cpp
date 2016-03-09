@@ -55,7 +55,7 @@
     } \
     void PurchaseContestRequestWrapper::set ## upperProperty(type property) { \
         if (!sponsorshipEnabled()) \
-            request.getRequest().initSponsorship().initOptions(); \
+            setSponsorshipEnabled(true); \
         _SIMPLE_SETTER_IMPL(property, getSponsorship().getOptions().set ## requestField(property)) \
     }
 
@@ -101,8 +101,14 @@ QVariantMap PurchaseContestRequestWrapper::submit() {
                        {"surchargePromise", QVariant::fromValue(qmlPromise)}};
 }
 
-void PurchaseContestRequestWrapper::disableSponsorship() {
-    request.getRequest().initSponsorship().setNoSponsorship();
+void PurchaseContestRequestWrapper::setSponsorshipEnabled(bool enabled) {
+    if (enabled == sponsorshipEnabled())
+        return;
+    if (enabled)
+        request.getRequest().initSponsorship().initOptions();
+    else
+        request.getRequest().initSponsorship().setNoSponsorship();
+    emit sponsorshipEnabledChanged(enabled);
 }
 
 SPONSORSHIP_SIMPLE_GETTER_SETTER(sponsorMaxVotes, SponsorMaxVotes, qint64, MaxVotes)

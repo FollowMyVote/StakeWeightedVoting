@@ -52,7 +52,8 @@ class PurchaseContestRequestWrapper : public QObject
     Q_PROPERTY(QQmlVariantListModel* promoCodes READ promoCodes CONSTANT)
     Q_PROPERTY(quint64 weightCoin READ weightCoin WRITE setWeightCoin NOTIFY weightCoinChanged)
     Q_PROPERTY(qint64 expiration READ expiration WRITE setExpiration NOTIFY expirationChanged)
-    Q_PROPERTY(bool sponsorshipEnabled READ sponsorshipEnabled NOTIFY sponsorshipEnabledChanged STORED false)
+    Q_PROPERTY(bool sponsorshipEnabled READ sponsorshipEnabled WRITE setSponsorshipEnabled
+               NOTIFY sponsorshipEnabledChanged)
     Q_PROPERTY(qint64 sponsorMaxVotes READ sponsorMaxVotes WRITE setSponsorMaxVotes NOTIFY sponsorMaxVotesChanged)
     Q_PROPERTY(qint32 sponsorMaxRevotes READ sponsorMaxRevotes WRITE setSponsorMaxRevotes
                NOTIFY sponsorMaxRevotesChanged)
@@ -102,7 +103,7 @@ public slots:
     void setExpiration(qint64 expiration);
     void setContestType(ContestType::Type contestType);
     void setTallyAlgorithm(TallyAlgorithm::Type tallyAlgorithm);
-    void disableSponsorship();
+    void setSponsorshipEnabled(bool enabled);
     void setSponsorMaxVotes(qint64 sponsorMaxVotes);
     void setSponsorMaxRevotes(qint32 sponsorMaxRevotes);
     void setSponsorEndDate(qint64 sponsorEndDate);

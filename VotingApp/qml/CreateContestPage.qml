@@ -1,8 +1,5 @@
 import QtQuick 2.5
 import QtQuick.Layouts 1.1
-import QtQuick.Controls 1.4 as Controls
-import QtQuick.Controls.Styles 1.4 as ControlStyles
-import QtQuick.Extras 1.4 as Extras
 import Qt.labs.controls 1.0
 import QtQml 2.2
 
@@ -16,173 +13,39 @@ Page {
     id: createContestPage
     backgroundColor: "white"
 
-    property var contestCreator
     property VotingSystem votingSystem
+    property var contestCreator
     property var purchaseRequest: contestCreator.getPurchaseContestRequest()
 
     SwipeView {
         id: swiper
         anchors.fill: parent
 
-        Item {
-            Flickable {
-                id: flickable
-                interactive: true
-                flickableDirection: Flickable.VerticalFlick
-                contentHeight: createContestFormColumn.height
-
-                ExtraAnchors.leftDock: parent
-                anchors.right: parent.horizontalCenter
-                anchors.rightMargin: window.dp(8)
-
-                Column {
-                    id: createContestFormColumn
-                    width: parent.width
-                    spacing: window.dp(8)
-
-                    AppTextField {
-                        id: contestName
-                        width: parent.width
-                        placeholderText: qsTr("Contest Name")
-                        maximumLength: contestCreator.contestLimits[ContestLimits.NameLength]
-                        Component.onCompleted: forceActiveFocus()
-                        KeyNavigation.tab: contestDescription
-
-                        Binding {
-                            target: purchaseRequest
-                            property: "name"
-                            value: contestName.text
-                        }
+        BasicContestForm {
+            votingSystem: createContestPage.votingSystem
+            contestCreator: createContestPage.contestCreator
+            purchaseRequest: createContestPage.purchaseRequest
+        }
+        SponsorshipForm {
+            onSponsorshipEnabledChanged: purchaseRequest.sponsorshipEnabled = sponsorshipEnabled
+            SwipeView.onIsCurrentItemChanged: {
+                if (!SwipeView.isCurrentItem && purchaseRequest.sponsorshipEnabled) {
+                    try {
+                        purchaseRequest.sponsorMaxVotes = maxVotes
+                    } catch (a) {
+                        purchaseRequest.sponsorMaxVotes = 0
                     }
-                    AppTextEdit {
-                        id: contestDescription
-                        width: parent.width
-                        placeholderText: qsTr("Description")
-                        wrapMode: TextEdit.Wrap
-
-                        Binding {
-                            target: purchaseRequest
-                            property: "description"
-                            value: contestDescription.text
-                        }
+                    try {
+                        purchaseRequest.sponsorMaxRevotes = maxRevotes
+                    } catch (a) {
+                        purchaseRequest.sponsorMaxRevotes = 0
                     }
-                    Row {
-                        spacing: window.dp(8)
-
-                        AppText {
-                            id: weightCoinLabel
-                            text: qsTr("Coin to Poll:")
-                        }
-                        Controls.ComboBox {
-                            width: window.dp(120)
-                            model: votingSystem.adaptor.coins
-                            textRole: "name"
-                            style: ControlStyles.ComboBoxStyle {
-                                font: weightCoinLabel.font
-                            }
-                        }
+                    try {
+                        purchaseRequest.sponsorIncentive = incentive * 10000
+                    } catch (a) {
+                        purchaseRequest.sponsorIncentive = 0
                     }
-                    Column {
-                        width: parent.width
-                        spacing: window.dp(8)
-                        Repeater {
-                            model: purchaseRequest.contestants
-                            delegate: RowLayout {
-                                width: parent.width
-
-                                IconButton {
-                                    icon: IconType.remove
-                                    onClicked: purchaseRequest.contestants.remove(index)
-                                }
-                                IconButton {
-                                    icon: IconType.edit
-                                    onClicked: {
-                                        var dialog = contestantDialog.createObject(createContestPage,
-                                                                                   {"contestantName": name,
-                                                                                       "contestantDescription":
-                                                                                       description})
-
-                                        dialog.accepted.connect(function() {
-                                            name = dialog.contestantName
-                                            description = dialog.contestantDescription
-                                            dialog.close()
-                                        })
-                                        dialog.canceled.connect(dialog.close)
-
-                                        dialog.open()
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    AppText {
-                                        text: name
-                                        Layout.fillWidth: true
-                                        elide: Text.ElideRight
-                                    }
-                                    AppText {
-                                        text: description
-                                        Layout.fillWidth: true
-                                        elide: Text.ElideRight
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    AppButton {
-                        text: qsTr("Add Contestant")
-
-                        onClicked: {
-                            // Create a new dialog as defined by the contestDialog component
-                            var dialog = contestantDialog.createObject(createContestPage)
-
-                            // Handle dialog accepted/canceled signals
-                            dialog.accepted.connect(function() {
-                                var contestant = Qt.createQmlObject("import FollowMyVote.StakeWeightedVoting." +
-                                                                    "ContestPurchase 1.0; Contestant{}",
-                                                                    createContestPage, "ContestantCreation")
-                                contestant.name = dialog.contestantName;
-                                contestant.description = dialog.contestantDescription
-                                purchaseRequest.contestants.append(contestant)
-                                dialog.close()
-                            })
-                            dialog.canceled.connect(dialog.close)
-
-                            dialog.open()
-                        }
-                    }
-                    Row {
-                        spacing: window.dp(8)
-
-                        Binding {
-                            target: purchaseRequest
-                            property: "expiration"
-                            value: {
-                                if (contestEndsTime.currentIndex === 0)
-                                    return new Date(0)
-
-                                var date = new Date()
-                                if (contestEndsTime.currentIndex === 1)
-                                    date.setDate(date.getDate() + 1)
-                                else if (contestEndsTime.currentIndex === 2)
-                                    date.setDate(date.getDate() + 7)
-                                else if (contestEndsTime.currentIndex === 3)
-                                    date.setMonth(date.getMonth() + 1)
-                                return date
-                            }
-                        }
-
-                        AppText {
-                            text: qsTr("Contest Ends")
-                        }
-                        Controls.ComboBox {
-                            id: contestEndsTime
-                            width: window.dp(100)
-                            model: [qsTr("never"), qsTr("in a day"), qsTr("in a week"), qsTr("in a month")]
-                            style: ControlStyles.ComboBoxStyle {
-                                font: weightCoinLabel.font
-                            }
-                        }
-                    }
+                    purchaseRequest.sponsorEndDate = endTime
                 }
             }
         }
@@ -192,38 +55,5 @@ Page {
         anchors.horizontalCenter: parent.horizontalCenter
         pages: swiper.count
         currentPage: swiper.currentIndex
-    }
-
-    Component {
-        id: contestantDialog
-
-        Dialog {
-            title: qsTr("Edit Contestant")
-            contentHeight: window.dp(200)
-            contentWidth: window.dp(250)
-
-            property alias contestantName: contestantName.text
-            property alias contestantDescription: contestantDescription.text
-
-            ColumnLayout {
-                anchors.fill: parent
-                anchors.margins: window.dp(8)
-
-                AppTextField {
-                    id: contestantName
-                    placeholderText: qsTr("Name")
-                    maximumLength: contestCreator.contestLimits[ContestLimits.ContestantNameLength]
-                    Layout.fillWidth: true
-                    KeyNavigation.tab: contestantDescription
-                    Component.onCompleted: forceActiveFocus(Qt.Popup)
-                }
-                ScrollingTextEdit {
-                    id: contestantDescription
-                    Layout.fillHeight: true
-                    Layout.fillWidth: true
-                    textEdit.placeholderText: qsTr("Description")
-                }
-            }
-        }
     }
 }
