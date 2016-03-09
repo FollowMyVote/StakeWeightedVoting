@@ -8,8 +8,11 @@ import QtQmlTricks.UiElements 2.0
 import FollowMyVote.StakeWeightedVoting 1.0
 
 Item {
+    id: basicContestForm
+
     property VotingSystem votingSystem
     property var purchaseRequest
+    property var contestCreator
 
     Flickable {
         id: flickable
@@ -25,6 +28,8 @@ Item {
             id: createContestFormColumn
             width: parent.width
             spacing: window.dp(8)
+            ExtraAnchors.topLeftCorner: parent
+            anchors.margins: window.dp(16)
             
             AppTextField {
                 id: contestName
@@ -91,7 +96,7 @@ Item {
                         IconButton {
                             icon: IconType.edit
                             onClicked: {
-                                var dialog = contestantDialog.createObject(createContestPage, {
+                                var dialog = contestantDialog.createObject(basicContestForm, {
                                                                                "contestantName": name,
                                                                                "contestantDescription": description})
                                 
@@ -126,13 +131,13 @@ Item {
                 
                 onClicked: {
                     // Create a new dialog as defined by the contestDialog component
-                    var dialog = contestantDialog.createObject(createContestPage)
+                    var dialog = contestantDialog.createObject(basicContestForm)
                     
                     // Handle dialog accepted/canceled signals
                     dialog.accepted.connect(function() {
                         var contestant = Qt.createQmlObject("import FollowMyVote.StakeWeightedVoting." +
                                                             "ContestPurchase 1.0; Contestant{}",
-                                                            createContestPage, "ContestantCreation")
+                                                            basicContestForm, "ContestantCreation")
                         contestant.name = dialog.contestantName;
                         contestant.description = dialog.contestantDescription
                         purchaseRequest.contestants.append(contestant)
@@ -154,11 +159,11 @@ Item {
                             return new Date(0)
                         
                         var date = new Date()
-                        if (contestEndsTime.currentIndex === 1)
+                        if (contestEndsTime.currentIdx === 1)
                             date.setDate(date.getDate() + 1)
-                        else if (contestEndsTime.currentIndex === 2)
+                        else if (contestEndsTime.currentIdx === 2)
                             date.setDate(date.getDate() + 7)
-                        else if (contestEndsTime.currentIndex === 3)
+                        else if (contestEndsTime.currentIdx === 3)
                             date.setMonth(date.getMonth() + 1)
                         return date
                     }
@@ -176,6 +181,39 @@ Item {
                         label.font: weightCoinLabel.font
                     }
                     Component.onCompleted: currentIdx = 0
+                }
+            }
+        }
+    }
+
+    Component {
+        id: contestantDialog
+
+        Dialog {
+            title: qsTr("Edit Contestant")
+            contentHeight: window.dp(200)
+            contentWidth: window.dp(300)
+
+            property alias contestantName: contestantName.text
+            property alias contestantDescription: contestantDescription.text
+
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: window.dp(8)
+
+                AppTextField {
+                    id: contestantName
+                    placeholderText: qsTr("Name")
+                    maximumLength: contestCreator.contestLimits[ContestLimits.ContestantNameLength]
+                    Layout.fillWidth: true
+                    KeyNavigation.tab: contestantDescription
+                    Component.onCompleted: forceActiveFocus(Qt.Popup)
+                }
+                ScrollingTextEdit {
+                    id: contestantDescription
+                    Layout.fillHeight: true
+                    Layout.fillWidth: true
+                    textEdit.placeholderText: qsTr("Description")
                 }
             }
         }

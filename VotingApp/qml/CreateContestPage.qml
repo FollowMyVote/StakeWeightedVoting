@@ -13,8 +13,8 @@ Page {
     id: createContestPage
     backgroundColor: "white"
 
-    property var contestCreator
     property VotingSystem votingSystem
+    property var contestCreator
     property var purchaseRequest: contestCreator.getPurchaseContestRequest()
 
     SwipeView {
@@ -23,7 +23,31 @@ Page {
 
         BasicContestForm {
             votingSystem: createContestPage.votingSystem
+            contestCreator: createContestPage.contestCreator
             purchaseRequest: createContestPage.purchaseRequest
+        }
+        SponsorshipForm {
+            onSponsorshipEnabledChanged: purchaseRequest.sponsorshipEnabled = sponsorshipEnabled
+            SwipeView.onIsCurrentItemChanged: {
+                if (!SwipeView.isCurrentItem && purchaseRequest.sponsorshipEnabled) {
+                    try {
+                        purchaseRequest.sponsorMaxVotes = maxVotes
+                    } catch (a) {
+                        purchaseRequest.sponsorMaxVotes = 0
+                    }
+                    try {
+                        purchaseRequest.sponsorMaxRevotes = maxRevotes
+                    } catch (a) {
+                        purchaseRequest.sponsorMaxRevotes = 0
+                    }
+                    try {
+                        purchaseRequest.sponsorIncentive = incentive * 10000
+                    } catch (a) {
+                        purchaseRequest.sponsorIncentive = 0
+                    }
+                    purchaseRequest.sponsorEndDate = endTime
+                }
+            }
         }
     }
     PageControl {
@@ -31,38 +55,5 @@ Page {
         anchors.horizontalCenter: parent.horizontalCenter
         pages: swiper.count
         currentPage: swiper.currentIndex
-    }
-
-    Component {
-        id: contestantDialog
-
-        Dialog {
-            title: qsTr("Edit Contestant")
-            contentHeight: window.dp(200)
-            contentWidth: window.dp(300)
-
-            property alias contestantName: contestantName.text
-            property alias contestantDescription: contestantDescription.text
-
-            ColumnLayout {
-                anchors.fill: parent
-                anchors.margins: window.dp(8)
-
-                AppTextField {
-                    id: contestantName
-                    placeholderText: qsTr("Name")
-                    maximumLength: contestCreator.contestLimits[ContestLimits.ContestantNameLength]
-                    Layout.fillWidth: true
-                    KeyNavigation.tab: contestantDescription
-                    Component.onCompleted: forceActiveFocus(Qt.Popup)
-                }
-                ScrollingTextEdit {
-                    id: contestantDescription
-                    Layout.fillHeight: true
-                    Layout.fillWidth: true
-                    textEdit.placeholderText: qsTr("Description")
-                }
-            }
-        }
     }
 }
