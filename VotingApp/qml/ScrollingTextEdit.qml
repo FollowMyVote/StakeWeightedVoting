@@ -1,9 +1,5 @@
 import QtQuick 2.5
 import QtQuick.Layouts 1.1
-import QtQuick.Controls 1.4 as Controls
-import QtQuick.Controls.Styles 1.4 as ControlStyles
-import QtQuick.Extras 1.4 as Extras
-import Qt.labs.controls 1.0
 import QtQml 2.2
 
 import VPlayApps 1.0
