@@ -49,7 +49,6 @@ class PurchaseContestRequestWrapper : public QObject
     Q_PROPERTY(QString name READ name WRITE setName NOTIFY nameChanged)
     Q_PROPERTY(QString description READ description WRITE setDescription NOTIFY descriptionChanged)
     QML_OBJMODEL_PROPERTY(PurchaseContestContestantWrapper, contestants)
-    Q_PROPERTY(QQmlVariantListModel* promoCodes READ promoCodes CONSTANT)
     Q_PROPERTY(quint64 weightCoin READ weightCoin WRITE setWeightCoin NOTIFY weightCoinChanged)
     Q_PROPERTY(qint64 expiration READ expiration WRITE setExpiration NOTIFY expirationChanged)
     Q_PROPERTY(bool sponsorshipEnabled READ sponsorshipEnabled WRITE setSponsorshipEnabled
@@ -59,6 +58,7 @@ class PurchaseContestRequestWrapper : public QObject
                NOTIFY sponsorMaxRevotesChanged)
     Q_PROPERTY(qint64 sponsorEndDate READ sponsorEndDate WRITE setSponsorEndDate NOTIFY sponsorEndDateChanged)
     Q_PROPERTY(qint64 sponsorIncentive READ sponsorIncentive WRITE setSponsorIncentive NOTIFY sponsorIncentiveChanged)
+    Q_PROPERTY(QQmlVariantListModel* promoCodes READ promoCodes CONSTANT)
 
     kj::TaskSet& tasks;
     QQmlVariantListModel m_promoCodes;
@@ -94,7 +94,7 @@ public:
 public slots:
     /// @brief Submit the request to the server. This consumes the request.
     /// @return A map with two entries: "purchaseApi" (a purchase API wrapper) and "surchargePromise" (a @ref Promise
-    /// for the surcharge list, which is itself a QVAriantList of objects with "description" and "charge" fields)
+    /// for the surcharge list, which is itself a QVariantList of objects with "description" and "charge" fields)
     QVariantMap submit();
 
     void setName(QString name);

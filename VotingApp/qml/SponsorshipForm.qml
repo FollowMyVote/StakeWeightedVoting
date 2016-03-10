@@ -28,6 +28,7 @@ Flickable {
     }
     property alias incentive: incentiveField.text
 
+    signal completed
 
     flickableDirection: Flickable.VerticalFlick
     
@@ -101,6 +102,12 @@ Flickable {
                     validator: DoubleValidator { bottom: 0; decimals: 4 }
                 }
             }
+        }
+        AppButton {
+            implicitWidth: contentWidth
+            implicitHeight: contentHeight
+            text: qsTr("Continue")
+            onClicked: completed()
         }
     }
 }

@@ -22,30 +22,31 @@ Page {
         anchors.fill: parent
 
         BasicContestForm {
-            votingSystem: createContestPage.votingSystem
-            contestCreator: createContestPage.contestCreator
-            purchaseRequest: createContestPage.purchaseRequest
+            id: basicForm
+            contestLimits: contestCreator.contestLimits
+            coinsModel: votingSystem.coins
+            contestantModel: purchaseRequest.contestants
+            onCompleted: swiper.currentIndex++
         }
         SponsorshipForm {
             onSponsorshipEnabledChanged: purchaseRequest.sponsorshipEnabled = sponsorshipEnabled
-            SwipeView.onIsCurrentItemChanged: {
-                if (!SwipeView.isCurrentItem && purchaseRequest.sponsorshipEnabled) {
-                    try {
-                        purchaseRequest.sponsorMaxVotes = maxVotes
-                    } catch (a) {
-                        purchaseRequest.sponsorMaxVotes = 0
+            onCompleted: {
+                try {
+                    // Note that contestants are filled in as they're created, so there's no need to update them here
+                    purchaseRequest.name = basicForm.contestName
+                    purchaseRequest.description = basicForm.contestDescription
+                    purchaseRequest.expiration = basicForm.contestExpiration
+                    purchaseRequest.weightCoin = basicForm.weightCoinId
+                    if (purchaseRequest.sponsorshipEnabled) {
+                        purchaseRequest.sponsorMaxVotes = maxVotes? maxVotes : 0
+                        purchaseRequest.sponsorMaxRevotes = maxRevotes? maxRevotes : 0
+                        purchaseRequest.sponsorIncentive = incentive? incentive * 10000 : 0
+                        purchaseRequest.sponsorEndDate = endTime
                     }
-                    try {
-                        purchaseRequest.sponsorMaxRevotes = maxRevotes
-                    } catch (a) {
-                        purchaseRequest.sponsorMaxRevotes = 0
-                    }
-                    try {
-                        purchaseRequest.sponsorIncentive = incentive * 10000
-                    } catch (a) {
-                        purchaseRequest.sponsorIncentive = 0
-                    }
-                    purchaseRequest.sponsorEndDate = endTime
+                } catch (exception) {
+                    NativeDialog.confirm(qsTr("Error creating contest"),
+                                         qsTr("An error occurred when processing your request: %1").arg(exception),
+                                         function(){}, false)
                 }
             }
         }
