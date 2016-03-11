@@ -212,9 +212,10 @@ kj::Promise<kj::Array<Balance::Reader>> StubChainAdaptor::getBalancesForOwner(QS
 
 Contest::Reader StubChainAdaptor::getContest(capnp::Data::Reader contestId) const
 {
-    if (contestId.size() != 1 || char(contestId[0]) < 0 || char(contestId[0]) > contests.size())
-        KJ_FAIL_REQUIRE("Could not find the specified contest", contestId);
-    return contests[static_cast<size_t>(contestId[0])].getReader();
+    for (auto& contest : contests)
+        if (contest.getReader().getContest().getId() == contestId)
+            return contest.getReader();
+    KJ_FAIL_REQUIRE("Could not find the specified contest", contestId);
 }
 
 Datagram::Builder StubChainAdaptor::createDatagram()
@@ -229,9 +230,10 @@ Datagram::Builder StubChainAdaptor::createDatagram()
 
 kj::Promise<Contest::Reader> StubChainAdaptor::getContest(QByteArray contestId) const
 {
-    if (contestId.size() != 1 || char(contestId[0]) < 0 || char(contestId[0]) > contests.size())
-        return KJ_EXCEPTION(FAILED, "Could not find the specified contest", contestId.toHex().toStdString());
-    return contests[static_cast<size_t>(contestId[0])].getReader();
+    for (auto& contest : contests)
+        if (*contest.getReader().getContest().getId().begin() == *contestId.begin())
+            return contest.getReader();
+    return KJ_EXCEPTION(FAILED, "Could not find the specified contest", contestId.toHex().toStdString());
 }
 
 kj::Promise<void> StubChainAdaptor::publishDatagram(QByteArray payerBalanceId, QByteArray publisherBalanceId)
@@ -310,8 +312,7 @@ kj::Maybe<const capnp::Orphan<Balance>&> StubChainAdaptor::getBalanceOrphan(QByt
 
 Contest::Builder StubChainAdaptor::createContest()
 {
-    contests.emplace_back(message.getOrphanage().newOrphan<::Contest>());
-    return contests.back().get();
+    return contests.emplace(contests.begin(), message.getOrphanage().newOrphan<::Contest>())->get();
 }
 
 } // namespace swv
