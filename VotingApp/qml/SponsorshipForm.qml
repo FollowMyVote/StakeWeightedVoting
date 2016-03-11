@@ -28,6 +28,7 @@ Flickable {
     }
     property alias incentive: incentiveField.text
 
+    signal completed
 
     flickableDirection: Flickable.VerticalFlick
     
@@ -70,13 +71,6 @@ Flickable {
             Row {
                 spacing: window.dp(8)
                 
-                Binding {
-                    target: purchaseRequest
-                    property: "sponsorEndDate"
-                    value: {
-                    }
-                }
-                
                 AppText {
                     id: sponshorshipEndsLabel
                     text: qsTr("Sponsorship ends")
@@ -101,6 +95,12 @@ Flickable {
                     validator: DoubleValidator { bottom: 0; decimals: 4 }
                 }
             }
+        }
+        AppButton {
+            implicitWidth: contentWidth
+            implicitHeight: contentHeight
+            text: qsTr("Continue")
+            onClicked: completed()
         }
     }
 }

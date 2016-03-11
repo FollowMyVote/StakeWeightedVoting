@@ -27,13 +27,13 @@ class PurchaseWrapper : public QObject
     void setComplete(bool complete);
 
 public:
-    explicit PurchaseWrapper(Purchase::Client&& api, kj::TaskSet& tasks, QObject *parent = 0);
+    PurchaseWrapper(Purchase::Client&& api, kj::TaskSet& tasks, QObject *parent = 0);
     virtual ~PurchaseWrapper() noexcept;
 
     bool complete() const {
         return m_complete;
     }
-    Q_INVOKABLE Promise* prices();
+    Q_INVOKABLE Promise* prices(QStringList promoCodes);
 
 public slots:
     /**
