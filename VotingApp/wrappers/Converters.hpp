@@ -40,8 +40,8 @@ inline QVariantMap convertListedContest(ContestGenerator::ListedContest::Reader 
 inline QString convertText(capnp::Text::Reader text) {
     return QString::fromStdString(text);
 }
-inline void convertText(capnp::Text::Builder target, QString source) {
-    target.asString() = source.toStdString();
+inline kj::String convertText(QString source) {
+    return kj::heapString(source.toStdString());
 }
 template <typename T>
 inline QList<T> convertList(kj::Array<T>&& kjList) {

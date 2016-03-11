@@ -15,7 +15,7 @@
     } \
     void PurchaseContestRequestWrapper::set ## upperProperty(QString property) { \
         _CHECK_NOT_SAME(property) \
-        convertText(request.getRequest().get ## requestField (), property); \
+        request.getRequest().set ## requestField(convertText(property)); \
         emit property ## Changed(property); \
     }
 
@@ -82,6 +82,7 @@ bool PurchaseContestRequestWrapper::sponsorshipEnabled() const {
 
 PurchaseWrapper* PurchaseContestRequestWrapper::submit() {
     updateContestants();
+    KJ_LOG(DBG, "Submitting purchase request", request, request.getRequest().getContestName());
 
     auto promise = request.send();
     auto purchase = promise.getPurchaseApi();
@@ -109,8 +110,8 @@ void PurchaseContestRequestWrapper::updateContestants()
     auto target = request.getRequest().initContestants().initEntries(m_contestants.count());
     for (uint i = 0; i < target.size(); ++i) {
         auto contestant = m_contestants.get(i).value<QObject*>();
-        convertText(target[i].getKey(), contestant->property("name").toString());
-        convertText(target[i].getValue(), contestant->property("description").toString());
+        target[i].setKey(convertText(contestant->property("name").toString()));
+        target[i].setValue(convertText(contestant->property("description").toString()));
     }
 }
 

@@ -44,7 +44,7 @@ Promise* PurchaseWrapper::prices(QStringList promoCodes)
     auto codes = request.initPromoCodes(promoCodes.size());
 
     for (int i = 0; i < codes.size(); ++i)
-        convertText(codes[i], promoCodes[i]);
+        codes.set(i, convertText(promoCodes[i]));
 
     return converter.convert(request.send(), [](capnp::Response<Purchase::PricesResults> r) {
         QVariantList totals;
