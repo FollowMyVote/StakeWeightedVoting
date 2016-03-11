@@ -29,10 +29,8 @@ interface ContestCreator {
     getContestLimits @1 () -> (limits :Map(ContestLimit, LimitValue));
     # Get a list of limits for various aspects of contest creation. Any omitted limits are assumed to be unlimited.
 
-    purchaseContest @2 (request :ContestCreationRequest) -> (purchaseApi :Purchase, surcharges :Map(Text, Price));
-    # Begin checkout with a contest creation request. Returns a Purchase API to finish checkout, and a list of
-    # surcharges as a map of human-readable description to price. Negative surcharges are discounts (usually for a
-    # promo code).
+    purchaseContest @2 (request :ContestCreationRequest) -> (purchaseApi :Purchase);
+    # Begin checkout with a contest creation request. Returns a Purchase API to finish checkout.
 
     enum LineItems {
     # LineItems is an enumeration of all the individual features we may charge for
@@ -54,7 +52,7 @@ interface ContestCreator {
         # Price for contests which never end
     }
     struct LineItem {
-    # Generic types must be pointer types (like a struct), so wrap a LineItems entry in a struct so we  can map it.
+    # Generic types must be pointer types (like a struct), so wrap a LineItems entry in a struct so we can map it.
         item @0 :LineItems;
     }
     struct Price {
@@ -128,6 +126,5 @@ interface ContestCreator {
                 # Balance to pay each voter as an incentive for voting on this contest
             }
         }
-        promoCodes @12 :List(Text);
     }
 }

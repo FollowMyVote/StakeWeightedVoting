@@ -15,7 +15,6 @@ Page {
 
     property VotingSystem votingSystem
     property var contestCreator
-    property var purchaseRequest: contestCreator.getPurchaseContestRequest()
 
     SwipeView {
         id: swiper
@@ -25,16 +24,19 @@ Page {
             id: basicForm
             contestLimits: contestCreator.contestLimits
             coinsModel: votingSystem.coins
-            contestantModel: purchaseRequest.contestants
             onCompleted: swiper.currentIndex++
         }
         SponsorshipForm {
             onSponsorshipEnabledChanged: purchaseRequest.sponsorshipEnabled = sponsorshipEnabled
             onCompleted: {
                 try {
-                    // Note that contestants are filled in as they're created, so there's no need to update them here
+                    var purchaseRequest = contestCreator.getPurchaseContestRequest()
+                    purchaseRequest.contestType = ContestType.OneOfN
+                    purchaseRequest.tallyAlgorithm = TallyAlgorithm.Plurality
                     purchaseRequest.name = basicForm.contestName
                     purchaseRequest.description = basicForm.contestDescription
+                    for (var i = 0; i < basicForm.contestantModel.count; i++)
+                        purchaseRequest.contestants.append(basicForm.contestantModel.get(i))
                     purchaseRequest.expiration = basicForm.contestExpiration
                     purchaseRequest.weightCoin = basicForm.weightCoinId
                     if (purchaseRequest.sponsorshipEnabled) {
@@ -43,6 +45,7 @@ Page {
                         purchaseRequest.sponsorIncentive = incentive? incentive * 10000 : 0
                         purchaseRequest.sponsorEndDate = endTime
                     }
+                    var purchaseApi = purchaseRequest.submit()
                 } catch (exception) {
                     NativeDialog.confirm(qsTr("Error creating contest"),
                                          qsTr("An error occurred when processing your request: %1").arg(exception),

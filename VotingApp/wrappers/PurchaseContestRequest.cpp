@@ -67,11 +67,7 @@ PurchaseContestRequestWrapper::PurchaseContestRequestWrapper(PurchaseRequest&& r
       tasks(taskTracker),
       converter(tasks),
       request(kj::mv(request))
-{
-    // When the contestants change, automatically update the request
-    connect(m_contestants, &QQmlVariantListModel::dataChanged,
-            this, &PurchaseContestRequestWrapper::updateContestants);
-}
+{}
 
 ENUM_GETTER_SETTER(contestType, ContestType)
 ENUM_GETTER_SETTER(tallyAlgorithm, TallyAlgorithm)
@@ -84,21 +80,13 @@ bool PurchaseContestRequestWrapper::sponsorshipEnabled() const {
     return request.asReader().getRequest().getSponsorship().isOptions();
 }
 
-QVariantMap PurchaseContestRequestWrapper::submit() {
+PurchaseWrapper* PurchaseContestRequestWrapper::submit() {
+    updateContestants();
+
     auto promise = request.send();
     auto purchase = promise.getPurchaseApi();
-    auto qmlPromise = converter.convert(kj::mv(promise),
-                                        [] (capnp::Response<ContestCreator::PurchaseContestResults> r) -> QVariantList
-    {
-        QVariantList results;
-        for (auto surcharge : r.getSurcharges().getEntries())
-            results.append(QVariantMap{{"description", QString::fromStdString(surcharge.getKey())},
-                                       {"charge", QVariant::fromValue(surcharge.getValue().getPrice())}});
-        return QVariantList() << results;
-    });
 
-    return QVariantMap{{"purchaseApi", QVariant::fromValue(new PurchaseWrapper(kj::mv(purchase), tasks, this))},
-                       {"surchargePromise", QVariant::fromValue(qmlPromise)}};
+    return new PurchaseWrapper(kj::mv(purchase), tasks, this);
 }
 
 void PurchaseContestRequestWrapper::setSponsorshipEnabled(bool enabled) {
@@ -116,28 +104,14 @@ SPONSORSHIP_SIMPLE_GETTER_SETTER(sponsorMaxRevotes, SponsorMaxRevotes, qint32, M
 SPONSORSHIP_SIMPLE_GETTER_SETTER(sponsorEndDate, SponsorEndDate, qint64, EndDate)
 SPONSORSHIP_SIMPLE_GETTER_SETTER(sponsorIncentive, SponsorIncentive, qint64, Incentive)
 
-// Converts a QQmlVariantListModel to a capnp list. Func is a callable taking an element of List and a QVariant as
-// arguments which copies the QVariant into the List element
-template <typename List, typename ListModel, typename Func>
-void updateList(List target, const ListModel& source, Func copier) {
-    for (uint i = 0; i < target.size(); ++i)
-        copier(target[i], source.get(i));
-}
-
 void PurchaseContestRequestWrapper::updateContestants()
 {
-    updateList(request.getRequest().initContestants().initEntries(m_contestants->count()), *m_contestants,
-               [] (::Map<capnp::Text, capnp::Text>::Entry::Builder dest, const QObject* src) {
-        convertText(dest.getKey(), src->property("name").toString());
-        convertText(dest.getValue(), src->property("description").toString());
-    });
+    auto target = request.getRequest().initContestants().initEntries(m_contestants.count());
+    for (uint i = 0; i < target.size(); ++i) {
+        auto contestant = m_contestants.get(i).value<QObject*>();
+        convertText(target[i].getKey(), contestant->property("name").toString());
+        convertText(target[i].getValue(), contestant->property("description").toString());
+    }
 }
 
-void PurchaseContestRequestWrapper::updatePromoCodes()
-{
-    updateList(request.getRequest().initPromoCodes(m_promoCodes.count()), m_promoCodes,
-               [] (capnp::Text::Builder dest, const QVariant& src) {
-        convertText(dest, src.toString());
-    });
-}
 } // namespace swv

@@ -27,27 +27,36 @@ PurchaseWrapper::PurchaseWrapper(Purchase::Client&& api, kj::TaskSet& tasks, QOb
         CompleteNotifier(PurchaseWrapper& wrapper) : wrapper(wrapper) {}
     };
 
-    auto request = api.subscribeRequest();
-    request.setNotifier(kj::heap<CompleteNotifier>(*this));
-    tasks.add(request.send().then([](capnp::Response<Purchase::SubscribeResults>){}));
-    tasks.add(api.completeRequest().send().then([this] (capnp::Response<Purchase::CompleteResults> r) {
-                  setComplete(r.getResult());
-              }));
+//    auto request = api.subscribeRequest();
+//    request.setNotifier(kj::heap<CompleteNotifier>(*this));
+//    tasks.add(request.send().then([](capnp::Response<Purchase::SubscribeResults>){}));
+//    tasks.add(api.completeRequest().send().then([this] (capnp::Response<Purchase::CompleteResults> r) {
+//                  setComplete(r.getResult());
+//              }));
 }
 
 PurchaseWrapper::~PurchaseWrapper() noexcept
 {}
 
-Promise* PurchaseWrapper::prices()
+Promise* PurchaseWrapper::prices(QStringList promoCodes)
 {
-    return converter.convert(api.pricesRequest().send(), [](capnp::Response<Purchase::PricesResults> r) {
-        QVariantList results;
-        for (auto price : r.getPrices()) {
-            results.append(QVariantMap{{"coinId", QVariant::fromValue(price.getCoinId())},
+    auto request = api.pricesRequest();
+    auto codes = request.initPromoCodes(promoCodes.size());
+
+    for (int i = 0; i < codes.size(); ++i)
+        convertText(codes[i], promoCodes[i]);
+
+    return converter.convert(request.send(), [](capnp::Response<Purchase::PricesResults> r) {
+        QVariantList totals;
+        for (auto price : r.getPrices())
+            totals.append(QVariantMap{{"coinId", QVariant::fromValue(price.getCoinId())},
                                        {"amount", QVariant::fromValue(price.getAmount())},
                                        {"payAddress", QVariant::fromValue(convertText(price.getPayAddress()))}});
-        }
-        return QVariantList() << results;
+        QVariantList adjustments;
+        for (auto adjustment : r.getAdjustments().getEntries())
+            adjustments.append(QVariantMap{{"reason", QVariant::fromValue(convertText(adjustment.getKey()))},
+                                           {"amount", QVariant::fromValue(adjustment.getValue().getPrice())}});
+        return QVariantList() << totals << adjustments;
     });
 }
 

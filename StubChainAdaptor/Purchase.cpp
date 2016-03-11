@@ -32,12 +32,33 @@ Purchase::~Purchase(){}
 
 ::kj::Promise<void> Purchase::prices(Purchase::Server::PricesContext context)
 {
-    auto resultPrices = context.getResults().initPrices(m_prices.size());
-    for (unsigned i = 0; i < resultPrices.size(); ++i) {
-        resultPrices[i].setCoinId(m_prices[i].coinId);
-        resultPrices[i].setAmount(m_prices[i].amount);
-        resultPrices[i].setPayAddress(m_prices[i].payAddress);
+    auto price = votePrice;
+    auto adjustments = this->adjustments;
+
+    // Process promo codes
+    for (auto code : context.getParams().getPromoCodes())
+        if (code == "TAKE10")
+            adjustments["Coupon TAKE10"] = price * -0.1;
+
+    // Apply adjustments to price. Do not let price go negative.
+    for (const auto& adjustment : adjustments)
+        price += adjustment.second;
+    if (price < 0) price = 0;
+
+    auto resultPrice = context.getResults().initPrices(1)[0];
+    // TODO: Define the VOTE asset in the stub chain and use its ID here
+    resultPrice.setCoinId(1);
+    resultPrice.setAmount(votePrice);
+    resultPrice.setPayAddress("follow-my-vote");
+
+    auto finalSurcharges = context.getResults().initAdjustments().initEntries(adjustments.size());
+    auto index = 0;
+    for (const auto& adjustment : adjustments) {
+        auto finalSurcharge = finalSurcharges[index++];
+        finalSurcharge.setKey(adjustment.first);
+        finalSurcharge.initValue().setPrice(adjustment.second);
     }
+
     return kj::READY_NOW;
 }
 

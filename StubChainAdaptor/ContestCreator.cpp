@@ -131,31 +131,14 @@ StubChainAdaptor::ContestCreator::~ContestCreator()
     if (creationRequest.getContestExpiration() == 0)
         price += 50000;
 
-    // Add any surcharges
+    // Calculate surcharges
     std::map<std::string, int64_t> surcharges;
     if (longText) {
         auto charge = ((creationRequest.totalSize().wordCount * capnp::BYTES_PER_WORD) / 1024) * 10000;
-        price += charge;
         surcharges["Long descriptions"] = charge;
     }
-    for (auto code : creationRequest.getPromoCodes())
-        if (code == "TAKE10") {
-            int64_t credit = price * .1;
-            price -= credit;
-            surcharges["Coupon TAKE10"] = -credit;
-        }
 
-    auto finalSurcharges = context.getResults().initSurcharges().initEntries(surcharges.size());
-    auto index = 0;
-    for (auto surcharge : surcharges) {
-        auto finalSurcharge = finalSurcharges[index++];
-        finalSurcharge.setKey(surcharge.first);
-        finalSurcharge.initValue().setPrice(surcharge.second);
-    }
-
-    std::vector<Purchase::Price> finalPrices;
-    finalPrices.emplace_back(0, price, kj::heapString("follow-my-vote"));
-    context.getResults().setPurchaseApi(kj::heap<Purchase>(kj::mv(finalPrices),
+    context.getResults().setPurchaseApi(kj::heap<Purchase>(price,
                                                            [&adaptor = adaptor, creationRequest] {
         auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
                        std::chrono::steady_clock::now().time_since_epoch()).count();
@@ -166,7 +149,7 @@ StubChainAdaptor::ContestCreator::~ContestCreator()
         contest.setName(creationRequest.getContestName());
         contest.setStartTime(now);
         contest.setEndTime(creationRequest.getContestExpiration());
-    }));
+    }, kj::mv(surcharges)));
 
     return kj::READY_NOW;
 }

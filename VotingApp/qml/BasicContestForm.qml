@@ -17,9 +17,9 @@ Item {
     // Input/output properties
     property alias contestName: contestName.text
     property alias contestDescription: contestDescription.text
-    property alias contestantModel: contestantRepeater.model
 
     // Output only properties
+    readonly property alias contestantModel: contestantRepeater.model
     readonly property alias weightCoinId: weightCoin.currentKey
     readonly property var contestExpiration: {
         if (contestEndsTime.currentIdx === 0)
@@ -95,6 +95,7 @@ Item {
                 spacing: window.dp(8)
                 Repeater {
                     id: contestantRepeater
+                    model: ListModel{}
                     delegate: RowLayout {
                         width: parent.width
                         
@@ -144,11 +145,7 @@ Item {
                     
                     // Handle dialog accepted/canceled signals
                     dialog.accepted.connect(function() {
-                        var contestant = Qt.createQmlObject("import FollowMyVote.StakeWeightedVoting." +
-                                                            "ContestPurchase 1.0; Contestant{}",
-                                                            basicContestForm, "ContestantCreation")
-                        contestant.name = dialog.contestantName;
-                        contestant.description = dialog.contestantDescription
+                        var contestant = {"name": dialog.contestantName, "description": dialog.contestantDescription}
                         contestantRepeater.model.append(contestant)
                         dialog.close()
                     })

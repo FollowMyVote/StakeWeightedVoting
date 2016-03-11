@@ -71,13 +71,6 @@ Flickable {
             Row {
                 spacing: window.dp(8)
                 
-                Binding {
-                    target: purchaseRequest
-                    property: "sponsorEndDate"
-                    value: {
-                    }
-                }
-                
                 AppText {
                     id: sponshorshipEndsLabel
                     text: qsTr("Sponsorship ends")
