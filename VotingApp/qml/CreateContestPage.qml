@@ -65,7 +65,20 @@ Page {
                         purchaseRequest.sponsorIncentive = incentive? incentive * 10000 : 0
                         purchaseRequest.sponsorEndDate = endTime
                     }
-                    var purchaseApi = purchaseRequest.submit()
+
+                    var dialog = purchaseDialog.createObject(createContestPage,
+                                                             {"purchaseApi": purchaseRequest.submit()})
+                    dialog.accepted.connect(function() {
+                        // TODO: Actually pay
+                        dialog.purchaseApi.paymentSent(dialog.selectedPriceIndex)
+                        dialog.close()
+                        createContestPage.navigationStack.pop()
+                    })
+                    dialog.canceled.connect(function() {
+                        dialog.close()
+                    })
+
+                    dialog.open()
                 } catch (exception) {
                     NativeDialog.confirm(qsTr("Error creating contest"),
                                          qsTr("An error occurred when processing your request: %1").arg(exception),
@@ -79,5 +92,74 @@ Page {
         anchors.horizontalCenter: parent.horizontalCenter
         pages: swiper.count
         currentPage: swiper.currentIndex
+    }
+
+    Component {
+        id: purchaseDialog
+
+        Dialog {
+            property var purchaseApi
+            property var selectedPriceIndex: priceList.currentIdx
+            property var selectedPrice: priceList.currentKey
+
+            contentWidth: window.width * .6
+            contentHeight: window.height * .6
+
+            function updatePrices(totals, adjustments) {
+                console.log(JSON.stringify(totals))
+                console.log(JSON.stringify(adjustments))
+                priceList.model = totals
+                priceList.currentIdx = 0
+                adjustmentRepeater.model = adjustments
+            }
+            Component.onCompleted: purchaseApi.prices([]).then(updatePrices)
+
+            MouseArea {
+                anchors.fill: parent
+                onClicked: mouse.accepted = true
+            }
+            Column {
+                anchors.fill: parent
+                spacing: window.dp(8)
+
+                Row {
+                    spacing: window.dp(8)
+                    AppText {
+                        text: qsTr('Promo code')
+                    }
+                    AppTextField {
+                        id: promoCodeField
+                        onAccepted: promoCodeApplyButton.clicked()
+                    }
+                    AppButton {
+                        id: promoCodeApplyButton
+                        text: qsTr("Apply")
+                        onClicked: purchaseApi.prices([promoCodeField.text]).then(updatePrices)
+                    }
+                }
+                Row {
+                    spacing: window.dp(8)
+                    AppText {
+                        text: qsTr("Pay with")
+                    }
+                    ComboList {
+                        id: priceList
+                        delegate: ComboListDelegateForSimpleVar {
+                            property var coin: votingSystem.getCoin(modelData.coinId)
+                            value: modelData.amount / Math.pow(10, coin.precision) + " " + coin.name
+                        }
+                    }
+                }
+                AppText {
+                    text: qsTr("Price adjustments:")
+                }
+                Repeater {
+                    id: adjustmentRepeater
+                    delegate: AppText {
+                        text: modelData.reason + ": " + (modelData.amount / 10000) + " VOTE"
+                    }
+                }
+            }
+        }
     }
 }

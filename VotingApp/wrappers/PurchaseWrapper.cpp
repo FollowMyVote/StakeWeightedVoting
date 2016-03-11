@@ -1,6 +1,8 @@
 #include "PurchaseWrapper.hpp"
 #include "Converters.hpp"
 
+#include <QDebug>
+
 namespace swv {
 
 void PurchaseWrapper::setComplete(bool complete)
@@ -49,14 +51,14 @@ Promise* PurchaseWrapper::prices(QStringList promoCodes)
     return converter.convert(request.send(), [](capnp::Response<Purchase::PricesResults> r) {
         QVariantList totals;
         for (auto price : r.getPrices())
-            totals.append(QVariantMap{{"coinId", QVariant::fromValue(price.getCoinId())},
-                                       {"amount", QVariant::fromValue(price.getAmount())},
+            totals.append(QVariantMap{{"coinId", QVariant::fromValue(qreal(price.getCoinId()))},
+                                       {"amount", QVariant::fromValue(qreal(price.getAmount()))},
                                        {"payAddress", QVariant::fromValue(convertText(price.getPayAddress()))}});
         QVariantList adjustments;
         for (auto adjustment : r.getAdjustments().getEntries())
             adjustments.append(QVariantMap{{"reason", QVariant::fromValue(convertText(adjustment.getKey()))},
-                                           {"amount", QVariant::fromValue(adjustment.getValue().getPrice())}});
-        return QVariantList() << totals << adjustments;
+                                           {"amount", QVariant::fromValue(qreal(adjustment.getValue().getPrice()))}});
+        return QVariantList() << QVariant::fromValue(totals) << QVariant::fromValue(adjustments);
     });
 }
 

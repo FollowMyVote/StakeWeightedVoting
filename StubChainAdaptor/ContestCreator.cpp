@@ -142,17 +142,33 @@ StubChainAdaptor::ContestCreator::~ContestCreator()
         surcharges["Long descriptions"] = charge;
     }
 
+    std::map<std::string, std::string> contestants;
+    for (auto contestant : creationRequest.getContestants().getEntries())
+        contestants.insert(std::make_pair<std::string, std::string>(contestant.getKey(), contestant.getValue()));
     context.getResults().setPurchaseApi(kj::heap<Purchase>(price,
-                                                           [&adaptor = adaptor, creationRequest] {
+                                                 [&adaptor = adaptor,
+                                                  name = std::string(creationRequest.getContestName()),
+                                                  descripton = std::string(creationRequest.getContestDescription()),
+                                                  contestants = kj::mv(contestants),
+                                                  weightCoin = creationRequest.getWeightCoin(),
+                                                  endTime = creationRequest.getContestExpiration()] {
         auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
                        std::chrono::steady_clock::now().time_since_epoch()).count();
         auto contest = adaptor.createContest().initContest();
-        contest.setCoin(creationRequest.getWeightCoin());
-        contest.setDescription(creationRequest.getContestDescription());
         contest.initId(1).front() = adaptor.contests.size() - 1;
-        contest.setName(creationRequest.getContestName());
+        contest.setName(name);
+        contest.setDescription(descripton);
+        auto finalContestants = contest.initContestants().initEntries(contestants.size());
+        int index = 0;
+        for (auto& contestant : contestants) {
+            auto finalContestant = finalContestants[index++];
+            finalContestant.setKey(kj::mv(contestant.first));
+            finalContestant.setValue(kj::mv(contestant.second));
+        }
+        contest.setCoin(weightCoin);
         contest.setStartTime(now);
-        contest.setEndTime(creationRequest.getContestExpiration());
+        contest.setEndTime(endTime);
+        KJ_LOG(DBG, "Created contest", contest);
     }, kj::mv(surcharges)));
 
     return kj::READY_NOW;

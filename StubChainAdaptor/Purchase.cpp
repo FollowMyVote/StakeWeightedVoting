@@ -35,20 +35,25 @@ Purchase::~Purchase(){}
     auto price = votePrice;
     auto adjustments = this->adjustments;
 
-    // Process promo codes
-    for (auto code : context.getParams().getPromoCodes())
-        if (code == "TAKE10")
-            adjustments["Coupon TAKE10"] = price * -0.1;
-
-    // Apply adjustments to price. Do not let price go negative.
+    // Apply adjustments to price
     for (const auto& adjustment : adjustments)
         price += adjustment.second;
+
+    // Process promo codes
+    for (auto code : context.getParams().getPromoCodes())
+        if (code == "TAKE10") {
+            auto adjustment = price * -0.1;
+            adjustments["Coupon TAKE10"] = adjustment;
+            price += adjustment;
+        }
+
+    // Do not let price go negative
     if (price < 0) price = 0;
 
     auto resultPrice = context.getResults().initPrices(1)[0];
     // TODO: Define the VOTE asset in the stub chain and use its ID here
     resultPrice.setCoinId(1);
-    resultPrice.setAmount(votePrice);
+    resultPrice.setAmount(price);
     resultPrice.setPayAddress("follow-my-vote");
 
     auto finalSurcharges = context.getResults().initAdjustments().initEntries(adjustments.size());
