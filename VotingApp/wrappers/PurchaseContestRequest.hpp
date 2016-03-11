@@ -11,6 +11,7 @@
 #include "vendor/QQmlVariantListModel.h"
 
 namespace swv {
+class PurchaseWrapper;
 
 QML_ENUM_CLASS(ContestType,
                OneOfN = static_cast<uint16_t>(::ContestCreator::ContestTypes::ONE_OF_N)
@@ -18,19 +19,6 @@ QML_ENUM_CLASS(ContestType,
 QML_ENUM_CLASS(TallyAlgorithm,
                Plurality = static_cast<uint16_t>(::ContestCreator::TallyAlgorithms::PLURALITY)
         )
-
-class PurchaseContestContestantWrapper : public QObject {
-    Q_OBJECT
-    Q_PROPERTY(QString name MEMBER name NOTIFY nameChanged)
-    Q_PROPERTY(QString description MEMBER description NOTIFY descriptionChanged)
-
-    QString name;
-    QString description;
-
-signals:
-    void nameChanged(QString);
-    void descriptionChanged(QString);
-};
 
 /**
  * @brief The PurchaseContestRequest class provies a QML interface to manage purchasing a contest
@@ -48,8 +36,7 @@ class PurchaseContestRequestWrapper : public QObject
                NOTIFY tallyAlgorithmChanged)
     Q_PROPERTY(QString name READ name WRITE setName NOTIFY nameChanged)
     Q_PROPERTY(QString description READ description WRITE setDescription NOTIFY descriptionChanged)
-    QML_OBJMODEL_PROPERTY(PurchaseContestContestantWrapper, contestants)
-    Q_PROPERTY(QQmlVariantListModel* promoCodes READ promoCodes CONSTANT)
+    Q_PROPERTY(QQmlVariantListModel* contestants READ contestants CONSTANT)
     Q_PROPERTY(quint64 weightCoin READ weightCoin WRITE setWeightCoin NOTIFY weightCoinChanged)
     Q_PROPERTY(qint64 expiration READ expiration WRITE setExpiration NOTIFY expirationChanged)
     Q_PROPERTY(bool sponsorshipEnabled READ sponsorshipEnabled WRITE setSponsorshipEnabled
@@ -61,7 +48,7 @@ class PurchaseContestRequestWrapper : public QObject
     Q_PROPERTY(qint64 sponsorIncentive READ sponsorIncentive WRITE setSponsorIncentive NOTIFY sponsorIncentiveChanged)
 
     kj::TaskSet& tasks;
-    QQmlVariantListModel m_promoCodes;
+    QQmlVariantListModel m_contestants;
     PromiseConverter converter;
 
 public:
@@ -78,14 +65,14 @@ public:
 
     QString name() const;
     QString description() const;
+    QQmlVariantListModel* contestants() {
+        return &m_contestants;
+    }
     quint64 weightCoin() const;
     qint64 expiration() const;
     ContestType::Type contestType() const;
     TallyAlgorithm::Type tallyAlgorithm() const;
     bool sponsorshipEnabled() const;
-    QQmlVariantListModel* promoCodes() {
-        return &m_promoCodes;
-    }
     qint64 sponsorMaxVotes();
     qint32 sponsorMaxRevotes();
     qint64 sponsorEndDate();
@@ -94,8 +81,8 @@ public:
 public slots:
     /// @brief Submit the request to the server. This consumes the request.
     /// @return A map with two entries: "purchaseApi" (a purchase API wrapper) and "surchargePromise" (a @ref Promise
-    /// for the surcharge list, which is itself a QVAriantList of objects with "description" and "charge" fields)
-    QVariantMap submit();
+    /// for the surcharge list, which is itself a QVariantList of objects with "description" and "charge" fields)
+    swv::PurchaseWrapper* submit();
 
     void setName(QString name);
     void setDescription(QString description);
@@ -124,7 +111,6 @@ public slots:
 
 protected slots:
     void updateContestants();
-    void updatePromoCodes();
 
 private:
     PurchaseRequest request;

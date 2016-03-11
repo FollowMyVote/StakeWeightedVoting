@@ -24,6 +24,7 @@
 
 #include <functional>
 #include <vector>
+#include <map>
 
 namespace swv {
 
@@ -42,8 +43,10 @@ public:
         {}
     };
 
-    Purchase(std::vector<Price> prices, std::function<void()> onPurchasedCallback)
-        : m_prices(kj::mv(prices)),
+    Purchase(int64_t votePrice, std::function<void()> onPurchasedCallback,
+             std::map<std::string, int64_t> adjustments = {})
+        : votePrice(votePrice),
+          adjustments(kj::mv(adjustments)),
           callback(onPurchasedCallback)
     {}
     virtual ~Purchase();
@@ -58,7 +61,8 @@ protected:
     void sendNotification();
 
     bool isComplete = false;
-    std::vector<Price> m_prices;
+    int64_t votePrice;
+    std::map<std::string, int64_t> adjustments;
     kj::Maybe<Notifier<capnp::Text>::Client> completionNotifier;
     std::function<void()> callback;
 };

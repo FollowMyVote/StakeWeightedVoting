@@ -10,9 +10,36 @@ import FollowMyVote.StakeWeightedVoting 1.0
 Item {
     id: basicContestForm
 
-    property VotingSystem votingSystem
-    property var purchaseRequest
-    property var contestCreator
+    // Input only properties
+    property var contestLimits
+    property alias coinsModel: weightCoin.model
+
+    // Input/output properties
+    property alias contestName: contestName.text
+    property alias contestDescription: contestDescription.text
+
+    // Output only properties
+    readonly property alias contestantModel: contestantRepeater.model
+    readonly property alias weightCoinId: weightCoin.currentKey
+    readonly property var contestExpiration: {
+        if (contestEndsTime.currentIdx === 0)
+            return 0
+
+        var date = new Date()
+        if (contestEndsTime.currentIdx === 1)
+            date.setDate(date.getDate() + 1)
+        else if (contestEndsTime.currentIdx === 2)
+            date.setDate(date.getDate() + 7)
+        else if (contestEndsTime.currentIdx === 3)
+            date.setMonth(date.getMonth() + 1)
+        return date.getTime()
+    }
+
+    function setWeightCoinId(id) {
+        weightCoin.selectByKey(id)
+    }
+
+    signal completed
 
     Flickable {
         id: flickable
@@ -35,27 +62,15 @@ Item {
                 id: contestName
                 width: parent.width
                 placeholderText: qsTr("Contest Name")
-                maximumLength: contestCreator.contestLimits[ContestLimits.NameLength]
+                maximumLength: contestLimits[ContestLimits.NameLength]
                 Component.onCompleted: forceActiveFocus()
                 KeyNavigation.tab: contestDescription
-                
-                Binding {
-                    target: purchaseRequest
-                    property: "name"
-                    value: contestName.text
-                }
             }
             AppTextEdit {
                 id: contestDescription
                 width: parent.width
                 placeholderText: qsTr("Description")
                 wrapMode: TextEdit.Wrap
-                
-                Binding {
-                    target: purchaseRequest
-                    property: "description"
-                    value: contestDescription.text
-                }
             }
             Row {
                 spacing: window.dp(8)
@@ -65,33 +80,28 @@ Item {
                     text: qsTr("Coin to Poll:")
                 }
                 ComboList {
+                    id: weightCoin
                     width: window.dp(120)
-                    model: votingSystem.coins
                     delegate: ComboListDelegateForModelWithRoles {
                         roleKey: "coinId"
                         roleValue: "name"
                         label.font: weightCoinLabel.font
                     }
                     Component.onCompleted: selectByKey(0)
-                    
-                    Binding {
-                        target: purchaseRequest
-                        property: "weightCoin"
-                        value: parent.currentKey
-                    }
                 }
             }
             Column {
                 width: parent.width
                 spacing: window.dp(8)
                 Repeater {
-                    model: purchaseRequest.contestants
+                    id: contestantRepeater
+                    model: ListModel{}
                     delegate: RowLayout {
                         width: parent.width
                         
                         IconButton {
                             icon: IconType.remove
-                            onClicked: purchaseRequest.contestants.remove(index)
+                            onClicked: contestantRepeater.model.remove(index)
                         }
                         IconButton {
                             icon: IconType.edit
@@ -135,12 +145,8 @@ Item {
                     
                     // Handle dialog accepted/canceled signals
                     dialog.accepted.connect(function() {
-                        var contestant = Qt.createQmlObject("import FollowMyVote.StakeWeightedVoting." +
-                                                            "ContestPurchase 1.0; Contestant{}",
-                                                            basicContestForm, "ContestantCreation")
-                        contestant.name = dialog.contestantName;
-                        contestant.description = dialog.contestantDescription
-                        purchaseRequest.contestants.append(contestant)
+                        var contestant = {"name": dialog.contestantName, "description": dialog.contestantDescription}
+                        contestantRepeater.model.append(contestant)
                         dialog.close()
                     })
                     dialog.canceled.connect(dialog.close)
@@ -150,24 +156,6 @@ Item {
             }
             Row {
                 spacing: window.dp(8)
-                
-                Binding {
-                    target: purchaseRequest
-                    property: "expiration"
-                    value: {
-                        if (contestEndsTime.currentIndex === 0)
-                            return new Date(0)
-                        
-                        var date = new Date()
-                        if (contestEndsTime.currentIdx === 1)
-                            date.setDate(date.getDate() + 1)
-                        else if (contestEndsTime.currentIdx === 2)
-                            date.setDate(date.getDate() + 7)
-                        else if (contestEndsTime.currentIdx === 3)
-                            date.setMonth(date.getMonth() + 1)
-                        return date
-                    }
-                }
                 
                 AppText {
                     id: contestEndsLabel
@@ -182,6 +170,12 @@ Item {
                     }
                     Component.onCompleted: currentIdx = 0
                 }
+            }
+            AppButton {
+                text: qsTr("Continue")
+                onClicked: completed()
+                implicitHeight: contentHeight
+                implicitWidth: contentWidth
             }
         }
     }
@@ -204,7 +198,7 @@ Item {
                 AppTextField {
                     id: contestantName
                     placeholderText: qsTr("Name")
-                    maximumLength: contestCreator.contestLimits[ContestLimits.ContestantNameLength]
+                    maximumLength: contestLimits[ContestLimits.ContestantNameLength]
                     Layout.fillWidth: true
                     KeyNavigation.tab: contestantDescription
                     Component.onCompleted: forceActiveFocus(Qt.Popup)

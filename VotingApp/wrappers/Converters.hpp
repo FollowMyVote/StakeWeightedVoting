@@ -34,14 +34,14 @@ inline capnp::Data::Builder convertBlob(QByteArray& data) {
 }
 inline QVariantMap convertListedContest(ContestGenerator::ListedContest::Reader contest) {
     return {{"contestId", QString(convertBlob(contest.getContestId()).toHex())},
-           {"votingStake", qint64(contest.getVotingStake())},
-           {"tracksLiveResults", contest.getTracksLiveResults()}};
+            {"votingStake", qint64(contest.getVotingStake())},
+            {"tracksLiveResults", contest.getTracksLiveResults()}};
 }
 inline QString convertText(capnp::Text::Reader text) {
     return QString::fromStdString(text);
 }
-inline void convertText(capnp::Text::Builder target, QString source) {
-    target.asString() = source.toStdString();
+inline kj::String convertText(QString source) {
+    return kj::heapString(source.toStdString());
 }
 template <typename T>
 inline QList<T> convertList(kj::Array<T>&& kjList) {
