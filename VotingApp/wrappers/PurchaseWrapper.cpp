@@ -27,12 +27,12 @@ PurchaseWrapper::PurchaseWrapper(Purchase::Client&& api, kj::TaskSet& tasks, QOb
         CompleteNotifier(PurchaseWrapper& wrapper) : wrapper(wrapper) {}
     };
 
-//    auto request = api.subscribeRequest();
-//    request.setNotifier(kj::heap<CompleteNotifier>(*this));
-//    tasks.add(request.send().then([](capnp::Response<Purchase::SubscribeResults>){}));
-//    tasks.add(api.completeRequest().send().then([this] (capnp::Response<Purchase::CompleteResults> r) {
-//                  setComplete(r.getResult());
-//              }));
+    auto request = this->api.subscribeRequest();
+    request.setNotifier(kj::heap<CompleteNotifier>(*this));
+    tasks.add(request.send().then([](capnp::Response<Purchase::SubscribeResults>){}));
+    tasks.add(this->api.completeRequest().send().then([this] (capnp::Response<Purchase::CompleteResults> r) {
+                  setComplete(r.getResult());
+              }));
 }
 
 PurchaseWrapper::~PurchaseWrapper() noexcept

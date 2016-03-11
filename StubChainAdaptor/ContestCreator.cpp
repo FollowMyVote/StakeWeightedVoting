@@ -83,14 +83,18 @@ StubChainAdaptor::ContestCreator::~ContestCreator()
     bool longText = false;
 
     // Check limits
+    KJ_REQUIRE(creationRequest.getContestName().size() > 0, "Contest must have a name", creationRequest);
     KJ_REQUIRE(creationRequest.getContestName().size() <= 100, "Contest name is too long", creationRequest);
     KJ_REQUIRE(creationRequest.getContestDescription().size() <= 10240,
                "Contest description is too long", creationRequest);
     if (creationRequest.getContestDescription().size() > 500)
         longText = true;
+    KJ_REQUIRE(creationRequest.getContestants().getEntries().size() > 0, "Contest must have at least one contestant",
+               creationRequest);
     KJ_REQUIRE(creationRequest.getContestants().getEntries().size() <= 8,
                "Contest has too many contestants", creationRequest);
     for (auto contestant : creationRequest.getContestants().getEntries()) {
+        KJ_REQUIRE(contestant.getKey().size() > 0, "Contestant must have a name", contestant);
         KJ_REQUIRE(contestant.getKey().size() <= 30, "Contestant name is too long", contestant);
         KJ_REQUIRE(contestant.getValue().size() <= 10240, "Contestant description is too long", contestant);
         if (contestant.getValue().size() > 500)

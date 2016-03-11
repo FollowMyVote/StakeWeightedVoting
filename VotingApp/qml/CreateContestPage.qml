@@ -16,6 +16,26 @@ Page {
     property VotingSystem votingSystem
     property var contestCreator
 
+    Connections {
+        target: contestCreator
+        property var lastErrorTime
+        onError: {
+            // Ignore errors that come within 1 second of the last error
+            console.log(lastErrorTime)
+            if (new Date().getTime() - lastErrorTime < 1000)
+                return
+
+            var message = errorString.split(';')
+            if (message.length > 1)
+                message = message[1]
+            else
+                message = errorString
+
+            NativeDialog.confirm("Error purchasing contest", message, function(){}, false)
+            lastErrorTime = new Date().getTime()
+        }
+    }
+
     SwipeView {
         id: swiper
         anchors.fill: parent
