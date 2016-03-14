@@ -155,7 +155,6 @@ StubChainAdaptor::ContestCreator::~ContestCreator()
         auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
                        std::chrono::steady_clock::now().time_since_epoch()).count();
         auto contest = adaptor.createContest().initContest();
-        contest.initId(1).front() = adaptor.contests.size() - 1;
         contest.setName(name);
         contest.setDescription(descripton);
         auto finalContestants = contest.initContestants().initEntries(contestants.size());

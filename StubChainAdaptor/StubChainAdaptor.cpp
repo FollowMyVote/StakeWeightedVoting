@@ -76,60 +76,42 @@ StubChainAdaptor::StubChainAdaptor(QObject* parent)
     balance.setAmount(88);
     balance.setType(1);
 
-    auto contestOrphan = orphanage.newOrphan<Contest>();
-    auto contest = contestOrphan.get();
-    auto ucontest = contest.getContest();
-    contest.initSignature(0);
-    ucontest.initId(1)[0] = 0;
-    ucontest.setCoin(1);
-    ucontest.setName("Lunch poll");
-    ucontest.setDescription("Where should we go for lunch?");
-    ucontest.setStartTime(static_cast<uint64_t>(QDateTime::fromString("2015-09-20T12:00:00",
+    auto contest = createContest().getContest();
+    contest.setCoin(1);
+    contest.setName("Lunch poll");
+    contest.setDescription("Where should we go for lunch?");
+    contest.setStartTime(static_cast<uint64_t>(QDateTime::fromString("2015-09-20T12:00:00",
                                                                       Qt::ISODate).toMSecsSinceEpoch()));
-    auto contestants = ucontest.initContestants().initEntries(3);
+    auto contestants = contest.initContestants().initEntries(3);
     contestants[0].setKey("Wikiteria");
     contestants[0].setValue("Cafeteria on the CRC campus");
     contestants[1].setKey("Wicked Taco");
     contestants[1].setValue("Restaurant on Prices Fork");
     contestants[2].setKey("Firehouse");
     contestants[2].setValue("Sub Shop on University City Blvd");
-    contests.emplace_back(kj::mv(contestOrphan));
 
-    contestOrphan = orphanage.newOrphan<Contest>();
-    contest = contestOrphan.get();
-    ucontest = contest.getContest();
-    contest.initSignature(0);
-    ucontest.initId(1)[0] = 1;
-    ucontest.setCoin(0);
-    ucontest.setName("Upgrade Authorization");
-    ucontest.setDescription("Do the BitShares stakeholders accept the upgrade to version 2.0, "
+    contest = createContest().getContest();
+    contest.setCoin(0);
+    contest.setName("Upgrade Authorization");
+    contest.setDescription("Do the BitShares stakeholders accept the upgrade to version 2.0, "
                             "using the Graphene Toolkit?");
-    ucontest.setStartTime(static_cast<uint64_t>(QDateTime::fromString("2015-09-11T12:00:00",
+    contest.setStartTime(static_cast<uint64_t>(QDateTime::fromString("2015-09-11T12:00:00",
                                                                       Qt::ISODate).toMSecsSinceEpoch()));
-    contestants = ucontest.initContestants().initEntries(2);
+    contestants = contest.initContestants().initEntries(2);
     contestants[0].setKey("Yes");
     contestants[0].setValue("Accept the upgrade, and hard-fork to BitShares 2.0");
     contestants[1].setKey("No");
     contestants[1].setValue("Reject the upgrade, and continue using BitShares 0.9.x");
-    contests.emplace_back(kj::mv(contestOrphan));
 
     // Total of 10 contests
-    contests.emplace_back(orphanage.newOrphanCopy(contests.back().getReader()));
-    contests.back().get().getContest().getId()[0] = 2;
-    contests.emplace_back(orphanage.newOrphanCopy(contests.back().getReader()));
-    contests.back().get().getContest().getId()[0] = 3;
-    contests.emplace_back(orphanage.newOrphanCopy(contests.back().getReader()));
-    contests.back().get().getContest().getId()[0] = 4;
-    contests.emplace_back(orphanage.newOrphanCopy(contests.back().getReader()));
-    contests.back().get().getContest().getId()[0] = 5;
-    contests.emplace_back(orphanage.newOrphanCopy(contests.back().getReader()));
-    contests.back().get().getContest().getId()[0] = 6;
-    contests.emplace_back(orphanage.newOrphanCopy(contests.back().getReader()));
-    contests.back().get().getContest().getId()[0] = 7;
-    contests.emplace_back(orphanage.newOrphanCopy(contests.back().getReader()));
-    contests.back().get().getContest().getId()[0] = 8;
-    contests.emplace_back(orphanage.newOrphanCopy(contests.back().getReader()));
-    contests.back().get().getContest().getId()[0] = 9;
+    createContest().setContest(contests.back().getReader().getContest());
+    createContest().setContest(contests.back().getReader().getContest());
+    createContest().setContest(contests.back().getReader().getContest());
+    createContest().setContest(contests.back().getReader().getContest());
+    createContest().setContest(contests.back().getReader().getContest());
+    createContest().setContest(contests.back().getReader().getContest());
+    createContest().setContest(contests.back().getReader().getContest());
+    createContest().setContest(contests.back().getReader().getContest());
 }
 
 StubChainAdaptor::~StubChainAdaptor() noexcept {}
@@ -326,7 +308,9 @@ kj::Maybe<const capnp::Orphan<Balance>&> StubChainAdaptor::getBalanceOrphan(QByt
 
 Contest::Builder StubChainAdaptor::createContest()
 {
-    return contests.emplace(contests.begin(), message.getOrphanage().newOrphan<::Contest>())->get();
+    auto newContest = contests.emplace(contests.begin(), message.getOrphanage().newOrphan<::Contest>())->get();
+    newContest.initContest().initId(1)[0] = contests.size() - 1;
+    return newContest;
 }
 
 Balance::Builder StubChainAdaptor::createBalance(QString owner)
