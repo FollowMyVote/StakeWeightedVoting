@@ -56,45 +56,25 @@ StubChainAdaptor::StubChainAdaptor(QObject* parent)
     coin.setCreator("committee-account");
     coins.emplace_back(kj::mv(coinOrphan));
 
-    std::reference_wrapper<std::vector<capnp::Orphan<Balance>>> bals = balances["nathan"];
-    auto balanceOrphan = orphanage.newOrphan<Balance>();
-    auto balance = balanceOrphan.get();
+    auto balance = createBalance("nathan");
     balance.setAmount(50000000);
-    balance.initId(1)[0] = 0;
     balance.setType(0);
-    bals.get().emplace_back(kj::mv(balanceOrphan));
 
-    balanceOrphan = orphanage.newOrphan<Balance>();
-    balance = balanceOrphan.get();
+    balance = createBalance("nathan");
     balance.setAmount(10);
-    balance.initId(1)[0] = 1;
     balance.setType(1);
-    bals.get().emplace_back(kj::mv(balanceOrphan));
 
-    balanceOrphan = orphanage.newOrphan<Balance>();
-    balance = balanceOrphan.get();
+    balance = createBalance("nathan");
     balance.setAmount(5000);
-    balance.initId(1)[0] = 2;
     balance.setType(2);
-    bals.get().emplace_back(kj::mv(balanceOrphan));
 
-    bals = balances["dev.nathanhourt.com"];
-
-    balanceOrphan = orphanage.newOrphan<Balance>();
-    balance = balanceOrphan.get();
+    balance = createBalance("dev.nathanhourt.com");
     balance.setAmount(10000000);
-    balance.initId(1)[0] = 3;
     balance.setType(0);
-    bals.get().emplace_back(kj::mv(balanceOrphan));
 
-    bals = balances["adam"];
-
-    balanceOrphan = orphanage.newOrphan<Balance>();
-    balance = balanceOrphan.get();
+    balance = createBalance("adam");
     balance.setAmount(88);
-    balance.initId(1)[0] = 4;
     balance.setType(1);
-    bals.get().emplace_back(kj::mv(balanceOrphan));
 
     auto contestOrphan = orphanage.newOrphan<Contest>();
     auto contest = contestOrphan.get();
@@ -266,6 +246,40 @@ kj::Promise<void> StubChainAdaptor::publishDatagram(QByteArray payerBalanceId, Q
     KJ_UNREACHABLE;
 }
 
+kj::Promise<void> StubChainAdaptor::transfer(QString sender, QString recipient, qint64 amount, quint64 coinId)
+{
+    auto senderBalances = balances.find(sender);
+    KJ_REQUIRE(senderBalances != balances.end(),
+               "Cannot transfer because sender has no balances", sender.toStdString());
+
+    qint64 senderFunds = 0;
+    for (const auto& balance : senderBalances->second)
+        if (balance.getReader().getType() == coinId)
+            senderFunds += balance.getReader().getAmount();
+    KJ_REQUIRE(senderFunds >= amount, "Cannot transfer because sender has insufficient funds", senderFunds, amount);
+
+    auto amountRemaining = amount;
+    for (auto balance = senderBalances->second.begin(); balance != senderBalances->second.end(); ++balance)
+        if (balance->getReader().getType() == coinId) {
+            if (balance->getReader().getAmount() <= amountRemaining) {
+                amountRemaining -= balance->getReader().getAmount();
+                balance = senderBalances->second.erase(balance);
+                if (amountRemaining == 0)
+                    break;
+            } else {
+                balance->get().setAmount(balance->get().getAmount() - amountRemaining);
+                amountRemaining = 0;
+                break;
+            }
+        }
+
+    auto newBalance = createBalance(recipient);
+    newBalance.setType(coinId);
+    newBalance.setAmount(amountRemaining);
+
+    return kj::READY_NOW;
+}
+
 kj::Promise<Datagram::Reader> StubChainAdaptor::getDatagram(QByteArray balanceId,
                                                             Datagram::DatagramType type,
                                                             QString key) const
@@ -313,6 +327,14 @@ kj::Maybe<const capnp::Orphan<Balance>&> StubChainAdaptor::getBalanceOrphan(QByt
 Contest::Builder StubChainAdaptor::createContest()
 {
     return contests.emplace(contests.begin(), message.getOrphanage().newOrphan<::Contest>())->get();
+}
+
+Balance::Builder StubChainAdaptor::createBalance(QString owner)
+{
+    balances[owner].emplace_back(message.getOrphanage().newOrphan<::Balance>());
+    auto& newBalance = balances[owner].back();
+    newBalance.get().initId(1)[0] = nextBalanceId++;
+    return newBalance.get();
 }
 
 } // namespace swv

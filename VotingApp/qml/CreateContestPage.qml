@@ -73,9 +73,11 @@ Page {
                         dialog.purchaseApi.paymentSent(dialog.selectedPriceIndex)
                         dialog.close()
                         createContestPage.navigationStack.pop()
+                        dialog.destroy()
                     })
                     dialog.canceled.connect(function() {
                         dialog.close()
+                        dialog.destroy()
                     })
 
                     dialog.open()

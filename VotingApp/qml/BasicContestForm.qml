@@ -114,8 +114,12 @@ Item {
                                     name = dialog.contestantName
                                     description = dialog.contestantDescription
                                     dialog.close()
+                                    dialog.destroy()
                                 })
-                                dialog.canceled.connect(dialog.close)
+                                dialog.canceled.connect(function() {
+                                    dialog.close()
+                                    dialog.destroy()
+                                })
                                 
                                 dialog.open()
                             }
