@@ -16,24 +16,28 @@ Page {
     property VotingSystem votingSystem
     property var contestCreator
 
+    function showError(message) {
+        // Ignore errors that come within 1 second of the last error
+        if (new Date().getTime() - internal.lastErrorTime < 1000)
+            return
+
+        message = message.split(';')
+        if (message.length > 1)
+            message = message[1]
+        else
+            message = errorString
+
+        NativeDialog.confirm("Error purchasing contest", message, function(){}, false)
+        internal.lastErrorTime = new Date().getTime()
+    }
+
+    QtObject {
+        id: internal
+        property var lastErrorTime
+    }
     Connections {
         target: contestCreator
-        property var lastErrorTime
-        onError: {
-            // Ignore errors that come within 1 second of the last error
-            console.log(lastErrorTime)
-            if (new Date().getTime() - lastErrorTime < 1000)
-                return
-
-            var message = errorString.split(';')
-            if (message.length > 1)
-                message = message[1]
-            else
-                message = errorString
-
-            NativeDialog.confirm("Error purchasing contest", message, function(){}, false)
-            lastErrorTime = new Date().getTime()
-        }
+        onError: showError(errorString)
     }
 
     SwipeView {
@@ -69,13 +73,20 @@ Page {
                     var dialog = purchaseDialog.createObject(createContestPage,
                                                              {"purchaseApi": purchaseRequest.submit()})
                     dialog.accepted.connect(function() {
-                        // TODO: Actually pay
-                        dialog.purchaseApi.paymentSent(dialog.selectedPriceIndex)
-                        dialog.close()
-                        createContestPage.navigationStack.pop()
+                        var transferPromise = votingSystem.adaptor.transfer(votingSystem.currentAccount.name,
+                                                                            dialog.selectedPrice.payAddress,
+                                                                            dialog.selectedPrice.amount,
+                                                                            dialog.selectedPrice.coinId);
+                        transferPromise.then(function() {
+                            dialog.purchaseApi.paymentSent(dialog.selectedPriceIndex)
+                            dialog.close()
+                            createContestPage.navigationStack.pop()
+                            dialog.destroy()
+                        }, showError)
                     })
                     dialog.canceled.connect(function() {
                         dialog.close()
+                        dialog.destroy()
                     })
 
                     dialog.open()

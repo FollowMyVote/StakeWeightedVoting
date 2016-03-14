@@ -62,6 +62,8 @@ public:
                                                         Datagram::DatagramType type,
                                                         QString key) const;
 
+    kj::Promise<void> transfer(QString sender, QString recipient, qint64 amount, quint64 coinId);
+
 protected:
     capnp::MallocMessageBuilder message;
     std::vector<capnp::Orphan<Coin>> coins;
@@ -69,10 +71,15 @@ protected:
     std::map<QString, std::vector<capnp::Orphan<Balance>>> balances;
     std::map<std::tuple<QByteArray, Datagram::DatagramType, std::vector<kj::byte>>, capnp::Orphan<::Datagram>> datagrams;
     kj::Maybe<capnp::Orphan<::Datagram>> pendingDatagram;
+    quint8 nextBalanceId = 0;
 
     kj::Maybe<capnp::Orphan<Balance>&> getBalanceOrphan(QByteArray id);
     kj::Maybe<const capnp::Orphan<Balance>&> getBalanceOrphan(QByteArray id) const;
+    kj::Maybe<capnp::Orphan<Coin>&> getCoinOrphan(QString name);
+    kj::Maybe<const capnp::Orphan<Coin>&> getCoinOrphan(QString name) const;
     ::Contest::Builder createContest();
+    ::Balance::Builder createBalance(QString owner);
+    ::Coin::Builder createCoin();
 };
 
 } // namespace swv

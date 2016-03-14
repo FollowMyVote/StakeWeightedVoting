@@ -250,4 +250,10 @@ Promise* ChainAdaptorWrapper::publishDatagram(QByteArray payerBalanceId, QByteAr
     return nullptr;
 }
 
+Promise* ChainAdaptorWrapper::transfer(QString sender, QString recipient, qint64 amount, quint64 coinId) {
+    if (hasAdaptor())
+        return promiseConverter.convert(m_adaptor->transfer(sender, recipient, amount, coinId));
+    return nullptr;
+}
+
 } // namespace swv

@@ -119,6 +119,16 @@ public:
     }
 
     /**
+     * @brief transfer funds from one account to another
+     * @param sender Name of the account to send from (should be one of the names returned by \ref getMyAccounts)
+     * @param recipient Name of the account or address to send to
+     * @param amount Amount of coin to send
+     * @param coinId Type of coin to send
+     * @return A promise which resolves when the transaction is successfully broadcast, or breaks if broadcast fails
+     */
+    virtual kj::Promise<void> transfer(QString sender, QString recipient, qint64 amount, quint64 coinId) = 0;
+
+    /**
      * @brief Get the datagram with the specified type and key belonging to the specified balance
      * @param balanceId ID of the balance owning the requested datagram
      * @param type The type of the requested datagram

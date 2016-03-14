@@ -145,17 +145,18 @@ StubChainAdaptor::ContestCreator::~ContestCreator()
     std::map<std::string, std::string> contestants;
     for (auto contestant : creationRequest.getContestants().getEntries())
         contestants.insert(std::make_pair<std::string, std::string>(contestant.getKey(), contestant.getValue()));
-    context.getResults().setPurchaseApi(kj::heap<Purchase>(price,
-                                                 [&adaptor = adaptor,
-                                                  name = std::string(creationRequest.getContestName()),
-                                                  descripton = std::string(creationRequest.getContestDescription()),
-                                                  contestants = kj::mv(contestants),
-                                                  weightCoin = creationRequest.getWeightCoin(),
-                                                  endTime = creationRequest.getContestExpiration()] {
+    context.getResults().setPurchaseApi(kj::heap<Purchase>(
+                                            price,
+                                            KJ_ASSERT_NONNULL(adaptor.getCoinOrphan("VOTE")).getReader().getId(),
+                                            [&adaptor = adaptor,
+                                             name = std::string(creationRequest.getContestName()),
+                                             descripton = std::string(creationRequest.getContestDescription()),
+                                             contestants = kj::mv(contestants),
+                                             weightCoin = creationRequest.getWeightCoin(),
+                                             endTime = creationRequest.getContestExpiration()] {
         auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
                        std::chrono::steady_clock::now().time_since_epoch()).count();
-        auto contest = adaptor.createContest().initContest();
-        contest.initId(1).front() = adaptor.contests.size() - 1;
+        auto contest = adaptor.createContest().getContest();
         contest.setName(name);
         contest.setDescription(descripton);
         auto finalContestants = contest.initContestants().initEntries(contestants.size());
