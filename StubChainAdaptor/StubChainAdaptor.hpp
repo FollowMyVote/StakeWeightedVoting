@@ -75,8 +75,11 @@ protected:
 
     kj::Maybe<capnp::Orphan<Balance>&> getBalanceOrphan(QByteArray id);
     kj::Maybe<const capnp::Orphan<Balance>&> getBalanceOrphan(QByteArray id) const;
+    kj::Maybe<capnp::Orphan<Coin>&> getCoinOrphan(QString name);
+    kj::Maybe<const capnp::Orphan<Coin>&> getCoinOrphan(QString name) const;
     ::Contest::Builder createContest();
     ::Balance::Builder createBalance(QString owner);
+    ::Coin::Builder createCoin();
 };
 
 } // namespace swv

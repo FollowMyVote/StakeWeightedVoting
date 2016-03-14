@@ -159,6 +159,16 @@ public:
      */
     Promise* publishDatagram(QByteArray payerBalanceId, QByteArray publisherBalanceId);
 
+    /**
+     * @brief Transfer amount from sender to recipient
+     * @param sender Account name of sender
+     * @param recipient Account name/address of recipient
+     * @param amount Amount to send
+     * @param coinId Type of coin to send
+     * @return A promise which resolves when the transaction has been broadcast, or breaks if transfer fails
+     */
+    Q_INVOKABLE Promise* transfer(QString sender, QString recipient, qint64 amount, quint64 coinId);
+
 signals:
     void hasAdaptorChanged(bool);
     void error(QString message);

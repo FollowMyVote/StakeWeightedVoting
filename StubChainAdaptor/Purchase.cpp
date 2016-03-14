@@ -51,8 +51,7 @@ Purchase::~Purchase(){}
     if (price < 0) price = 0;
 
     auto resultPrice = context.getResults().initPrices(1)[0];
-    // TODO: Define the VOTE asset in the stub chain and use its ID here
-    resultPrice.setCoinId(1);
+    resultPrice.setCoinId(voteId);
     resultPrice.setAmount(price);
     resultPrice.setPayAddress("follow-my-vote");
 

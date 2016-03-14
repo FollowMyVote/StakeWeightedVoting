@@ -31,30 +31,25 @@ namespace swv {
 StubChainAdaptor::StubChainAdaptor(QObject* parent)
     : QObject(parent)
 {
-    auto orphanage = message.getOrphanage();
-    auto coinOrphan = orphanage.newOrphan<Coin>();
-    auto coin = coinOrphan.get();
+    auto coin = createCoin();
     coin.setName("BTS");
-    coin.setId(0);
     coin.setPrecision(5);
     coin.setCreator("committee-account");
-    coins.emplace_back(kj::mv(coinOrphan));
 
-    coinOrphan = orphanage.newOrphan<Coin>();
-    coin = coinOrphan.get();
+    coin = createCoin();
     coin.setName("FMV");
-    coin.setId(1);
     coin.setPrecision(0);
     coin.setCreator("follow-my-vote");
-    coins.emplace_back(kj::mv(coinOrphan));
 
-    coinOrphan = orphanage.newOrphan<Coin>();
-    coin = coinOrphan.get();
+    coin = createCoin();
     coin.setName("USD");
-    coin.setId(2);
     coin.setPrecision(2);
     coin.setCreator("committee-account");
-    coins.emplace_back(kj::mv(coinOrphan));
+
+    coin = createCoin();
+    coin.setName("VOTE");
+    coin.setPrecision(4);
+    coin.setCreator("follow-my-vote");
 
     auto balance = createBalance("nathan");
     balance.setAmount(50000000);
@@ -68,13 +63,29 @@ StubChainAdaptor::StubChainAdaptor(QObject* parent)
     balance.setAmount(5000);
     balance.setType(2);
 
+    balance = createBalance("nathan");
+    balance.setAmount(10000000);
+    balance.setType(3);
+
     balance = createBalance("dev.nathanhourt.com");
     balance.setAmount(10000000);
     balance.setType(0);
 
+    balance = createBalance("dev.nathanhourt.com");
+    balance.setAmount(10000000);
+    balance.setType(3);
+
     balance = createBalance("adam");
     balance.setAmount(88);
     balance.setType(1);
+
+    balance = createBalance("adam");
+    balance.setAmount(10000000);
+    balance.setType(3);
+
+    balance = createBalance("follow-my-vote");
+    balance.setAmount(1000000000);
+    balance.setType(0);
 
     auto contest = createContest().getContest();
     contest.setCoin(1);
@@ -90,20 +101,8 @@ StubChainAdaptor::StubChainAdaptor(QObject* parent)
     contestants[2].setKey("Firehouse");
     contestants[2].setValue("Sub Shop on University City Blvd");
 
-    contest = createContest().getContest();
-    contest.setCoin(0);
-    contest.setName("Upgrade Authorization");
-    contest.setDescription("Do the BitShares stakeholders accept the upgrade to version 2.0, "
-                            "using the Graphene Toolkit?");
-    contest.setStartTime(static_cast<uint64_t>(QDateTime::fromString("2015-09-11T12:00:00",
-                                                                      Qt::ISODate).toMSecsSinceEpoch()));
-    contestants = contest.initContestants().initEntries(2);
-    contestants[0].setKey("Yes");
-    contestants[0].setValue("Accept the upgrade, and hard-fork to BitShares 2.0");
-    contestants[1].setKey("No");
-    contestants[1].setValue("Reject the upgrade, and continue using BitShares 0.9.x");
-
     // Total of 10 contests
+    createContest().setContest(contests.back().getReader().getContest());
     createContest().setContest(contests.back().getReader().getContest());
     createContest().setContest(contests.back().getReader().getContest());
     createContest().setContest(contests.back().getReader().getContest());
@@ -131,12 +130,10 @@ kj::Promise<Coin::Reader> StubChainAdaptor::getCoin(quint64 id) const
 
 kj::Promise<Coin::Reader> StubChainAdaptor::getCoin(QString symbol) const
 {
-    auto itr = std::find_if(coins.begin(), coins.end(), [symbol] (const capnp::Orphan<Coin>& coin) {
-        return coin.getReader().getName() == symbol.toStdString();
-    });
-    if (itr == coins.end())
+    KJ_IF_MAYBE(coin, getCoinOrphan(symbol))
+            return coin->getReader();
+    else
         return KJ_EXCEPTION(FAILED, "Could not find the specified coin.", symbol.toStdString());
-    return itr->getReader();
 }
 
 kj::Promise<kj::Array<Coin::Reader>> StubChainAdaptor::listAllCoins() const
@@ -230,36 +227,42 @@ kj::Promise<void> StubChainAdaptor::publishDatagram(QByteArray payerBalanceId, Q
 
 kj::Promise<void> StubChainAdaptor::transfer(QString sender, QString recipient, qint64 amount, quint64 coinId)
 {
-    auto senderBalances = balances.find(sender);
-    KJ_REQUIRE(senderBalances != balances.end(),
-               "Cannot transfer because sender has no balances", sender.toStdString());
+    try {
+        KJ_LOG(DBG, "Attempting to transfer", sender.toStdString(), recipient.toStdString(), amount, coinId);
 
-    qint64 senderFunds = 0;
-    for (const auto& balance : senderBalances->second)
-        if (balance.getReader().getType() == coinId)
-            senderFunds += balance.getReader().getAmount();
-    KJ_REQUIRE(senderFunds >= amount, "Cannot transfer because sender has insufficient funds", senderFunds, amount);
+        auto senderBalances = balances.find(sender);
+        KJ_REQUIRE(senderBalances != balances.end(),
+                   "Cannot transfer because sender has no balances", sender.toStdString());
 
-    auto amountRemaining = amount;
-    for (auto balance = senderBalances->second.begin(); balance != senderBalances->second.end(); ++balance)
-        if (balance->getReader().getType() == coinId) {
-            if (balance->getReader().getAmount() <= amountRemaining) {
-                amountRemaining -= balance->getReader().getAmount();
-                balance = senderBalances->second.erase(balance);
-                if (amountRemaining == 0)
+        qint64 senderFunds = 0;
+        for (const auto& balance : senderBalances->second)
+            if (balance.getReader().getType() == coinId)
+                senderFunds += balance.getReader().getAmount();
+        KJ_REQUIRE(senderFunds >= amount, "Cannot transfer because sender has insufficient funds", senderFunds, amount);
+
+        auto amountRemaining = amount;
+        for (auto balance = senderBalances->second.begin(); balance != senderBalances->second.end(); ++balance)
+            if (balance->getReader().getType() == coinId) {
+                if (balance->getReader().getAmount() <= amountRemaining) {
+                    amountRemaining -= balance->getReader().getAmount();
+                    balance = senderBalances->second.erase(balance);
+                    if (amountRemaining == 0)
+                        break;
+                } else {
+                    balance->get().setAmount(balance->get().getAmount() - amountRemaining);
+                    amountRemaining = 0;
                     break;
-            } else {
-                balance->get().setAmount(balance->get().getAmount() - amountRemaining);
-                amountRemaining = 0;
-                break;
+                }
             }
-        }
 
-    auto newBalance = createBalance(recipient);
-    newBalance.setType(coinId);
-    newBalance.setAmount(amountRemaining);
+        auto newBalance = createBalance(recipient);
+        newBalance.setType(coinId);
+        newBalance.setAmount(amountRemaining);
 
-    return kj::READY_NOW;
+        return kj::READY_NOW;
+    } catch (kj::Exception& e) {
+        return kj::mv(e);
+    }
 }
 
 kj::Promise<Datagram::Reader> StubChainAdaptor::getDatagram(QByteArray balanceId,
@@ -306,6 +309,26 @@ kj::Maybe<const capnp::Orphan<Balance>&> StubChainAdaptor::getBalanceOrphan(QByt
     return {};
 }
 
+kj::Maybe<capnp::Orphan<Coin>&> StubChainAdaptor::getCoinOrphan(QString name)
+{
+    auto itr = std::find_if(coins.begin(), coins.end(), [name] (const capnp::Orphan<Coin>& coin) {
+        return coin.getReader().getName() == name.toStdString();
+    });
+    if (itr == coins.end())
+        return {};
+    return *itr;
+}
+
+kj::Maybe<const capnp::Orphan<Coin>&> StubChainAdaptor::getCoinOrphan(QString name) const
+{
+    auto itr = std::find_if(coins.begin(), coins.end(), [name] (const capnp::Orphan<Coin>& coin) {
+        return coin.getReader().getName() == name.toStdString();
+    });
+    if (itr == coins.end())
+        return {};
+    return *itr;
+}
+
 Contest::Builder StubChainAdaptor::createContest()
 {
     auto newContest = contests.emplace(contests.begin(), message.getOrphanage().newOrphan<::Contest>())->get();
@@ -319,6 +342,14 @@ Balance::Builder StubChainAdaptor::createBalance(QString owner)
     auto& newBalance = balances[owner].back();
     newBalance.get().initId(1)[0] = nextBalanceId++;
     return newBalance.get();
+}
+
+Coin::Builder StubChainAdaptor::createCoin()
+{
+    coins.emplace_back(message.getOrphanage().newOrphan<::Coin>());
+    auto& newCoin = coins.back();
+    newCoin.get().setId(coins.size() - 1);
+    return newCoin.get();
 }
 
 } // namespace swv

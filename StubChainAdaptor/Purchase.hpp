@@ -43,9 +43,10 @@ public:
         {}
     };
 
-    Purchase(int64_t votePrice, std::function<void()> onPurchasedCallback,
+    Purchase(int64_t votePrice, uint64_t voteId, std::function<void()> onPurchasedCallback,
              std::map<std::string, int64_t> adjustments = {})
         : votePrice(votePrice),
+          voteId(voteId),
           adjustments(kj::mv(adjustments)),
           callback(onPurchasedCallback)
     {}
@@ -62,6 +63,7 @@ protected:
 
     bool isComplete = false;
     int64_t votePrice;
+    uint64_t voteId;
     std::map<std::string, int64_t> adjustments;
     kj::Maybe<Notifier<capnp::Text>::Client> completionNotifier;
     std::function<void()> callback;
