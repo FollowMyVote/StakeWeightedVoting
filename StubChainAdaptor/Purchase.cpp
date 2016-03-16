@@ -20,6 +20,8 @@
 
 #include <kj/debug.h>
 
+#include <string>
+
 namespace swv {
 
 Purchase::~Purchase(){}

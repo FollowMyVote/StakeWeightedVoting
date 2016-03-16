@@ -92,7 +92,7 @@ StubChainAdaptor::StubChainAdaptor(QObject* parent)
     contest.setName("Lunch poll");
     contest.setDescription("Where should we go for lunch?");
     contest.setStartTime(static_cast<uint64_t>(QDateTime::fromString("2015-09-20T12:00:00",
-                                                                      Qt::ISODate).toMSecsSinceEpoch()));
+                                                                     Qt::ISODate).toMSecsSinceEpoch()));
     auto contestants = contest.initContestants().initEntries(3);
     contestants[0].setKey("Wikiteria");
     contestants[0].setValue("Cafeteria on the CRC campus");
