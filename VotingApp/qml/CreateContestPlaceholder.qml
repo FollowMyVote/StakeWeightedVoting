@@ -21,6 +21,8 @@ Rectangle {
     border.width: window.dp(2)
     border.color: "lightgrey"
 
+    property VotingSystem votingSystem
+
     AppTextField {
         id: search
         placeholderText: qsTr("Search")
@@ -44,8 +46,8 @@ Rectangle {
         onClicked: {
             console.log("Begin contest creation")
             myContestsPage.navigationStack.push(Qt.resolvedUrl("CreateContestPage.qml"),
-                                                {"contestCreator": _votingSystem.backend.contestCreator,
-                                                    "votingSystem": _votingSystem})
+                                                {"contestCreator": votingSystem.backend.contestCreator,
+                                                    "votingSystem": votingSystem})
         }
 
         RowLayout {

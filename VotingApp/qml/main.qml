@@ -130,7 +130,9 @@ App {
                             return votingSystem.backend.getContestsByCreator(votingSystem.currentAccount)
                     }
                     listView.headerPositioning: ListView.PullBackHeader
-                    listView.header: CreateContestPlaceholder {}
+                    listView.header: CreateContestPlaceholder {
+                        votingSystem: _votingSystem
+                    }
                 }
             }
         }
