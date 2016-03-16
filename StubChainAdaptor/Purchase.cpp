@@ -17,7 +17,7 @@
  */
 
 #include "Purchase.hpp"
-#include <string>
+
 #include <kj/debug.h>
 
 namespace swv {
