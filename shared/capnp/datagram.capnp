@@ -18,10 +18,18 @@
 
 struct Datagram {
 # A piece of data stored on the blockchain. Datagrams are stored as belonging to a particular Balance, and the datagram
-# schema is unique per-balance.
+# index is unique per-balance.
 
-    schema @0 :Data;
-    # A magic number to roughly identify the type of a datagram
-    content @1 :Data;
+    enum DatagramType {
+        decision @0;
+        # Marks a datagram as containing a decision
+    }
+
+    index :group {
+    # The index is the key which identifies the type and content of the datagram, unique to the balance that stores it
+        type @0 :DatagramType;
+        key @1 :Data;
+    }
+    content @2 :Data;
     # The actual data
 }

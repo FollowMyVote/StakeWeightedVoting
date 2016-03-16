@@ -81,7 +81,7 @@ ContestCreatorWrapper*BackendWrapper::contestCreator()
 {
     // Lazy load the creator; most runs we will probably never need it.
     if (creator.get() == nullptr)
-        creator = kj::heap<ContestCreatorWrapper>(m_backend.getContestCreatorRequest().send().getCreator());
+        creator = kj::heap<ContestCreatorWrapper>(m_backend.createContestRequest().send().getCreator());
     return creator.get();
 }
 

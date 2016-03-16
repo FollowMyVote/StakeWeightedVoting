@@ -1,12 +1,11 @@
 import QtQuick 2.5
 import QtQuick.Layouts 1.1
-import QtQuick.Controls 1.4 as Controls
-import QtQuick.Controls.Styles 1.4 as ControlStyles
-import QtQuick.Extras 1.4 as Extras
 import Qt.labs.controls 1.0
 import QtQml 2.2
 
 import VPlayApps 1.0
+
+import QtQmlTricks.UiElements 2.0
 
 import FollowMyVote.StakeWeightedVoting 1.0
 
@@ -14,177 +13,87 @@ Page {
     id: createContestPage
     backgroundColor: "white"
 
-    property var contestCreator
     property VotingSystem votingSystem
-    property var purchaseRequest: contestCreator.getPurchaseContestRequest()
+    property var contestCreator
+
+    function showError(message) {
+        // Ignore errors that come within 1 second of the last error
+        if (new Date().getTime() - internal.lastErrorTime < 1000)
+            return
+
+        message = message.split(';')
+        if (message.length > 1)
+            message = message[1]
+        else
+            message = errorString
+
+        NativeDialog.confirm("Error purchasing contest", message, function(){}, false)
+        internal.lastErrorTime = new Date().getTime()
+    }
+
+    QtObject {
+        id: internal
+        property var lastErrorTime
+    }
+    Connections {
+        target: contestCreator
+        onError: showError(errorString)
+    }
 
     SwipeView {
         id: swiper
         anchors.fill: parent
 
-        Item {
-            Flickable {
-                id: flickable
-                interactive: true
-                flickableDirection: Flickable.VerticalFlick
-                contentHeight: createContestFormColumn.height
-                anchors {
-                    left: parent.left
-                    right: parent.horizontalCenter
-                    top: parent.top
-                    bottom: parent.bottom
-                    margins: window.dp(16)
-                    rightMargin: window.dp(8)
-                }
-
-                Column {
-                    id: createContestFormColumn
-                    width: parent.width
-                    spacing: window.dp(8)
-
-                    AppTextField {
-                        id: contestName
-                        width: parent.width
-                        placeholderText: qsTr("Contest Name")
-                        maximumLength: contestCreator.contestLimits[ContestLimits.NameLength]
-                        Component.onCompleted: forceActiveFocus()
-                        KeyNavigation.tab: contestDescription
-
-                        Binding {
-                            target: purchaseRequest
-                            property: "name"
-                            value: contestName.text
-                        }
+        BasicContestForm {
+            id: basicForm
+            contestLimits: contestCreator.contestLimits
+            coinsModel: votingSystem.coins
+            onCompleted: swiper.currentIndex++
+        }
+        SponsorshipForm {
+            onSponsorshipEnabledChanged: purchaseRequest.sponsorshipEnabled = sponsorshipEnabled
+            onCompleted: {
+                try {
+                    var purchaseRequest = contestCreator.getPurchaseContestRequest()
+                    purchaseRequest.contestType = ContestType.OneOfN
+                    purchaseRequest.tallyAlgorithm = TallyAlgorithm.Plurality
+                    purchaseRequest.name = basicForm.contestName
+                    purchaseRequest.description = basicForm.contestDescription
+                    for (var i = 0; i < basicForm.contestantModel.count; i++)
+                        purchaseRequest.contestants.append(basicForm.contestantModel.get(i))
+                    purchaseRequest.expiration = basicForm.contestExpiration
+                    purchaseRequest.weightCoin = basicForm.weightCoinId
+                    if (purchaseRequest.sponsorshipEnabled) {
+                        purchaseRequest.sponsorMaxVotes = maxVotes? maxVotes : 0
+                        purchaseRequest.sponsorMaxRevotes = maxRevotes? maxRevotes : 0
+                        purchaseRequest.sponsorIncentive = incentive? incentive * 10000 : 0
+                        purchaseRequest.sponsorEndDate = endTime
                     }
-                    AppTextEdit {
-                        id: contestDescription
-                        width: parent.width
-                        placeholderText: qsTr("Description")
-                        wrapMode: TextEdit.Wrap
 
-                        Binding {
-                            target: purchaseRequest
-                            property: "description"
-                            value: contestDescription.text
-                        }
-                    }
-                    Row {
-                        spacing: window.dp(8)
+                    var dialog = purchaseDialog.createObject(createContestPage,
+                                                             {"purchaseApi": purchaseRequest.submit()})
+                    dialog.accepted.connect(function() {
+                        var transferPromise = votingSystem.adaptor.transfer(votingSystem.currentAccount.name,
+                                                                            dialog.selectedPrice.payAddress,
+                                                                            dialog.selectedPrice.amount,
+                                                                            dialog.selectedPrice.coinId);
+                        transferPromise.then(function() {
+                            dialog.purchaseApi.paymentSent(dialog.selectedPriceIndex)
+                            dialog.close()
+                            createContestPage.navigationStack.pop()
+                            dialog.destroy()
+                        }, showError)
+                    })
+                    dialog.canceled.connect(function() {
+                        dialog.close()
+                        dialog.destroy()
+                    })
 
-                        AppText {
-                            id: weightCoinLabel
-                            text: qsTr("Coin to Poll:")
-                        }
-                        Controls.ComboBox {
-                            width: window.dp(120)
-                            model: votingSystem.adaptor.coins
-                            textRole: "name"
-                            style: ControlStyles.ComboBoxStyle {
-                                font: weightCoinLabel.font
-                            }
-                        }
-                    }
-                    Column {
-                        width: parent.width
-                        spacing: window.dp(8)
-                        Repeater {
-                            model: purchaseRequest.contestants
-                            delegate: RowLayout {
-                                width: parent.width
-
-                                IconButton {
-                                    icon: IconType.remove
-                                    onClicked: purchaseRequest.contestants.remove(index)
-                                }
-                                IconButton {
-                                    icon: IconType.edit
-                                    onClicked: {
-                                        var dialog = contestantDialog.createObject(createContestPage,
-                                                                                   {"contestantName": name,
-                                                                                       "contestantDescription":
-                                                                                       description})
-
-                                        dialog.accepted.connect(function() {
-                                            name = dialog.contestantName
-                                            description = dialog.contestantDescription
-                                            dialog.close()
-                                        })
-                                        dialog.canceled.connect(dialog.close)
-
-                                        dialog.open()
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    AppText {
-                                        text: name
-                                        Layout.fillWidth: true
-                                        elide: Text.ElideRight
-                                    }
-                                    AppText {
-                                        text: description
-                                        Layout.fillWidth: true
-                                        elide: Text.ElideRight
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    AppButton {
-                        text: qsTr("Add Contestant")
-
-                        onClicked: {
-                            // Create a new dialog as defined by the contestDialog component
-                            var dialog = contestantDialog.createObject(createContestPage)
-
-                            // Handle dialog accepted/canceled signals
-                            dialog.accepted.connect(function() {
-                                var contestant = Qt.createQmlObject("import FollowMyVote.StakeWeightedVoting." +
-                                                                    "ContestPurchase 1.0; Contestant{}",
-                                                                    createContestPage, "ContestantCreation")
-                                contestant.name = dialog.contestantName;
-                                contestant.description = dialog.contestantDescription
-                                purchaseRequest.contestants.append(contestant)
-                                dialog.close()
-                            })
-                            dialog.canceled.connect(dialog.close)
-
-                            dialog.open()
-                        }
-                    }
-                    Row {
-                        spacing: window.dp(8)
-
-                        Binding {
-                            target: purchaseRequest
-                            property: "expiration"
-                            value: {
-                                if (contestEndsTime.currentIndex === 0)
-                                    return new Date(0)
-
-                                var date = new Date()
-                                if (contestEndsTime.currentIndex === 1)
-                                    date.setDate(date.getDate() + 1)
-                                else if (contestEndsTime.currentIndex === 2)
-                                    date.setDate(date.getDate() + 7)
-                                else if (contestEndsTime.currentIndex === 3)
-                                    date.setMonth(date.getMonth() + 1)
-                                return date
-                            }
-                        }
-
-                        AppText {
-                            text: qsTr("Contest Ends")
-                        }
-                        Controls.ComboBox {
-                            id: contestEndsTime
-                            width: window.dp(100)
-                            model: [qsTr("never"), qsTr("in a day"), qsTr("in a week"), qsTr("in a month")]
-                            style: ControlStyles.ComboBoxStyle {
-                                font: weightCoinLabel.font
-                            }
-                        }
-                    }
+                    dialog.open()
+                } catch (exception) {
+                    NativeDialog.confirm(qsTr("Error creating contest"),
+                                         qsTr("An error occurred when processing your request: %1").arg(exception),
+                                         function(){}, false)
                 }
             }
         }
@@ -197,33 +106,69 @@ Page {
     }
 
     Component {
-        id: contestantDialog
+        id: purchaseDialog
 
         Dialog {
-            title: qsTr("Edit Contestant")
-            contentHeight: window.dp(200)
-            contentWidth: window.dp(250)
+            property var purchaseApi
+            property var selectedPriceIndex: priceList.currentIdx
+            property var selectedPrice: priceList.currentKey
 
-            property alias contestantName: contestantName.text
-            property alias contestantDescription: contestantDescription.text
+            contentWidth: window.width * .6
+            contentHeight: window.height * .6
 
-            ColumnLayout {
+            function updatePrices(totals, adjustments) {
+                console.log(JSON.stringify(totals))
+                console.log(JSON.stringify(adjustments))
+                priceList.model = totals
+                priceList.currentIdx = 0
+                adjustmentRepeater.model = adjustments
+            }
+            Component.onCompleted: purchaseApi.prices([]).then(updatePrices)
+
+            MouseArea {
                 anchors.fill: parent
-                anchors.margins: window.dp(8)
+                onClicked: mouse.accepted = true
+            }
+            Column {
+                anchors.fill: parent
+                spacing: window.dp(8)
 
-                AppTextField {
-                    id: contestantName
-                    placeholderText: qsTr("Name")
-                    maximumLength: contestCreator.contestLimits[ContestLimits.ContestantNameLength]
-                    Layout.fillWidth: true
-                    KeyNavigation.tab: contestantDescription
-                    Component.onCompleted: forceActiveFocus(Qt.Popup)
+                Row {
+                    spacing: window.dp(8)
+                    AppText {
+                        text: qsTr('Promo code')
+                    }
+                    AppTextField {
+                        id: promoCodeField
+                        onAccepted: promoCodeApplyButton.clicked()
+                    }
+                    AppButton {
+                        id: promoCodeApplyButton
+                        text: qsTr("Apply")
+                        onClicked: purchaseApi.prices([promoCodeField.text]).then(updatePrices)
+                    }
                 }
-                ScrollingTextEdit {
-                    id: contestantDescription
-                    Layout.fillHeight: true
-                    Layout.fillWidth: true
-                    textEdit.placeholderText: qsTr("Description")
+                Row {
+                    spacing: window.dp(8)
+                    AppText {
+                        text: qsTr("Pay with")
+                    }
+                    ComboList {
+                        id: priceList
+                        delegate: ComboListDelegateForSimpleVar {
+                            property var coin: votingSystem.getCoin(modelData.coinId)
+                            value: modelData.amount / Math.pow(10, coin.precision) + " " + coin.name
+                        }
+                    }
+                }
+                AppText {
+                    text: qsTr("Price adjustments:")
+                }
+                Repeater {
+                    id: adjustmentRepeater
+                    delegate: AppText {
+                        text: modelData.reason + ": " + (modelData.amount / 10000) + " VOTE"
+                    }
                 }
             }
         }

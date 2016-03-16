@@ -29,10 +29,8 @@ interface ContestCreator {
     getContestLimits @1 () -> (limits :Map(ContestLimit, LimitValue));
     # Get a list of limits for various aspects of contest creation. Any omitted limits are assumed to be unlimited.
 
-    purchaseContest @2 (request :ContestCreationRequest) -> (purchaseApi :Purchase, surcharges :Map(Text, Price));
-    # Begin checkout with a contest creation request. Returns a Purchase API to finish checkout, and a list of
-    # surcharges as a map of human-readable description to price. Negative surcharges are discounts (usually for a
-    # promo code).
+    purchaseContest @2 (request :ContestCreationRequest) -> (purchaseApi :Purchase);
+    # Begin checkout with a contest creation request. Returns a Purchase API to finish checkout.
 
     enum LineItems {
     # LineItems is an enumeration of all the individual features we may charge for
@@ -54,7 +52,7 @@ interface ContestCreator {
         # Price for contests which never end
     }
     struct LineItem {
-    # Generic types must be pointer types (like a struct), so wrap a LineItems entry in a struct so we  can map it.
+    # Generic types must be pointer types (like a struct), so wrap a LineItems entry in a struct so we can map it.
         item @0 :LineItems;
     }
     struct Price {
@@ -81,7 +79,7 @@ interface ContestCreator {
         # Maximum permissible length of a contestant description
         maxEndDate @7;
         # Maximum end date of a finite-duration contest. A value of zero allows infinite contest duration; any other
-        # value is the microsecond timestamp of the latest allowable end date
+        # value is the millisecond timestamp of the latest allowable end date
     }
     struct ContestLimit {
     # Wrap the ContestLimit in a struct
@@ -114,7 +112,7 @@ interface ContestCreator {
         contestants @5 :Map(Text, Text);
         # Map of contestant name to description
         contestExpiration @6 :Int64;
-        # Microsecond timestamp of end date; zero indicates no end
+        # Millisecond timestamp of end date; zero indicates no end
         sponsorship :union {
             noSponsorship @7 :Void;
             options :group {
@@ -128,6 +126,5 @@ interface ContestCreator {
                 # Balance to pay each voter as an incentive for voting on this contest
             }
         }
-        promoCodes @12 :List(Text);
     }
 }

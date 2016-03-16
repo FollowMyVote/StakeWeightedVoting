@@ -108,8 +108,8 @@ public:
      * This method will publish the datagram last retrieved using @ref getDatagram using the specified balance. Only
      * one datagram should be retrieved and published at a time.
      *
-     * This datagram will replace any datagram with the same schema which is already owned by the specified balance.
-     * Datagrams owned by the balance with different schemas will be preserved.
+     * This datagram will replace any datagram with the same type/key which is already owned by the specified balance.
+     * Datagrams owned by the balance with a distinct type/key will be preserved.
      */
     virtual kj::Promise<void> publishDatagram(QByteArray payerBalance, QByteArray publisherBalance) = 0;
     [[deprecated("Issue #6: Replaced by overload which distinguishes between payer and publisher balances")]]
@@ -119,12 +119,25 @@ public:
     }
 
     /**
-     * @brief Get the datagram with the specified schema belonging to the specified balance
+     * @brief transfer funds from one account to another
+     * @param sender Name of the account to send from (should be one of the names returned by \ref getMyAccounts)
+     * @param recipient Name of the account or address to send to
+     * @param amount Amount of coin to send
+     * @param coinId Type of coin to send
+     * @return A promise which resolves when the transaction is successfully broadcast, or breaks if broadcast fails
+     */
+    virtual kj::Promise<void> transfer(QString sender, QString recipient, qint64 amount, quint64 coinId) = 0;
+
+    /**
+     * @brief Get the datagram with the specified type and key belonging to the specified balance
      * @param balanceId ID of the balance owning the requested datagram
-     * @param schema The schema of the requested datagram
+     * @param type The type of the requested datagram
+     * @param key The key of the requested datagram
      * @return A promise for the requested datagram. The promise will be broken if no datagram is found.
      */
-    virtual kj::Promise<Datagram::Reader> getDatagram(QByteArray balanceId, QString schema) const = 0;
+    virtual kj::Promise<Datagram::Reader> getDatagram(QByteArray balanceId,
+                                                      Datagram::DatagramType type,
+                                                      QString key) const = 0;
 };
 
 #endif // BLOCKCHAINADAPTORINTERFACE_H

@@ -16,6 +16,8 @@
 
 @0x926d0fcd95f1e5d5;
 
+using Map = import "map.capnp".Map;
+
 interface Purchase {
     # A purchase API is created and sent to a client whenever the client wishes to make a purhcase. The client can
     # check the completion of the purchase, get a list of prices, notify the server that payment has been sent and be
@@ -24,18 +26,22 @@ interface Purchase {
 
     complete @0 () -> (result :Bool);
     # Check the status of the purchase
-    prices @1 () -> (prices :List(Price));
-    # Get the price of the purchase in all available coins
+    prices @1 (promoCodes :List(Text)) -> (prices :List(Total), adjustments :Map(Text, Price));
+    # Get the price of the purchase in all available coins, and a list of price adjustments as a map of human-readable
+    # description to price. Negative adjustments are discounts (usually for a promo code).
     subscribe @2 (notifier :Notifier(Text)) -> ();
     # Get notified when the purchase is complete. Notification message will either be "true" or "false"
     paymentSent @3 (selectedPrice :Int16) -> ();
     # Used to notify the server that the payment has been sent. selectedPrice is the index of the price paid in the
     # array returned by prices()
 
-    struct Price {
+    struct Total {
         coinId @0 :UInt64;
         amount @1 :Int64;
         payAddress @2 :Text;
+    }
+    struct Price {
+        price @0 :Int64 = 0;
     }
 }
 

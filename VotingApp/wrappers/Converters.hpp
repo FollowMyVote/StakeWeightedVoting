@@ -26,16 +26,22 @@
 inline QByteArray convertBlob(capnp::Data::Reader data) {
     return QByteArray(reinterpret_cast<const char*>(data.begin()), static_cast<signed>(data.size()));
 }
+/// Convert a QByteArray into a capnp::Data::Builder.
+/// @warning The returned builder just references the QByteArray's memory! Do not change or deallocate the byte array
+/// while the returned Builder exists.
+inline capnp::Data::Builder convertBlob(QByteArray& data) {
+    return capnp::Data::Builder(reinterpret_cast<kj::byte*>(data.data()), data.size());
+}
 inline QVariantMap convertListedContest(ContestGenerator::ListedContest::Reader contest) {
     return {{"contestId", QString(convertBlob(contest.getContestId()).toHex())},
-           {"votingStake", qint64(contest.getVotingStake())},
-           {"tracksLiveResults", contest.getTracksLiveResults()}};
+            {"votingStake", qint64(contest.getVotingStake())},
+            {"tracksLiveResults", contest.getTracksLiveResults()}};
 }
 inline QString convertText(capnp::Text::Reader text) {
     return QString::fromStdString(text);
 }
-inline void convertText(capnp::Text::Builder target, QString source) {
-    target.asString() = source.toStdString();
+inline kj::String convertText(QString source) {
+    return kj::heapString(source.toStdString());
 }
 template <typename T>
 inline QList<T> convertList(kj::Array<T>&& kjList) {

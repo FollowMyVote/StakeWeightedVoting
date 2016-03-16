@@ -32,7 +32,6 @@
 #include "wrappers/Balance.hpp"
 #include "wrappers/Contest.hpp"
 #include "wrappers/Decision.hpp"
-#include "wrappers/Datagram.hpp"
 #include "wrappers/ContestGeneratorWrapper.hpp"
 #include "wrappers/PurchaseContestRequest.hpp"
 #include "wrappers/PurchaseWrapper.hpp"
@@ -43,6 +42,8 @@
 #include <Promise.hpp>
 
 #include <capnqt/QtEventPort.hpp>
+
+#include <QtQmlTricksPlugin.h>
 
 #include <VPApplication>
 
@@ -76,7 +77,6 @@ int main(int argc, char *argv[])
     REGISTER_WRAPPER(Decision);
     REGISTER_WRAPPER(Contest);
     REGISTER_WRAPPER(Coin);
-    REGISTER_WRAPPER(Datagram);
     REGISTER_WRAPPER(Backend);
     REGISTER_WRAPPER(ChainAdaptor);
     REGISTER_WRAPPER(ContestGenerator);
@@ -84,7 +84,6 @@ int main(int argc, char *argv[])
     REGISTER_WRAPPER(PurchaseContestRequest);
     REGISTER_WRAPPER(Purchase);
 #undef REGISTER_WRAPPER
-    qmlRegisterType<swv::PurchaseContestContestantWrapper>("FollowMyVote.StakeWeightedVoting.ContestPurchase", 1, 0, "Contestant");
 
     // Register enum wrappers
 #define REGISTER_ENUM(name) \
@@ -103,6 +102,7 @@ int main(int argc, char *argv[])
     qmlRegisterType<QSortFilterProxyModel>();
 
     QQmlApplicationEngine engine;
+    registerQtQmlTricksUiElements(&engine);
     Promise::setEngine(&engine);
     vplay.initialize(&engine);
     vplay.setMainQmlFileName(QStringLiteral("qrc:/qml/main.qml"));

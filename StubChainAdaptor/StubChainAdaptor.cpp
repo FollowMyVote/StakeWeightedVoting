@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with SWV.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "StubChainAdaptor.hpp"
+#include "BackendStub.hpp"
 
 #include <capnp/dynamic.h>
 
@@ -31,134 +31,94 @@ namespace swv {
 StubChainAdaptor::StubChainAdaptor(QObject* parent)
     : QObject(parent)
 {
-    auto orphanage = message.getOrphanage();
-    auto coinOrphan = orphanage.newOrphan<Coin>();
-    auto coin = coinOrphan.get();
+    auto coin = createCoin();
     coin.setName("BTS");
-    coin.setId(0);
     coin.setPrecision(5);
     coin.setCreator("committee-account");
-    coins.emplace_back(kj::mv(coinOrphan));
 
-    coinOrphan = orphanage.newOrphan<Coin>();
-    coin = coinOrphan.get();
+    coin = createCoin();
     coin.setName("FMV");
-    coin.setId(1);
     coin.setPrecision(0);
     coin.setCreator("follow-my-vote");
-    coins.emplace_back(kj::mv(coinOrphan));
 
-    coinOrphan = orphanage.newOrphan<Coin>();
-    coin = coinOrphan.get();
+    coin = createCoin();
     coin.setName("USD");
-    coin.setId(2);
     coin.setPrecision(2);
     coin.setCreator("committee-account");
-    coins.emplace_back(kj::mv(coinOrphan));
 
-    std::reference_wrapper<std::vector<capnp::Orphan<Balance>>> bals = balances["nathan"];
-    auto balanceOrphan = orphanage.newOrphan<Balance>();
-    auto balance = balanceOrphan.get();
+    coin = createCoin();
+    coin.setName("VOTE");
+    coin.setPrecision(4);
+    coin.setCreator("follow-my-vote");
+
+    auto balance = createBalance("nathan");
     balance.setAmount(50000000);
-    balance.initId(1)[0] = 0;
     balance.setType(0);
-    bals.get().emplace_back(kj::mv(balanceOrphan));
 
-    balanceOrphan = orphanage.newOrphan<Balance>();
-    balance = balanceOrphan.get();
+    balance = createBalance("nathan");
     balance.setAmount(10);
-    balance.initId(1)[0] = 1;
     balance.setType(1);
-    bals.get().emplace_back(kj::mv(balanceOrphan));
 
-    balanceOrphan = orphanage.newOrphan<Balance>();
-    balance = balanceOrphan.get();
+    balance = createBalance("nathan");
     balance.setAmount(5000);
-    balance.initId(1)[0] = 2;
     balance.setType(2);
-    bals.get().emplace_back(kj::mv(balanceOrphan));
 
-    bals = balances["dev.nathanhourt.com"];
-
-    balanceOrphan = orphanage.newOrphan<Balance>();
-    balance = balanceOrphan.get();
+    balance = createBalance("nathan");
     balance.setAmount(10000000);
-    balance.initId(1)[0] = 3;
+    balance.setType(3);
+
+    balance = createBalance("dev.nathanhourt.com");
+    balance.setAmount(10000000);
     balance.setType(0);
-    bals.get().emplace_back(kj::mv(balanceOrphan));
 
-    bals = balances["adam"];
+    balance = createBalance("dev.nathanhourt.com");
+    balance.setAmount(10000000);
+    balance.setType(3);
 
-    balanceOrphan = orphanage.newOrphan<Balance>();
-    balance = balanceOrphan.get();
+    balance = createBalance("adam");
     balance.setAmount(88);
-    balance.initId(1)[0] = 4;
     balance.setType(1);
-    bals.get().emplace_back(kj::mv(balanceOrphan));
 
-    auto contestOrphan = orphanage.newOrphan<Contest>();
-    auto contest = contestOrphan.get();
-    auto ucontest = contest.getContest();
-    contest.initSignature(0);
-    ucontest.initId(1)[0] = 0;
-    ucontest.setCoin(1);
-    ucontest.setName("Lunch poll");
-    ucontest.setDescription("Where should we go for lunch?");
-    ucontest.setStartTime(static_cast<uint64_t>(QDateTime::fromString("2015-09-20T12:00:00",
+    balance = createBalance("adam");
+    balance.setAmount(10000000);
+    balance.setType(3);
+
+    balance = createBalance("follow-my-vote");
+    balance.setAmount(1000000000);
+    balance.setType(0);
+
+    auto contest = createContest().getContest();
+    contest.setCoin(1);
+    contest.setName("Lunch poll");
+    contest.setDescription("Where should we go for lunch?");
+    contest.setStartTime(static_cast<uint64_t>(QDateTime::fromString("2015-09-20T12:00:00",
                                                                       Qt::ISODate).toMSecsSinceEpoch()));
-    auto tags = ucontest.initTags().initEntries(1);
-    tags[0].setKey("category");
-    tags[0].setValue("food");
-    auto contestants = ucontest.initContestants().initEntries(3);
+    auto contestants = contest.initContestants().initEntries(3);
     contestants[0].setKey("Wikiteria");
     contestants[0].setValue("Cafeteria on the CRC campus");
     contestants[1].setKey("Wicked Taco");
     contestants[1].setValue("Restaurant on Prices Fork");
     contestants[2].setKey("Firehouse");
     contestants[2].setValue("Sub Shop on University City Blvd");
-    contests.emplace_back(kj::mv(contestOrphan));
-
-    contestOrphan = orphanage.newOrphan<Contest>();
-    contest = contestOrphan.get();
-    ucontest = contest.getContest();
-    contest.initSignature(0);
-    ucontest.initId(1)[0] = 1;
-    ucontest.setCoin(0);
-    ucontest.setName("Upgrade Authorization");
-    ucontest.setDescription("Do the BitShares stakeholders accept the upgrade to version 2.0, "
-                            "using the Graphene Toolkit?");
-    ucontest.setStartTime(static_cast<uint64_t>(QDateTime::fromString("2015-09-11T12:00:00",
-                                                                      Qt::ISODate).toMSecsSinceEpoch()));
-    tags = ucontest.initTags().initEntries(1);
-    tags[0].setKey("category");
-    tags[0].setValue("hard-forks");
-    contestants = ucontest.initContestants().initEntries(2);
-    contestants[0].setKey("Yes");
-    contestants[0].setValue("Accept the upgrade, and hard-fork to BitShares 2.0");
-    contestants[1].setKey("No");
-    contestants[1].setValue("Reject the upgrade, and continue using BitShares 0.9.x");
-    contests.emplace_back(kj::mv(contestOrphan));
 
     // Total of 10 contests
-    contests.emplace_back(orphanage.newOrphanCopy(contests.back().getReader()));
-    contests.back().get().getContest().getId()[0] = 2;
-    contests.emplace_back(orphanage.newOrphanCopy(contests.back().getReader()));
-    contests.back().get().getContest().getId()[0] = 3;
-    contests.emplace_back(orphanage.newOrphanCopy(contests.back().getReader()));
-    contests.back().get().getContest().getId()[0] = 4;
-    contests.emplace_back(orphanage.newOrphanCopy(contests.back().getReader()));
-    contests.back().get().getContest().getId()[0] = 5;
-    contests.emplace_back(orphanage.newOrphanCopy(contests.back().getReader()));
-    contests.back().get().getContest().getId()[0] = 6;
-    contests.emplace_back(orphanage.newOrphanCopy(contests.back().getReader()));
-    contests.back().get().getContest().getId()[0] = 7;
-    contests.emplace_back(orphanage.newOrphanCopy(contests.back().getReader()));
-    contests.back().get().getContest().getId()[0] = 8;
-    contests.emplace_back(orphanage.newOrphanCopy(contests.back().getReader()));
-    contests.back().get().getContest().getId()[0] = 9;
+    createContest().setContest(contests.back().getReader().getContest());
+    createContest().setContest(contests.back().getReader().getContest());
+    createContest().setContest(contests.back().getReader().getContest());
+    createContest().setContest(contests.back().getReader().getContest());
+    createContest().setContest(contests.back().getReader().getContest());
+    createContest().setContest(contests.back().getReader().getContest());
+    createContest().setContest(contests.back().getReader().getContest());
+    createContest().setContest(contests.back().getReader().getContest());
+    createContest().setContest(contests.back().getReader().getContest());
 }
 
 StubChainAdaptor::~StubChainAdaptor() noexcept {}
+
+::Backend::Client StubChainAdaptor::getBackendStub()
+{
+    return kj::heap<BackendStub>(*this);
+}
 
 kj::Promise<Coin::Reader> StubChainAdaptor::getCoin(quint64 id) const
 {
@@ -170,12 +130,10 @@ kj::Promise<Coin::Reader> StubChainAdaptor::getCoin(quint64 id) const
 
 kj::Promise<Coin::Reader> StubChainAdaptor::getCoin(QString symbol) const
 {
-    auto itr = std::find_if(coins.begin(), coins.end(), [symbol] (const capnp::Orphan<Coin>& coin) {
-        return coin.getReader().getName() == symbol.toStdString();
-    });
-    if (itr == coins.end())
+    KJ_IF_MAYBE(coin, getCoinOrphan(symbol))
+            return coin->getReader();
+    else
         return KJ_EXCEPTION(FAILED, "Could not find the specified coin.", symbol.toStdString());
-    return itr->getReader();
 }
 
 kj::Promise<kj::Array<Coin::Reader>> StubChainAdaptor::listAllCoins() const
@@ -211,6 +169,14 @@ kj::Promise<kj::Array<Balance::Reader>> StubChainAdaptor::getBalancesForOwner(QS
     return results.finish();
 }
 
+Contest::Reader StubChainAdaptor::getContest(capnp::Data::Reader contestId) const
+{
+    for (auto& contest : contests)
+        if (contest.getReader().getContest().getId() == contestId)
+            return contest.getReader();
+    KJ_FAIL_REQUIRE("Could not find the specified contest", contestId);
+}
+
 Datagram::Builder StubChainAdaptor::createDatagram()
 {
     KJ_IF_MAYBE(KJ_UNUSED d, pendingDatagram) {
@@ -223,9 +189,10 @@ Datagram::Builder StubChainAdaptor::createDatagram()
 
 kj::Promise<Contest::Reader> StubChainAdaptor::getContest(QByteArray contestId) const
 {
-    if (contestId.size() != 1 || char(contestId[0]) < 0 || char(contestId[0]) > 9)
-        return KJ_EXCEPTION(FAILED, "Could not find the specified contest", contestId.toHex().toStdString());
-    return contests[static_cast<size_t>(contestId[0])].getReader();
+    for (auto& contest : contests)
+        if (*contest.getReader().getContest().getId().begin() == *contestId.begin())
+            return contest.getReader();
+    return KJ_EXCEPTION(FAILED, "Could not find the specified contest", contestId.toHex().toStdString());
 }
 
 kj::Promise<void> StubChainAdaptor::publishDatagram(QByteArray payerBalanceId, QByteArray publisherBalanceId)
@@ -235,7 +202,6 @@ kj::Promise<void> StubChainAdaptor::publishDatagram(QByteArray payerBalanceId, Q
                                                               "Call createDatagram first!"));
     pendingDatagram = nullptr;
 
-    Datagram::Reader reader = dgram.getReader();
     auto maybePayerBalance = getBalanceOrphan(payerBalanceId);
     auto maybePublisherBalance = getBalanceOrphan(publisherBalanceId);
     KJ_IF_MAYBE(payerBalance, maybePayerBalance) {
@@ -245,10 +211,10 @@ kj::Promise<void> StubChainAdaptor::publishDatagram(QByteArray payerBalanceId, Q
             KJ_REQUIRE(builder.getAmount() >= 10, "The specified balance cannot pay the fee");
             builder.setAmount(builder.getAmount() - 10);
 
-            auto schema = reader.getSchema();
-            auto key = publisherBalanceId.append(QByteArray::fromRawData(reinterpret_cast<const char*>(schema.begin()),
-                                                                         static_cast<int>(schema.size())));
-            datagrams[key] = kj::mv(dgram);
+            auto index = dgram.getReader().getIndex();
+            KJ_LOG(DBG, "Publishing datagram.", publisherBalanceId.toHex().toStdString(), static_cast<uint16_t>(index.getType()), index.getKey());
+            std::vector<kj::byte> key(index.getKey().begin(), index.getKey().end());
+            datagrams[std::make_tuple(publisherBalanceId, index.getType(), kj::mv(key))] = kj::mv(dgram);
             return kj::READY_NOW;
         } else {
             KJ_FAIL_REQUIRE("Could not find the publisher balance");
@@ -259,13 +225,57 @@ kj::Promise<void> StubChainAdaptor::publishDatagram(QByteArray payerBalanceId, Q
     KJ_UNREACHABLE;
 }
 
-kj::Promise<Datagram::Reader> StubChainAdaptor::getDatagram(QByteArray balanceId, QString schema) const
+kj::Promise<void> StubChainAdaptor::transfer(QString sender, QString recipient, qint64 amount, quint64 coinId)
 {
-    auto key = balanceId;
-    auto itr = datagrams.find(key.append(QByteArray::fromHex(schema.toLocal8Bit())));
+    try {
+        KJ_LOG(DBG, "Attempting to transfer", sender.toStdString(), recipient.toStdString(), amount, coinId);
+
+        auto senderBalances = balances.find(sender);
+        KJ_REQUIRE(senderBalances != balances.end(),
+                   "Cannot transfer because sender has no balances", sender.toStdString());
+
+        qint64 senderFunds = 0;
+        for (const auto& balance : senderBalances->second)
+            if (balance.getReader().getType() == coinId)
+                senderFunds += balance.getReader().getAmount();
+        KJ_REQUIRE(senderFunds >= amount, "Cannot transfer because sender has insufficient funds", senderFunds, amount);
+
+        auto amountRemaining = amount;
+        for (auto balance = senderBalances->second.begin(); balance != senderBalances->second.end(); ++balance)
+            if (balance->getReader().getType() == coinId) {
+                if (balance->getReader().getAmount() <= amountRemaining) {
+                    amountRemaining -= balance->getReader().getAmount();
+                    balance = senderBalances->second.erase(balance);
+                    if (amountRemaining == 0)
+                        break;
+                } else {
+                    balance->get().setAmount(balance->get().getAmount() - amountRemaining);
+                    amountRemaining = 0;
+                    break;
+                }
+            }
+
+        auto newBalance = createBalance(recipient);
+        newBalance.setType(coinId);
+        newBalance.setAmount(amountRemaining);
+
+        return kj::READY_NOW;
+    } catch (kj::Exception& e) {
+        return kj::mv(e);
+    }
+}
+
+kj::Promise<Datagram::Reader> StubChainAdaptor::getDatagram(QByteArray balanceId,
+                                                            Datagram::DatagramType type,
+                                                            QString key) const
+{
+    auto binaryKey = QByteArray::fromHex(key.toLocal8Bit());
+    std::vector<kj::byte> keyVector(binaryKey.begin(), binaryKey.end());
+    auto itr = datagrams.find(std::make_tuple(balanceId, type, kj::mv(keyVector)));
     if (itr == datagrams.end())
-        return KJ_EXCEPTION(FAILED, "No datagram belonging to the specified balance with the specified schema found.",
-                            balanceId.toHex().data(), schema.toStdString());
+        return KJ_EXCEPTION(FAILED, "No datagram belonging to the specified balance "
+                                    "with the specified type and key found.",
+                            balanceId.toHex().data(), static_cast<uint16_t>(type), key.toStdString());
     return itr->second.getReader();
 }
 
@@ -297,6 +307,49 @@ kj::Maybe<const capnp::Orphan<Balance>&> StubChainAdaptor::getBalanceOrphan(QByt
             return *itr;
     }
     return {};
+}
+
+kj::Maybe<capnp::Orphan<Coin>&> StubChainAdaptor::getCoinOrphan(QString name)
+{
+    auto itr = std::find_if(coins.begin(), coins.end(), [name] (const capnp::Orphan<Coin>& coin) {
+        return coin.getReader().getName() == name.toStdString();
+    });
+    if (itr == coins.end())
+        return {};
+    return *itr;
+}
+
+kj::Maybe<const capnp::Orphan<Coin>&> StubChainAdaptor::getCoinOrphan(QString name) const
+{
+    auto itr = std::find_if(coins.begin(), coins.end(), [name] (const capnp::Orphan<Coin>& coin) {
+        return coin.getReader().getName() == name.toStdString();
+    });
+    if (itr == coins.end())
+        return {};
+    return *itr;
+}
+
+Contest::Builder StubChainAdaptor::createContest()
+{
+    auto newContest = contests.emplace(contests.begin(), message.getOrphanage().newOrphan<::Contest>())->get();
+    newContest.initContest().initId(1)[0] = contests.size() - 1;
+    return newContest;
+}
+
+Balance::Builder StubChainAdaptor::createBalance(QString owner)
+{
+    balances[owner].emplace_back(message.getOrphanage().newOrphan<::Balance>());
+    auto& newBalance = balances[owner].back();
+    newBalance.get().initId(1)[0] = nextBalanceId++;
+    return newBalance.get();
+}
+
+Coin::Builder StubChainAdaptor::createCoin()
+{
+    coins.emplace_back(message.getOrphanage().newOrphan<::Coin>());
+    auto& newCoin = coins.back();
+    newCoin.get().setId(coins.size() - 1);
+    return newCoin.get();
 }
 
 } // namespace swv

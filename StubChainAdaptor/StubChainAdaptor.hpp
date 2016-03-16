@@ -18,6 +18,8 @@
 #ifndef STUBCHAINADAPTOR_H
 #define STUBCHAINADAPTOR_H
 
+#include "capnp/backend.capnp.h"
+
 #include <QObject>
 #include <QMap>
 
@@ -37,8 +39,13 @@ class STUBCHAINADAPTORSHARED_EXPORT StubChainAdaptor : public QObject, public Bl
     Q_OBJECT
 
 public:
+    class BackendStub;
+    class ContestCreator;
+
     StubChainAdaptor(QObject* parent = nullptr);
     virtual ~StubChainAdaptor() noexcept;
+
+    ::Backend::Client getBackendStub();
 
     virtual kj::Promise<Coin::Reader> getCoin(quint64 id) const;
     virtual kj::Promise<Coin::Reader> getCoin(QString symbol) const;
@@ -47,21 +54,32 @@ public:
     virtual kj::Promise<Balance::Reader> getBalance(QByteArray id) const;
     virtual kj::Promise<kj::Array<Balance::Reader>> getBalancesForOwner(QString owner) const;
     virtual kj::Promise<::Contest::Reader> getContest(QByteArray contestId) const;
+    ::Contest::Reader getContest(capnp::Data::Reader contestId) const;
 
     virtual ::Datagram::Builder createDatagram();
     virtual kj::Promise<void> publishDatagram(QByteArray payerBalanceId, QByteArray publisherBalanceId);
-    virtual kj::Promise<::Datagram::Reader> getDatagram(QByteArray balanceId, QString schema) const;
+    virtual kj::Promise<::Datagram::Reader> getDatagram(QByteArray balanceId,
+                                                        Datagram::DatagramType type,
+                                                        QString key) const;
+
+    kj::Promise<void> transfer(QString sender, QString recipient, qint64 amount, quint64 coinId);
 
 protected:
     capnp::MallocMessageBuilder message;
     std::vector<capnp::Orphan<Coin>> coins;
     std::vector<capnp::Orphan<Contest>> contests;
     std::map<QString, std::vector<capnp::Orphan<Balance>>> balances;
-    std::map<QByteArray, capnp::Orphan<::Datagram>> datagrams;
+    std::map<std::tuple<QByteArray, Datagram::DatagramType, std::vector<kj::byte>>, capnp::Orphan<::Datagram>> datagrams;
     kj::Maybe<capnp::Orphan<::Datagram>> pendingDatagram;
+    quint8 nextBalanceId = 0;
 
     kj::Maybe<capnp::Orphan<Balance>&> getBalanceOrphan(QByteArray id);
     kj::Maybe<const capnp::Orphan<Balance>&> getBalanceOrphan(QByteArray id) const;
+    kj::Maybe<capnp::Orphan<Coin>&> getCoinOrphan(QString name);
+    kj::Maybe<const capnp::Orphan<Coin>&> getCoinOrphan(QString name) const;
+    ::Contest::Builder createContest();
+    ::Balance::Builder createBalance(QString owner);
+    ::Coin::Builder createCoin();
 };
 
 } // namespace swv

@@ -27,7 +27,6 @@
 #include "wrappers/Balance.hpp"
 #include "wrappers/Contest.hpp"
 #include "wrappers/Decision.hpp"
-#include "wrappers/Datagram.hpp"
 #include "wrappers/BackendWrapper.hpp"
 #include "wrappers/OwningWrapper.hpp"
 #include "wrappers/Converters.hpp"
@@ -219,6 +218,10 @@ VotingSystem::VotingSystem(QObject *parent)
                     // If this account is the persisted current account, set that too
                     if (account->get_name() == currentAccountName)
                         setCurrentAccount(account);
+                    // If no account is set yet, go ahead and set the first one we find (we should set a current
+                    // account at startup if at all possible)
+                    else if (d->currentAccount == nullptr)
+                        setCurrentAccount(account);
                 }
             }));
         }
@@ -281,11 +284,15 @@ Promise* VotingSystem::connectToBackend(QString hostname, quint16 port) {
     return connectPromise;
 }
 
-void VotingSystem::configureChainAdaptor() {
+void VotingSystem::configureChainAdaptor(bool useTestingBackend) {
     Q_D(VotingSystem);
 
     //TODO: make a real implementation of this
     auto adaptor = kj::heap<StubChainAdaptor>(d->adaptor);
+    if (useTestingBackend) {
+        d->backend = kj::heap<BackendWrapper>(adaptor->getBackendStub(), *d->promiseConverter);
+        emit backendConnectedChanged(true);
+    }
     d->adaptor->setAdaptor(kj::mv(adaptor));
 }
 
@@ -295,6 +302,13 @@ Promise* VotingSystem::castCurrentDecision(swv::ContestWrapper* contest) {
     if (!isReady()) {
         setLastError(tr("Unable to cast vote. Please ensure that you are online and that you have connected this app "
                         "to the blockchain."));
+        return nullptr;
+    }
+
+    if (d->currentAccount == nullptr) {
+        // If this ever happens, it's probably a bug, but better to give an error than crash.
+        setLastError(tr("Unable to cast vote because current account is not set. "
+                        "Please set your account in the settings and try again."));
         return nullptr;
     }
 
@@ -336,12 +350,14 @@ Promise* VotingSystem::castCurrentDecision(swv::ContestWrapper* contest) {
             KJ_FAIL_REQUIRE("Couldn't cast vote because voting account has no balances in the coin");
         }
 
-        QString serialDecision = decision->serialize().toHex();
+        auto serialDecision = decision->serialize();
         auto promises = kj::heapArrayBuilder<kj::Promise<void>>(balances.size());
         for (auto balance : balances) {
-            auto dgram = chain->getDatagram();
-            dgram->setSchema(DECISION_SCHEMA + contest->id());
-            dgram->setContent(serialDecision);
+            auto dgram = chain->getNewDatagram();
+            dgram.initIndex().setType(Datagram::DatagramType::DECISION);
+            auto binaryId = QByteArray::fromHex(contest->id().toLocal8Bit());
+            dgram.getIndex().setKey(convertBlob(binaryId));
+            dgram.setContent(convertBlob(serialDecision));
 
             promises.add(chain->adaptor()->publishDatagram(convertBlob(balance.getId())));
         }
@@ -382,6 +398,12 @@ void VotingSystem::cancelCurrentDecision(ContestWrapper* contest) {
     if (!isReady()) {
         setLastError(tr("Unable to cancel vote. Please ensure that you are online and that you have connected this "
                         "app to the blockchain."));
+        return;
+    }
+    if (d->currentAccount == nullptr) {
+        // If this ever happens, it's probably a bug. Log it, and just reset the decisions.
+        KJ_LOG(ERROR, "Current account was unset while canceling a decision. This probably shouldn't be possible.");
+        contest->currentDecision()->setOpinions({});
         return;
     }
 
