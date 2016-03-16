@@ -58,7 +58,7 @@ QVariantList ContestWrapper::contestants() const
 
 QDateTime ContestWrapper::startTime() const
 {
-    return QDateTime::fromMSecsSinceEpoch(static_cast<signed>(getStartTime()));
+    return QDateTime::fromMSecsSinceEpoch(getStartTime());
 }
 
 OwningWrapper<DecisionWrapper>* ContestWrapper::currentDecision() {
