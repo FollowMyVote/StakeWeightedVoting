@@ -78,7 +78,6 @@ BackendServer::BackendServer()
                         std::chrono::system_clock::now().time_since_epoch()
                     ).count() / (1000 * 60 * 60) * (1000 * 60 * 60));
         // TODO: test that this logic for getting the timestamp is correct
-        KJ_LOG(DBG, history.getHistoryEndTimestamp());
         auto histogram = history.initHistogram(historyLength);
         for (int i = 0; i < historyLength; ++i)
             histogram.set(i, 1000000);
