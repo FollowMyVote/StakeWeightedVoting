@@ -4,7 +4,7 @@ Module {
   name: "VPlay"
 
   // include vplay header, lib and resources
-  property string sdkPath: qbs.getEnv("VPLAY_SDK_PATH")
+  property string sdkPath
   property string qtIncPath: sdkPath + "/include"
   property string includePath: qtIncPath+"/VPlay"
   property string staticLibrary: "VPlay"

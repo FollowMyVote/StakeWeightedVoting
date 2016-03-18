@@ -9,7 +9,7 @@ QtGuiApplication {
     Depends { name: "Qt"; submodules: ["network", "qml"] }
     Depends { name: "libqtqmltricks-qtquickuielements" }
     Depends { name: "VPlay" }
-    VPlay.sdkPath: original? original : Qt.incPath + "/.."
+    VPlay.sdkPath: Qt.core.incPath + "/.."
 
     qmlImportPaths: [VPlay.sdkPath + "/qml"]
     cpp.includePaths: [".", "qml-promise/src", VPlay.includePath]
