@@ -110,7 +110,10 @@ App {
                     }
                     Component.onCompleted: {
                         if (votingSystem.isReady) loadContests()
-                        else votingSystem.connected.connect(loadContests)
+                        else votingSystem.isReadyChanged.connect(function(ready) {
+                            if (ready)
+                                loadContests()
+                        })
                     }
                 }
             }
