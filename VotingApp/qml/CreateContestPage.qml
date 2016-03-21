@@ -51,7 +51,6 @@ Page {
             onCompleted: swiper.currentIndex++
         }
         SponsorshipForm {
-            onSponsorshipEnabledChanged: purchaseRequest.sponsorshipEnabled = sponsorshipEnabled
             onCompleted: {
                 try {
                     var purchaseRequest = contestCreator.getPurchaseContestRequest()
@@ -63,6 +62,7 @@ Page {
                         purchaseRequest.contestants.append(basicForm.contestantModel.get(i))
                     purchaseRequest.expiration = basicForm.contestExpiration
                     purchaseRequest.weightCoin = basicForm.weightCoinId
+                    purchaseRequest.sponsorshipEnabled = sponsorshipEnabled
                     if (purchaseRequest.sponsorshipEnabled) {
                         purchaseRequest.sponsorMaxVotes = maxVotes? maxVotes : 0
                         purchaseRequest.sponsorMaxRevotes = maxRevotes? maxRevotes : 0
