@@ -71,26 +71,6 @@ App {
        onCurrentAccountChanged: console.log("Current account set to " + currentAccount.name)
     }
 
-    Component {
-        id: createContestPageComponent
-
-        Page {
-            id: createContestPage
-
-            property var contestCreator
-
-            PageControl {
-                anchors {
-                    horizontalCenter: parent.horizontalCenter
-                    top: parent.top
-                }
-                pages: 3
-                indicatorSize: window.dp(16)
-                enabled: false
-            }
-        }
-    }
-
     Navigation {
         id: mainNavigation
 
@@ -110,8 +90,8 @@ App {
                     }
                     Component.onCompleted: {
                         if (votingSystem.isReady) loadContests()
-                        else votingSystem.isReadyChanged.connect(function(ready) {
-                            if (ready)
+                        else votingSystem.isReadyChanged.connect(function() {
+                            if (votingSystem.isReady)
                                 loadContests()
                         })
                     }
