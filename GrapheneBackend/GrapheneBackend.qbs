@@ -9,6 +9,8 @@ CppApplication {
     Depends { name: "graphene" }
 
     files: [
+        "BackendPlugin.cpp",
+        "BackendPlugin.hpp",
         "main.cpp",
     ]
 
