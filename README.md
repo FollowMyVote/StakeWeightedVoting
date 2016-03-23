@@ -23,7 +23,7 @@ See [Architecture](Architecture.md) for more information on how the components i
 - [Graphene](https://github.com/followmyvote/graphene) (Optional)
  - Note: Follow My Vote forks of both Graphene and FC must be used until Cryptonomex accepts our pull requests
  
-A video showing how to set up the development environment is available [here](https://drive.google.com/file/d/0BxT8fpuOgKV8ek82WjlOUDhfelU/view?usp=sharing)
+A video showing how to set up the development environment is available [here](https://youtu.be/lvTyZ0GAT-k)
 
 > ###### Note
 > We use submodules, so be sure to run `git submodule update --init` after cloning and `git submodule update` when the submodules are updated.
