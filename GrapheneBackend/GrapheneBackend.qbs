@@ -11,6 +11,10 @@ CppApplication {
     files: [
         "BackendPlugin.cpp",
         "BackendPlugin.hpp",
+        "BackendServer.cpp",
+        "BackendServer.hpp",
+        "compat/FcEventPort.cpp",
+        "compat/FcEventPort.hpp",
         "main.cpp",
     ]
 

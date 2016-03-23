@@ -25,6 +25,8 @@
 
 #include <capnp/rpc-twoparty.h>
 
+namespace swv {
+
 class TwoPartyServer : private kj::TaskSet::ErrorHandler
 {
     // Convenience class which implements a simple server which accepts connections on a listener
@@ -32,6 +34,7 @@ class TwoPartyServer : private kj::TaskSet::ErrorHandler
 
 public:
     explicit TwoPartyServer(capnp::Capability::Client bootstrapInterface);
+    virtual ~TwoPartyServer();
 
     void accept(kj::Own<kj::AsyncIoStream>&& connection);
     // Accepts the connection for servicing.
@@ -49,5 +52,7 @@ private:
 
     void taskFailed(kj::Exception&& exception) override;
 };
+
+} // namespace swv
 
 #endif // TWOPARTYSERVER_HPP

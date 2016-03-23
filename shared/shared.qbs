@@ -26,6 +26,8 @@ StaticLibrary {
 
     files: [
         "BlockchainAdaptorInterface.hpp",
+        "TwoPartyServer.cpp",
+        "TwoPartyServer.hpp",
         "capnp/*.capnp",
     ]
 

@@ -24,8 +24,12 @@
 
 #include <kj/debug.h>
 
+namespace swv {
+
 TwoPartyServer::TwoPartyServer(capnp::Capability::Client bootstrapInterface)
     : bootstrapInterface(kj::mv(bootstrapInterface)), tasks(*this) {}
+
+TwoPartyServer::~TwoPartyServer() {}
 
 struct TwoPartyServer::AcceptedConnection {
   kj::Own<kj::AsyncIoStream> connection;
@@ -60,3 +64,5 @@ kj::Promise<void> TwoPartyServer::listen(kj::Own<kj::ConnectionReceiver> listene
 void TwoPartyServer::taskFailed(kj::Exception&& exception) {
   KJ_LOG(ERROR, exception);
 }
+
+} // namespace swv

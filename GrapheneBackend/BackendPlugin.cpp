@@ -16,19 +16,26 @@
  * along with SWV.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "BackendPlugin.hpp"
+#include "BackendServer.hpp"
+
+#include <TwoPartyServer.hpp>
 
 namespace swv {
 
 BackendPlugin::BackendPlugin()
+    : server(kj::heap<TwoPartyServer>(kj::heap<BackendServer>()))
 {
 
 }
+
+BackendPlugin::~BackendPlugin() noexcept {}
 
 std::string BackendPlugin::plugin_name() const {
     return "Follow My Vote Backend";
 }
 
 void BackendPlugin::plugin_initialize(const boost::program_options::variables_map& options) {
+    serverPort = options["port"].as<uint16_t>();
 }
 
 void BackendPlugin::plugin_startup() {
