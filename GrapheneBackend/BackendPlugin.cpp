@@ -23,10 +23,7 @@
 namespace swv {
 
 BackendPlugin::BackendPlugin()
-    : server(kj::heap<TwoPartyServer>(kj::heap<BackendServer>()))
-{
-
-}
+    : server(kj::heap<TwoPartyServer>(kj::heap<BackendServer>())) {}
 
 BackendPlugin::~BackendPlugin() noexcept {}
 
