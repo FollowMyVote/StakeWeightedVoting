@@ -15,6 +15,8 @@ CppApplication {
         "BackendServer.hpp",
         "compat/FcEventPort.cpp",
         "compat/FcEventPort.hpp",
+        "compat/FcStreamWrapper.cpp",
+        "compat/FcStreamWrapper.hpp",
         "main.cpp",
     ]
 
