@@ -29,7 +29,7 @@
 int main() {
     kj::UnixEventPort::captureSignal(SIGINT);
 
-    TwoPartyServer server(kj::heap<BackendServer>());
+    swv::TwoPartyServer server(kj::heap<BackendServer>());
     auto asyncIo = kj::setupAsyncIo();
     auto promise = asyncIo.provider->getNetwork().parseAddress("127.0.0.1", 2572).then(
                        [&server](kj::Own<kj::NetworkAddress> addr)

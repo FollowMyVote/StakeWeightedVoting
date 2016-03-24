@@ -20,12 +20,21 @@
 
 #include <graphene/app/plugin.hpp>
 
+#include <kj/async-io.h>
+
 namespace swv {
+class TwoPartyServer;
 
 class BackendPlugin : public graphene::app::plugin
 {
+    kj::Own<TwoPartyServer> server;
+    kj::AsyncIoContext asyncIo = kj::setupAsyncIo();
+    kj::Promise<void> serverPromise = kj::READY_NOW;
+    uint16_t serverPort = 17073;
+
 public:
     BackendPlugin();
+    virtual ~BackendPlugin() noexcept;
 
     // abstract_plugin interface
     virtual std::string plugin_name() const override;

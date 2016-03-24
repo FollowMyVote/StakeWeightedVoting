@@ -15,8 +15,6 @@ QtApplication {
         "ContestGeneratorImpl.hpp",
         "PurchaseImpl.cpp",
         "PurchaseImpl.hpp",
-        "TwoPartyServer.cpp",
-        "TwoPartyServer.hpp",
         "main.cpp",
     ]
 
