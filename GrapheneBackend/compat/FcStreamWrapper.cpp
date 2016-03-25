@@ -145,13 +145,17 @@ void FcStreamWrapper::processReads()
             }
         };
 
-        if (kj::runCatchingExceptions(kj::mv(reader)) == nullptr || currentRead.truncateForEof)
-            // Either there was no exception, or we're truncating on EOF. Either way, report how many bytes were read.
+        if (kj::runCatchingExceptions(kj::mv(reader)) == nullptr)
+            // Nominal case -- everything is fine
             currentRead.fulfiller->fulfill(kj::mv(totalBytes));
-        else
-            // We got an exception and we're not truncing for EOF. Break the promise.
-            currentRead.fulfiller->reject(KJ_EXCEPTION(FAILED, "EOF when attempting to read",
-                                                       totalBytes, currentRead.minBytes));
+        else {
+            eof = true;
+            if (currentRead.truncateForEof)
+                currentRead.fulfiller->fulfill(kj::mv(totalBytes));
+            else
+                currentRead.fulfiller->reject(KJ_EXCEPTION(FAILED, "EOF when attempting to read",
+                                                           totalBytes, currentRead.minBytes));
+        }
         pendingReads.pop();
     }
 
