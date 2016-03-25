@@ -44,7 +44,7 @@ class FcStreamWrapper : public kj::AsyncIoStream
     struct WriteContext;
     struct ReadContext;
 
-    fc::iostream& wrappedStream;
+    kj::Own<fc::iostream> wrappedStream;
 
     std::queue<WriteContext> pendingWrites;
     bool writesProcessing = false;
@@ -55,7 +55,7 @@ class FcStreamWrapper : public kj::AsyncIoStream
     bool eof = false;
 
 public:
-    FcStreamWrapper(fc::iostream& wrappedStream);
+    FcStreamWrapper(kj::Own<fc::iostream> wrappedStream);
     virtual ~FcStreamWrapper();
 
     // AsyncOutputStream interface

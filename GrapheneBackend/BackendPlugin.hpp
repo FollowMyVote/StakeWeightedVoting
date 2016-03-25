@@ -22,15 +22,24 @@
 
 #include <kj/async-io.h>
 
+#include <fc/network/tcp_socket.hpp>
+
+#include <map>
+
 namespace swv {
-class TwoPartyServer;
 
 class BackendPlugin : public graphene::app::plugin
 {
-    kj::Own<TwoPartyServer> server;
-    kj::AsyncIoContext asyncIo = kj::setupAsyncIo();
-    kj::Promise<void> serverPromise = kj::READY_NOW;
+    struct ActiveClient;
+
+    bool running = false;
     uint16_t serverPort = 17073;
+    fc::tcp_server server;
+    std::map<uint64_t, kj::Own<ActiveClient>> clients;
+    uint64_t nextClientId = 0;
+
+    void acceptLoop();
+    kj::Own<ActiveClient> prepareClient(kj::Own<fc::tcp_socket> clientSocket);
 
 public:
     BackendPlugin();

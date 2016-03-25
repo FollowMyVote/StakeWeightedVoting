@@ -24,6 +24,7 @@
  */
 
 #include "BackendPlugin.hpp"
+#include "compat/FcEventPort.hpp"
 
 #include <graphene/app/application.hpp>
 
@@ -44,6 +45,9 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 
+#include <kj/async.h>
+#include <kj/debug.h>
+
 #include <iostream>
 #include <fstream>
 
@@ -62,6 +66,13 @@ fc::optional<fc::logging_config> load_logging_config_from_ini_file(const fc::pat
 int main(int argc, char** argv) {
    app::application* node = new app::application();
    fc::oexception unhandled_exception;
+
+   kj::_::Debug::setLogLevel(kj::_::Debug::Severity::INFO);
+   swv::FcEventPort eventPort;
+   kj::EventLoop loop(eventPort);
+   eventPort.setLoop(&loop);
+   kj::WaitScope wsc(loop);
+
    try {
       bpo::options_description app_options("Follow My Vote Backend for Graphene");
       bpo::options_description cfg_options("Follow My Vote Backend for Graphene");

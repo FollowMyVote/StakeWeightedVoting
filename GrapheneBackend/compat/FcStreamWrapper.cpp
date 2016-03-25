@@ -50,11 +50,10 @@ struct FcStreamWrapper::ReadContext {
     bool truncateForEof;
 };
 
-FcStreamWrapper::FcStreamWrapper(fc::iostream& wrappedStream)
-    : wrappedStream(wrappedStream) {}
+FcStreamWrapper::FcStreamWrapper(kj::Own<fc::iostream> wrappedStream)
+    : wrappedStream(kj::mv(wrappedStream)) {}
 
 FcStreamWrapper::~FcStreamWrapper() {}
-
 
 kj::Promise<void> FcStreamWrapper::write(const void* buffer, size_t size) {
     if (flushWrites)
@@ -101,49 +100,37 @@ void FcStreamWrapper::shutdownWrite() {
 
 void FcStreamWrapper::startWrites() {
     // If there is not already a context processing pending writes, queue one up
-    if (!writesProcessing)
+    if (!writesProcessing) {
+        writesProcessing = true;
         fc::async([this] {processWrites();});
+    }
 }
 
 void FcStreamWrapper::startReads() {
     // If there is not already a context processing pending reads, queue one up
-    if (!readsProcessing)
+    if (!readsProcessing) {
+        readsProcessing = true;
         fc::async([this] {processReads();});
+    }
 }
 
-class FlagGuard {
-    // This is a canary class. It sets the guarded boolean to true when created, and sets it to false when destroyed.
-
-    bool& guardedFlag;
-
-public:
-    FlagGuard (bool& guardedFlag)
-        : guardedFlag(guardedFlag) {
-        this->guardedFlag = true;
-    }
-    ~FlagGuard() {
-        guardedFlag = false;
-    }
-};
-
 void FcStreamWrapper::processWrites() {
-    FlagGuard guard(writesProcessing);
-
     while (!pendingWrites.empty()) {
         auto& currentWrite = pendingWrites.front();
-        wrappedStream.write(static_cast<const char*>(currentWrite.buffer), currentWrite.length);
-        currentWrite.fulfiller->fulfill();
+        wrappedStream->write(static_cast<const char*>(currentWrite.buffer), currentWrite.length);
+        if (currentWrite.fulfiller->isWaiting())
+            currentWrite.fulfiller->fulfill();
         pendingWrites.pop();
     }
 
     if (flushWrites)
-        wrappedStream.flush();
+        wrappedStream->flush();
+
+    writesProcessing = false;
 }
 
 void FcStreamWrapper::processReads()
 {
-    FlagGuard guard(readsProcessing);
-
     while (!pendingReads.empty()) {
         auto& currentRead = pendingReads.front();
         size_t totalBytes = 0;
@@ -153,7 +140,7 @@ void FcStreamWrapper::processReads()
             while (totalBytes < currentRead.minBytes) {
                 // Ask for maxBytes -- readsome will give us all of them if they're available, or fewer if not.
                 // It will only throw if it gets an EOF before the first byte is read.
-                totalBytes += wrappedStream.readsome(static_cast<char*>(currentRead.buffer) + totalBytes,
+                totalBytes += wrappedStream->readsome(static_cast<char*>(currentRead.buffer) + totalBytes,
                                                      currentRead.maxBytes - totalBytes);
             }
         };
@@ -167,6 +154,8 @@ void FcStreamWrapper::processReads()
                                                        totalBytes, currentRead.minBytes));
         pendingReads.pop();
     }
+
+    readsProcessing = false;
 }
 
 } // namespace swv
