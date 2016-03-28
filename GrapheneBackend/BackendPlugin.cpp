@@ -21,11 +21,10 @@
 
 #include <capnp/rpc-twoparty.h>
 
-#include <kj/debug.h>
-
 namespace swv {
 
-BackendPlugin::BackendPlugin() {}
+BackendPlugin::BackendPlugin()
+    : tasks(errorLogger) {}
 BackendPlugin::~BackendPlugin() noexcept {}
 
 std::string BackendPlugin::plugin_name() const {
@@ -77,8 +76,13 @@ void BackendPlugin::acceptLoop() {
         try {
             auto client = kj::heap<fc::tcp_socket>();
             server.accept(*client);
-            KJ_LOG(INFO, "FMV client connected", std::string(client->remote_endpoint()));
-            clients.emplace(std::make_pair(nextClientId++, prepareClient(kj::mv(client))));
+            auto clientId = nextClientId++;
+            KJ_LOG(INFO, "FMV client connected", std::string(client->remote_endpoint()), clientId);
+            clients.emplace(std::make_pair(clientId, prepareClient(kj::mv(client))));
+            tasks.add(clients[clientId]->network.onDisconnect().then([this, clientId] {
+                KJ_LOG(INFO, "FMV client disconnected", clientId);
+                clients.erase(clientId);
+            }));
         } catch (kj::Exception e) {
             KJ_LOG(ERROR, "Exception while processing client", e);
         }

@@ -21,6 +21,7 @@
 #include <graphene/app/plugin.hpp>
 
 #include <kj/async-io.h>
+#include <kj/debug.h>
 
 #include <fc/network/tcp_socket.hpp>
 
@@ -31,12 +32,19 @@ namespace swv {
 class BackendPlugin : public graphene::app::plugin
 {
     struct ActiveClient;
+    class : public kj::TaskSet::ErrorHandler {
+    public:
+        virtual void taskFailed(kj::Exception&& e) override {
+            KJ_LOG(ERROR, "Exception from BackendPlugin tasks", e);
+        }
+    } errorLogger;
 
     bool running = false;
     uint16_t serverPort = 17073;
     fc::tcp_server server;
     std::map<uint64_t, kj::Own<ActiveClient>> clients;
     uint64_t nextClientId = 0;
+    kj::TaskSet tasks;
 
     void acceptLoop();
     kj::Own<ActiveClient> prepareClient(kj::Own<fc::tcp_socket> clientSocket);
