@@ -59,16 +59,18 @@ void BackendPlugin::plugin_set_program_options(boost::program_options::options_d
                                       "The port for the server to listen on");
 }
 
-struct BackendPlugin::ActiveClient {
+struct BackendPlugin::ClientConnection {
+    BackendServer& server;
     kj::Own<kj::AsyncIoStream> connection;
     capnp::TwoPartyVatNetwork network;
     capnp::RpcSystem<capnp::rpc::twoparty::VatId> rpcSystem;
 
-    ActiveClient(capnp::Capability::Client bootstrapInterface,
+    ClientConnection(kj::Own<BackendServer> server,
                  kj::Own<kj::AsyncIoStream>&& connectionParam)
-        : connection(kj::mv(connectionParam)),
+        : server(*server),
+          connection(kj::mv(connectionParam)),
           network(*connection, capnp::rpc::twoparty::Side::SERVER),
-          rpcSystem(makeRpcServer(network, kj::mv(bootstrapInterface))) {}
+          rpcSystem(makeRpcServer(network, kj::mv(server))) {}
 };
 
 void BackendPlugin::acceptLoop() {
@@ -78,8 +80,8 @@ void BackendPlugin::acceptLoop() {
             server.accept(*client);
             auto clientId = nextClientId++;
             KJ_LOG(INFO, "FMV client connected", std::string(client->remote_endpoint()), clientId);
-            clients.emplace(std::make_pair(clientId, prepareClient(kj::mv(client))));
-            tasks.add(clients[clientId]->network.onDisconnect().then([this, clientId] {
+            auto itr = clients.emplace(std::make_pair(clientId, prepareClient(kj::mv(client)))).first;
+            tasks.add(itr->second->network.onDisconnect().then([this, clientId] {
                 KJ_LOG(INFO, "FMV client disconnected", clientId);
                 clients.erase(clientId);
             }));
@@ -89,9 +91,9 @@ void BackendPlugin::acceptLoop() {
     }
 }
 
-kj::Own<BackendPlugin::ActiveClient> BackendPlugin::prepareClient(kj::Own<fc::tcp_socket> clientSocket) {
-    // TODO: authenticate client, setup encryption, figure out how to clean up closed connections
-    return kj::heap<BackendPlugin::ActiveClient>(kj::heap<BackendServer>(),
+kj::Own<BackendPlugin::ClientConnection> BackendPlugin::prepareClient(kj::Own<fc::tcp_socket> clientSocket) {
+    // TODO: authenticate client, setup encryption
+    return kj::heap<BackendPlugin::ClientConnection>(kj::heap<BackendServer>(),
                                                  kj::heap<FcStreamWrapper>(kj::mv(clientSocket)));
 }
 

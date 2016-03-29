@@ -31,7 +31,7 @@ namespace swv {
 
 class BackendPlugin : public graphene::app::plugin
 {
-    struct ActiveClient;
+    struct ClientConnection;
     class : public kj::TaskSet::ErrorHandler {
     public:
         virtual void taskFailed(kj::Exception&& e) override {
@@ -42,12 +42,12 @@ class BackendPlugin : public graphene::app::plugin
     bool running = false;
     uint16_t serverPort = 17073;
     fc::tcp_server server;
-    std::map<uint64_t, kj::Own<ActiveClient>> clients;
+    std::map<uint64_t, kj::Own<ClientConnection>> clients;
     uint64_t nextClientId = 0;
     kj::TaskSet tasks;
 
     void acceptLoop();
-    kj::Own<ActiveClient> prepareClient(kj::Own<fc::tcp_socket> clientSocket);
+    kj::Own<ClientConnection> prepareClient(kj::Own<fc::tcp_socket> clientSocket);
 
 public:
     BackendPlugin();
