@@ -15,23 +15,29 @@
  * You should have received a copy of the GNU General Public License
  * along with SWV.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "BackendServer.hpp"
+#ifndef TYPES_HPP
+#define TYPES_HPP
 
-BackendServer::BackendServer() {}
-BackendServer::~BackendServer() {}
+#include <graphene/chain/protocol/types.hpp>
+#include <graphene/db/generic_index.hpp>
 
+#ifndef VOTE_SPACE_ID
+#define VOTE_SPACE_ID 7
+#endif
 
-::kj::Promise<void> BackendServer::getContestFeed(Backend::Server::GetContestFeedContext context) {
+namespace swv {
+namespace gch = graphene::chain;
+namespace gdb = graphene::db;
+
+namespace ObjectIds {
+enum VoteObjectTypes {
+    Contest = 1
+};
 }
 
-::kj::Promise<void> BackendServer::searchContests(Backend::Server::SearchContestsContext context) {
+class Contest;
+
+using ContestObject = gdb::object_id<VOTE_SPACE_ID, ObjectIds::Contest, Contest>;
 }
 
-::kj::Promise<void> BackendServer::getContestResults(Backend::Server::GetContestResultsContext context) {
-}
-
-::kj::Promise<void> BackendServer::createContest(Backend::Server::CreateContestContext context) {
-}
-
-::kj::Promise<void> BackendServer::getCoinDetails(Backend::Server::GetCoinDetailsContext context) {
-}
+#endif // TYPES_HPP

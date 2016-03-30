@@ -17,6 +17,7 @@
  */
 #include "BackendPlugin.hpp"
 #include "BackendServer.hpp"
+#include "VoteDatabase.hpp"
 #include "compat/FcStreamWrapper.hpp"
 
 #include <capnp/rpc-twoparty.h>
@@ -24,7 +25,8 @@
 namespace swv {
 
 BackendPlugin::BackendPlugin()
-    : tasks(errorLogger) {}
+    : tasks(errorLogger),
+      database(kj::heap<VoteDatabase>(*app().chain_database())) {}
 BackendPlugin::~BackendPlugin() noexcept {}
 
 std::string BackendPlugin::plugin_name() const {
@@ -33,6 +35,7 @@ std::string BackendPlugin::plugin_name() const {
 
 void BackendPlugin::plugin_initialize(const boost::program_options::variables_map& options) {
     serverPort = options["port"].as<uint16_t>();
+    database->registerIndexes();
     KJ_LOG(INFO, "Follow My Vote plugin initialized");
 }
 

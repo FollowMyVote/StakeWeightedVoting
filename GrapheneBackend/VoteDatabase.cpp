@@ -15,23 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with SWV.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "BackendServer.hpp"
+#include "VoteDatabase.hpp"
+#include "Contest.hpp"
 
-BackendServer::BackendServer() {}
-BackendServer::~BackendServer() {}
+namespace swv {
 
-
-::kj::Promise<void> BackendServer::getContestFeed(Backend::Server::GetContestFeedContext context) {
+VoteDatabase::VoteDatabase(gch::database& chain)
+    : chain(chain) {
 }
 
-::kj::Promise<void> BackendServer::searchContests(Backend::Server::SearchContestsContext context) {
+void VoteDatabase::registerIndexes() const {
+    chain.add_index<gdb::primary_index<ContestIndex>>();
 }
 
-::kj::Promise<void> BackendServer::getContestResults(Backend::Server::GetContestResultsContext context) {
-}
-
-::kj::Promise<void> BackendServer::createContest(Backend::Server::CreateContestContext context) {
-}
-
-::kj::Promise<void> BackendServer::getCoinDetails(Backend::Server::GetCoinDetailsContext context) {
-}
+} // namespace swv

@@ -15,23 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with SWV.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "BackendServer.hpp"
+#include "Contest.hpp"
 
-BackendServer::BackendServer() {}
-BackendServer::~BackendServer() {}
+namespace swv {
 
+Contest::~Contest() {}
 
-::kj::Promise<void> BackendServer::getContestFeed(Backend::Server::GetContestFeedContext context) {
-}
-
-::kj::Promise<void> BackendServer::searchContests(Backend::Server::SearchContestsContext context) {
-}
-
-::kj::Promise<void> BackendServer::getContestResults(Backend::Server::GetContestResultsContext context) {
-}
-
-::kj::Promise<void> BackendServer::createContest(Backend::Server::CreateContestContext context) {
-}
-
-::kj::Promise<void> BackendServer::getCoinDetails(Backend::Server::GetCoinDetailsContext context) {
-}
+} // namespace swv

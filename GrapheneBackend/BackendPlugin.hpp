@@ -28,6 +28,7 @@
 #include <map>
 
 namespace swv {
+class VoteDatabase;
 
 class BackendPlugin : public graphene::app::plugin
 {
@@ -45,6 +46,7 @@ class BackendPlugin : public graphene::app::plugin
     std::map<uint64_t, kj::Own<ClientConnection>> clients;
     uint64_t nextClientId = 0;
     kj::TaskSet tasks;
+    kj::Own<VoteDatabase> database;
 
     void acceptLoop();
     kj::Own<ClientConnection> prepareClient(kj::Own<fc::tcp_socket> clientSocket);
