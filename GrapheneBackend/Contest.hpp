@@ -30,9 +30,12 @@ class Contest : public gdb::abstract_object<Contest>
 public:
     virtual ~Contest();
 
-    static const uint8_t space_id = ContestObject::space_id;
-    static const uint8_t type_id = ContestObject::type_id;
+    static const uint8_t space_id = ContestObjectId::space_id;
+    static const uint8_t type_id = ContestObjectId::type_id;
 
+    /// We ID contests by the operation that created them. This is more convenient for clients than the object ID since
+    /// clients are not necessarily using FMV nodes.
+    gch::operation_history_id_type contestId;
     gch::account_id_type creator;
     std::string name;
     std::string description;
@@ -41,6 +44,9 @@ public:
     gch::asset_id_type coin;
     fc::time_point creationTime;
     fc::time_point endTime;
+
+    std::map<int32_t, int64_t> contestantResults;
+    std::map<std::string, int64_t> writeInResults;
 };
 
 namespace bmi = boost::multi_index;
@@ -50,7 +56,7 @@ struct ByCoin;
 using ContestObjectMultiIndex = bmi::multi_index_container<
     Contest,
     bmi::indexed_by<
-        bmi::ordered_unique<bmi::tag<ById>, bmi::member<gdb::object, gdb::object_id_type, &gdb::object::id>>,
+        bmi::ordered_unique<bmi::tag<ById>, bmi::member<Contest, gch::operation_history_id_type, &Contest::contestId>>,
         bmi::ordered_non_unique<bmi::tag<ByCreator>, bmi::member<Contest, gch::account_id_type, &Contest::creator>>,
         bmi::ordered_non_unique<bmi::tag<ByCoin>, bmi::member<Contest, gch::asset_id_type, &Contest::coin>>
     >
@@ -60,6 +66,7 @@ using ContestIndex = gch::generic_index<Contest, ContestObjectMultiIndex>;
 } // namespace swv
 
 FC_REFLECT_DERIVED(swv::Contest, (graphene::db::object),
-                   (creator)(name)(description)(tags)(contestants)(coin)(creationTime)(endTime))
+                   (contestId)(creator)(name)(description)(tags)(contestants)(coin)(creationTime)(endTime)
+                   (contestantResults)(writeInResults))
 
 #endif // CONTEST_HPP

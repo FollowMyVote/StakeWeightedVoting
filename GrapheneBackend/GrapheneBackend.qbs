@@ -15,6 +15,8 @@ CppApplication {
         "BackendServer.hpp",
         "Contest.cpp",
         "Contest.hpp",
+        "CustomEvaluator.cpp",
+        "CustomEvaluator.hpp",
         "Types.hpp",
         "VoteDatabase.cpp",
         "VoteDatabase.hpp",

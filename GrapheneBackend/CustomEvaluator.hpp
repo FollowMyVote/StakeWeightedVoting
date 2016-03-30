@@ -15,29 +15,31 @@
  * You should have received a copy of the GNU General Public License
  * along with SWV.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef TYPES_HPP
-#define TYPES_HPP
+#ifndef CUSTOMEVALUATOR_HPP
+#define CUSTOMEVALUATOR_HPP
 
-#include <graphene/chain/protocol/types.hpp>
-#include <graphene/db/generic_index.hpp>
+#include "Types.hpp"
 
-#ifndef VOTE_SPACE_ID
-#define VOTE_SPACE_ID 7
-#endif
+#include <graphene/chain/evaluator.hpp>
+#include <graphene/chain/protocol/custom.hpp>
 
 namespace swv {
-namespace gch = graphene::chain;
-namespace gdb = graphene::db;
 
-namespace ObjectIds {
-enum VoteObjectTypes {
-    Contest = 1
+/**
+ * @brief The CustomEvaluator class implements an evaluator for custom_operation ops, specifically for voting
+ */
+class CustomEvaluator : public gch::evaluator<CustomEvaluator>
+{
+public:
+    using operation_type = gch::custom_operation;
+
+    gch::void_result do_evaluate(const operation_type& op) { return {}; }
+    gch::void_result do_apply(const operation_type& op);
+
+    /// Will be set to true by @ref do_evaluate if there is something to do. False otherwise.
+    bool shouldApply = false;
 };
-}
 
-class Contest;
+} // namespace swv
 
-using ContestObjectId = gdb::object_id<VOTE_SPACE_ID, ObjectIds::Contest, Contest>;
-}
-
-#endif // TYPES_HPP
+#endif // CUSTOMEVALUATOR_HPP
