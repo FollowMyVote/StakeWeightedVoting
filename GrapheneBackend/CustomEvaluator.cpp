@@ -17,6 +17,7 @@
  */
 #include "CustomEvaluator.hpp"
 #include "Contest.hpp"
+#include "Decision.hpp"
 
 #include <datagram.capnp.h>
 #include <decision.capnp.h>
@@ -26,6 +27,7 @@
 #include <kj/debug.h>
 
 #include <graphene/chain/database.hpp>
+#include <graphene/chain/operation_history_object.hpp>
 
 namespace swv {
 
@@ -34,14 +36,76 @@ inline T unpack(capnp::Data::Reader r) {
     return fc::raw::unpack<T>(std::vector<char>(r.begin(), r.end()));
 }
 
-void processDecision(gch::database& db, gch::account_balance_id_type publisherId, Decision::Reader decision) {
-    KJ_REQUIRE(decision.getOpinions().size() <= 1, "Only single-candidate votes are supported.", decision);
+void processDecision(gch::database& db, gch::account_balance_id_type publisherId, ::Decision::Reader decision) {
+    KJ_REQUIRE(decision.getOpinions().size() <= 1, "Only single-candidate votes are supported", decision);
     // Recall that contests are ID'd by their operation history ID, not the object ID
     auto& contestIndex = db.get_index_type<ContestIndex>().indices().get<ById>();
     auto itr = contestIndex.find(unpack<gch::operation_history_id_type>(decision.getContest()));
     KJ_REQUIRE(itr != contestIndex.end(), "Decision references unknown contest");
     auto& contest = *itr;
-    // TODO: Untally any votes which are being replaced, and tally the new votes
+    FC_ASSERT(contest.coin == publisherId(db).asset_type, "Publishing balance is in a different coin than the contest",
+              ("balance", publisherId(db))("contest", contest));
+    if (decision.getOpinions().size() == 1) {
+        auto opinion = decision.getOpinions()[0];
+        KJ_REQUIRE(opinion.getContestant() < contest.contestants.size() + decision.getWriteIns().getEntries().size(),
+                   "Opinion references a non-existent contestant", decision, fc::json::to_string(contest));
+        KJ_REQUIRE(opinion.getOpinion() == 1, "Only opinions of 1 are supported", decision);
+    }
+
+    // Get previous decision
+    auto& decisionIndex = db.get_index_type<DecisionIndex>().indices().get<ByVoter>();
+    auto decisionItr = decisionIndex.upper_bound(boost::make_tuple(publisherId, contest.contestId));
+    if (decisionItr != decisionIndex.end() && decisionItr->opinions.size() > 0) {
+        KJ_DASSERT(decisionItr->opinions.size() == 1);
+        KJ_DASSERT(contest.coin == decisionItr->voter(db).asset_type);
+        // There is an old decision currently in effect. Untally it
+        db.modify(contest, [&](Contest& c) {
+            auto opinion = *decisionItr->opinions.begin();
+            if (opinion.first < c.contestants.size()) {
+                // Vote is for a normal candidate
+                auto resultItr = c.contestantResults.find(opinion.first);
+                KJ_DASSERT(resultItr != c.contestantResults.end());
+                resultItr->second -= decisionItr->voter(db).balance.value;
+                KJ_DASSERT(resultItr->second >= 0);
+            } else {
+                // Vote is for a write-in candidate
+                KJ_DASSERT(opinion.first - c.contestants.size() < decisionItr->writeIns.size());
+                auto writeInName = decisionItr->writeIns[opinion.first - c.contestants.size()].first;
+                auto resultItr = c.writeInResults.find(writeInName);
+                KJ_DASSERT(resultItr != c.writeInResults.end());
+                resultItr->second -= decisionItr->voter(db).balance.value;
+                KJ_DASSERT(resultItr->second >= 0);
+                // If the write-in no longer has any votes, remove it
+                if (resultItr->second == 0)
+                    c.writeInResults.erase(resultItr);
+            }
+        });
+    }
+
+    // Store decision and update tally
+    auto& newDecision = db.create<Decision>([&db, decision, &contest, publisherId](Decision& d) {
+        auto& index = db.get_index_type<gch::simple_index<gch::operation_history_object>>();
+        d.decisionId = gch::operation_history_id_type(index.size() - 1);
+        d.voter = publisherId;
+        d.contestId = contest.contestId;
+        for (auto opinion : decision.getOpinions())
+            d.opinions.insert(std::make_pair(opinion.getContestant(), opinion.getOpinion()));
+        for (auto writeIn : decision.getWriteIns().getEntries())
+            d.writeIns.emplace_back(std::make_pair(writeIn.getKey(), writeIn.getValue()));
+    });
+    if (newDecision.opinions.size() > 0)
+        db.modify(contest, [&](Contest& c) {
+            auto opinion = *newDecision.opinions.begin();
+            if (opinion.first < c.contestants.size()) {
+                // Vote is for a normal candidate
+                auto& result = c.contestantResults[opinion.first];
+                result += newDecision.voter(db).balance.value;
+            } else {
+                // Vote is for a write-in candidate
+                auto& result = c.writeInResults[newDecision.writeIns[opinion.first - c.contestants.size()].first];
+                result += newDecision.voter(db).balance.value;
+            }
+        });
 }
 
 graphene::chain::void_result CustomEvaluator::do_apply(const CustomEvaluator::operation_type& op) {
@@ -62,7 +126,7 @@ graphene::chain::void_result CustomEvaluator::do_apply(const CustomEvaluator::op
             auto publisherId = unpack<gch::account_balance_id_type>(datagram.getIndex().getKey());
             KJ_REQUIRE(publisherId(db()).owner == op.fee_payer(),
                        "Nice try. You may not publish decisions for someone else");
-            processDecision(db(), publisherId, datagramMessage.getRoot<Decision>());
+            processDecision(db(), publisherId, datagramMessage.getRoot<::Decision>());
             break;
         }
         case Datagram::DatagramType::CONTEST:

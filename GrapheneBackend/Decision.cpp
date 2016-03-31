@@ -15,35 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with SWV.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef TYPES_HPP
-#define TYPES_HPP
+#include "Decision.hpp"
 
-#include <graphene/chain/protocol/types.hpp>
-#include <graphene/db/generic_index.hpp>
 
-#ifndef VOTE_SPACE_ID
-#define VOTE_SPACE_ID 7
-#endif
-
-namespace swv {
-namespace gch = graphene::chain;
-namespace gdb = graphene::db;
-
-namespace ObjectIds {
-enum VoteObjectTypes {
-    Contest = 1,
-    Decision
-};
-}
-
-class Contest;
-class Decision;
-
-using ContestObjectId = gdb::object_id<VOTE_SPACE_ID, ObjectIds::Contest, Contest>;
-using DecisionObjectId = gdb::object_id<VOTE_SPACE_ID, ObjectIds::Decision, Decision>;
-
-namespace bmi = boost::multi_index;
-struct ById;
-}
-
-#endif // TYPES_HPP

@@ -49,8 +49,6 @@ public:
     std::map<std::string, int64_t> writeInResults;
 };
 
-namespace bmi = boost::multi_index;
-struct ById;
 struct ByCreator;
 struct ByCoin;
 using ContestObjectMultiIndex = bmi::multi_index_container<

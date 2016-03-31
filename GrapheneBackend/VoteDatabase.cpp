@@ -16,7 +16,9 @@
  * along with SWV.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "VoteDatabase.hpp"
+#include "CustomEvaluator.hpp"
 #include "Contest.hpp"
+#include "Decision.hpp"
 
 namespace swv {
 
@@ -25,7 +27,9 @@ VoteDatabase::VoteDatabase(gch::database& chain)
 }
 
 void VoteDatabase::registerIndexes() const {
+    chain.register_evaluator<CustomEvaluator>();
     chain.add_index<gdb::primary_index<ContestIndex>>();
+    chain.add_index<gdb::primary_index<DecisionIndex>>();
 }
 
 } // namespace swv
