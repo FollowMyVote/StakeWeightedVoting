@@ -53,7 +53,7 @@ StubChainAdaptor::BackendStub::~BackendStub()
 {}
 
 ::kj::Promise<void> StubChainAdaptor::BackendStub::getContestFeed(Backend::Server::GetContestFeedContext context) {
-    std::vector<Contest::Reader> feedContests;
+    std::vector<Signed<Contest>::Reader> feedContests;
     feedContests.reserve(adaptor.contests.size());
 
     for (const auto& contest : reverse(adaptor.contests))
@@ -64,7 +64,7 @@ StubChainAdaptor::BackendStub::~BackendStub()
 }
 
 ::kj::Promise<void> StubChainAdaptor::BackendStub::searchContests(Backend::Server::SearchContestsContext context) {
-    std::vector<Contest::Reader> feedContests;
+    std::vector<Signed<Contest>::Reader> feedContests;
     feedContests.reserve(adaptor.contests.size());
 
     //TODO: implement filtering
@@ -77,7 +77,7 @@ StubChainAdaptor::BackendStub::~BackendStub()
 
 ::kj::Promise<void> StubChainAdaptor::BackendStub::getContestResults(Backend::Server::GetContestResultsContext context) {
     auto contestId = context.getParams().getContestId();
-    auto contest = adaptor.getContest(contestId).getContest();
+    auto contest = adaptor.getContest(contestId).getValue();
     std::map<int32_t, int64_t> contestantTallies;
     std::map<kj::String, int64_t> writeInTallies;
 

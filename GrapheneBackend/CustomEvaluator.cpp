@@ -22,6 +22,7 @@
 #include <datagram.capnp.h>
 #include <decision.capnp.h>
 #include <contest.capnp.h>
+#include <signed.capnp.h>
 
 #include <capnp/serialize-packed.h>
 
@@ -110,7 +111,7 @@ void processDecision(gch::database& db, gch::account_balance_id_type publisherId
         });
 }
 
-void processContest(gch::database& db, ::Contest::Reader contest) {
+void processContest(gch::database& db, ::Signed<::Contest>::Reader contest) {
     // TODO
 }
 

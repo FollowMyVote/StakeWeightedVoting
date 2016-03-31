@@ -18,8 +18,9 @@
 #ifndef CONTESTGENERATOR_HPP
 #define CONTESTGENERATOR_HPP
 
-#include "contestgenerator.capnp.h"
-#include "contest.capnp.h"
+#include <contestgenerator.capnp.h>
+#include <contest.capnp.h>
+#include <signed.capnp.h>
 
 #include <vector>
 
@@ -30,7 +31,7 @@ class ContestGenerator : public ::ContestGenerator::Server
 public:
     /// Contests will be generated in reverse order of contests; i.e. the vector will be traversed back to front
     /// Thus contests should contain the oldest/least relevant contest at the beginning and the newest at the end
-    ContestGenerator(std::vector<Contest::Reader> contests);
+    ContestGenerator(std::vector<Signed<Contest>::Reader> contests);
     virtual ~ContestGenerator();
 
 protected:
@@ -40,7 +41,7 @@ protected:
     ::kj::Promise<void> logEngagement(LogEngagementContext);
 
 private:
-    std::vector<Contest::Reader> contests;
+    std::vector<Signed<Contest>::Reader> contests;
 };
 
 } // namespace swv

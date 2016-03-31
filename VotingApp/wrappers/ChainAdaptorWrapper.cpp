@@ -65,17 +65,18 @@ kj::Promise<OwningWrapper<DecisionWrapper>*> ChainAdaptorWrapper::_getDecision(Q
     if (!hasAdaptor()) return KJ_EXCEPTION(FAILED, "No blockchain adaptor is set.");
 
     using Reader = ::Balance::Reader;
-    auto promise = m_adaptor->getContest(QByteArray::fromHex(contestId.toLocal8Bit())).then([=](::Contest::Reader c) {
+    auto promise = m_adaptor->getContest(QByteArray::fromHex(contestId.toLocal8Bit())).then(
+                       [=](::Signed<Contest>::Reader c) {
         return m_adaptor->getBalancesForOwner(owner).then([c](kj::Array<Reader> balances) {
             return std::make_tuple(c, kj::mv(balances));
         });
-    }).then([=](std::tuple<::Contest::Reader, kj::Array<Reader>> contestAndBalances) {
-        ::Contest::Reader contest;
+    }).then([=](std::tuple<::Signed<Contest>::Reader, kj::Array<Reader>> contestAndBalances) {
+        ::Signed<Contest>::Reader contest;
         kj::Array<Reader> balances;
         std::tie(contest, balances) = kj::mv(contestAndBalances);
 
         auto newEnd = std::remove_if(balances.begin(), balances.end(), [contest](Reader balance) {
-            return balance.getType() != contest.getContest().getCoin();
+            return balance.getType() != contest.getValue().getCoin();
         });
         KJ_REQUIRE(newEnd - balances.begin() > 0, "No balances found in the contest's coin, so no decision exists.");
 
@@ -197,9 +198,9 @@ Promise* ChainAdaptorWrapper::getContest(QString contestId)
 {
     QByteArray realContestId = QByteArray::fromHex(contestId.toLocal8Bit());
     if (hasAdaptor()) {
-        auto promise = m_adaptor->getContest(realContestId).then([this](::Contest::Reader r) {
+        auto promise = m_adaptor->getContest(realContestId).then([this](::Signed<::Contest>::Reader r) {
             //TODO: Check signature
-            auto contest = new ContestWrapper(r.getContest());
+            auto contest = new ContestWrapper(r.getValue());
             QQmlEngine::setObjectOwnership(contest, QQmlEngine::JavaScriptOwnership);
             auto decision = new OwningWrapper<DecisionWrapper>(contest);
 

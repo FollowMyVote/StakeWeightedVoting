@@ -20,7 +20,7 @@
 
 #include "StubChainAdaptor.hpp"
 
-#include <capnp/backend.capnp.h>
+#include <backend.capnp.h>
 
 namespace swv {
 
