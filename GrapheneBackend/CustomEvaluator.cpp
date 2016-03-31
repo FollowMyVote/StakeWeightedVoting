@@ -21,6 +21,7 @@
 
 #include <datagram.capnp.h>
 #include <decision.capnp.h>
+#include <contest.capnp.h>
 
 #include <capnp/serialize-packed.h>
 
@@ -52,6 +53,7 @@ void processDecision(gch::database& db, gch::account_balance_id_type publisherId
         KJ_REQUIRE(opinion.getOpinion() == 1, "Only opinions of 1 are supported", decision);
     }
 
+    // TODO: Move tally and untally logic to methods or visitors on Contest
     // Get previous decision
     auto& decisionIndex = db.get_index_type<DecisionIndex>().indices().get<ByVoter>();
     auto decisionItr = decisionIndex.upper_bound(boost::make_tuple(publisherId, contest.contestId));
@@ -108,6 +110,10 @@ void processDecision(gch::database& db, gch::account_balance_id_type publisherId
         });
 }
 
+void processContest(gch::database& db, ::Contest::Reader contest) {
+    // TODO
+}
+
 graphene::chain::void_result CustomEvaluator::do_apply(const CustomEvaluator::operation_type& op) {
     kj::ArrayPtr<const kj::byte> data(reinterpret_cast<const kj::byte*>(op.data.data()), op.data.size());
     if (data.size() <= VOTE_MAGIC->size() || data.slice(0, VOTE_MAGIC->size() - 1) != *VOTE_MAGIC)
@@ -118,20 +124,23 @@ graphene::chain::void_result CustomEvaluator::do_apply(const CustomEvaluator::op
         kj::ArrayInputStream dataStream(data.slice(VOTE_MAGIC->size(), data.size()));
         capnp::PackedMessageReader message(dataStream);
         auto datagram = message.getRoot<Datagram>();
+        kj::ArrayInputStream datagramContents(datagram.getContent());
+        capnp::PackedMessageReader datagramMessage(datagramContents);
 
         switch (datagram.getIndex().getType()) {
         case Datagram::DatagramType::DECISION: {
-            kj::ArrayInputStream datagramContents(datagram.getContent());
-            capnp::PackedMessageReader datagramMessage(datagramContents);
             auto publisherId = unpack<gch::account_balance_id_type>(datagram.getIndex().getKey());
             KJ_REQUIRE(publisherId(db()).owner == op.fee_payer(),
                        "Nice try. You may not publish decisions for someone else");
             processDecision(db(), publisherId, datagramMessage.getRoot<::Decision>());
             break;
         }
-        case Datagram::DatagramType::CONTEST:
-            // TODO
+        case Datagram::DatagramType::CONTEST: {
+            KJ_REQUIRE(kj::StringPtr(op.fee_payer()(db()).name) == CONTEST_PUBLISHING_ACCOUNT,
+                       "Unauthorized account attempted to publish contest",
+                       op.fee_payer()(db()).name, *CONTEST_PUBLISHING_ACCOUNT);
             break;
+        }
         }
     } catch (kj::Exception& e) {
         KJ_LOG(WARNING, "Exception while processing datagram", e, data);
