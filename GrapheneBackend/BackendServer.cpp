@@ -17,21 +17,27 @@
  */
 #include "BackendServer.hpp"
 
+#include <kj/debug.h>
+
 BackendServer::BackendServer() {}
 BackendServer::~BackendServer() {}
 
-
 ::kj::Promise<void> BackendServer::getContestFeed(Backend::Server::GetContestFeedContext context) {
+    return KJ_EXCEPTION(UNIMPLEMENTED, "NYI");
 }
 
 ::kj::Promise<void> BackendServer::searchContests(Backend::Server::SearchContestsContext context) {
+    return KJ_EXCEPTION(UNIMPLEMENTED, "NYI");
 }
 
 ::kj::Promise<void> BackendServer::getContestResults(Backend::Server::GetContestResultsContext context) {
+    return KJ_EXCEPTION(UNIMPLEMENTED, "NYI");
 }
 
 ::kj::Promise<void> BackendServer::createContest(Backend::Server::CreateContestContext context) {
+    return KJ_EXCEPTION(UNIMPLEMENTED, "NYI");
 }
 
 ::kj::Promise<void> BackendServer::getCoinDetails(Backend::Server::GetCoinDetailsContext context) {
+    return KJ_EXCEPTION(UNIMPLEMENTED, "NYI");
 }
