@@ -97,7 +97,7 @@ void BackendPlugin::acceptLoop() {
 kj::Own<BackendPlugin::ClientConnection> BackendPlugin::prepareClient(kj::Own<fc::tcp_socket> clientSocket) {
     // TODO: authenticate client, setup encryption
     return kj::heap<BackendPlugin::ClientConnection>(kj::heap<BackendServer>(),
-                                                 kj::heap<FcStreamWrapper>(kj::mv(clientSocket)));
+                                                     kj::heap<FcStreamWrapper>(kj::mv(clientSocket)));
 }
 
 } // namespace swv

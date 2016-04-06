@@ -57,7 +57,7 @@ FcStreamWrapper::~FcStreamWrapper() {}
 
 kj::Promise<void> FcStreamWrapper::write(const void* buffer, size_t size) {
     if (flushWrites)
-        return KJ_EXCEPTION(FAILED, "write() called after shutdownWrite() has been called");
+        return KJ_EXCEPTION(DISCONNECTED, "write() called after shutdownWrite() has been called");
     auto promiseAndFulfiller = kj::newPromiseAndFulfiller<void>();
 
     pendingWrites.emplace(kj::mv(promiseAndFulfiller.fulfiller), buffer, size);
@@ -67,7 +67,7 @@ kj::Promise<void> FcStreamWrapper::write(const void* buffer, size_t size) {
 
 kj::Promise<void> FcStreamWrapper::write(kj::ArrayPtr<const kj::ArrayPtr<const kj::byte>> pieces) {
     if (flushWrites)
-        return KJ_EXCEPTION(FAILED, "write() called after shutdownWrite() has been called");
+        return KJ_EXCEPTION(DISCONNECTED, "write() called after shutdownWrite() has been called");
     return kj::joinPromises(KJ_MAP(piece, pieces) {
                                 return write(piece.begin(), piece.size());
                             });
@@ -75,7 +75,7 @@ kj::Promise<void> FcStreamWrapper::write(kj::ArrayPtr<const kj::ArrayPtr<const k
 
 kj::Promise<size_t> FcStreamWrapper::read(void* buffer, size_t minBytes, size_t maxBytes) {
     if (eof)
-        return KJ_EXCEPTION(FAILED, "EOF when attempting to read", eof, minBytes);
+        return KJ_EXCEPTION(DISCONNECTED, "EOF when attempting to read", eof, minBytes);
     auto promiseAndFulfiller = kj::newPromiseAndFulfiller<size_t>();
 
     pendingReads.emplace(kj::mv(promiseAndFulfiller.fulfiller), buffer, minBytes, maxBytes, false);
@@ -117,9 +117,16 @@ void FcStreamWrapper::startReads() {
 void FcStreamWrapper::processWrites() {
     while (!pendingWrites.empty()) {
         auto& currentWrite = pendingWrites.front();
-        wrappedStream->write(static_cast<const char*>(currentWrite.buffer), currentWrite.length);
-        if (currentWrite.fulfiller->isWaiting())
+        if (!eof) {
+            wrappedStream->write(static_cast<const char*>(currentWrite.buffer), currentWrite.length);
             currentWrite.fulfiller->fulfill();
+        } else {
+            // When FC streams (at least, fc::tcp_sockets) read EOF, writing tends to hang forever. I attempted to
+            // write anyways with fc::async and a timeout, but fc::future::wait(100ms) also hangs forever (!) when
+            // I tried to write to the stream in the async call.
+            currentWrite.fulfiller->reject(KJ_EXCEPTION(DISCONNECTED,
+                                                        "Cowardly refusing to write to EOF'd FC stream."));
+        }
         pendingWrites.pop();
     }
 
@@ -153,7 +160,7 @@ void FcStreamWrapper::processReads()
             if (currentRead.truncateForEof)
                 currentRead.fulfiller->fulfill(kj::mv(totalBytes));
             else
-                currentRead.fulfiller->reject(KJ_EXCEPTION(FAILED, "EOF when attempting to read",
+                currentRead.fulfiller->reject(KJ_EXCEPTION(DISCONNECTED, "EOF when attempting to read",
                                                            totalBytes, currentRead.minBytes));
         }
         pendingReads.pop();
