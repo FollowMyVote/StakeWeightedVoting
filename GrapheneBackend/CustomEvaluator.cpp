@@ -38,6 +38,13 @@ inline T unpack(capnp::Data::Reader r) {
     return fc::raw::unpack<T>(std::vector<char>(r.begin(), r.end()));
 }
 
+inline std::map<std::string, std::string> convertMap(::Map<capnp::Text, capnp::Text>::Reader map) {
+    std::map<std::string, std::string> result;
+    for (const auto& pair : map.getEntries())
+        result[pair.getKey()] = pair.getValue();
+    return result;
+}
+
 void processDecision(gch::database& db, gch::account_balance_id_type publisherId, ::Decision::Reader decision) {
     KJ_REQUIRE(decision.getOpinions().size() <= 1, "Only single-candidate votes are supported", decision);
     // Recall that contests are ID'd by their operation history ID, not the object ID
@@ -111,8 +118,22 @@ void processDecision(gch::database& db, gch::account_balance_id_type publisherId
         });
 }
 
-void processContest(gch::database& db, ::Signed<::Contest>::Reader contest) {
-    // TODO
+void processContest(gch::database& db, ::Contest::Reader contest) {
+    // All relevant data consistency checks should have been done before FMV published the contest to the chain.
+    db.create<Contest>([&db, contest](Contest& c) {
+        auto& index = db.get_index_type<gch::simple_index<gch::operation_history_object>>();
+        c.contestId = gch::operation_history_id_type(index.size() - 1);
+        // TODO: set c.creator if creator is public. Not yet sure how to get the creator's signature...
+        c.creator = GRAPHENE_NULL_ACCOUNT;
+        c.name = contest.getName();
+        c.description = contest.getDescription();
+        c.tags = convertMap(contest.getTags());
+        c.contestants = convertMap(contest.getContestants());
+        c.coin = gch::asset_id_type(contest.getCoin());
+        c.creationTime = db.head_block_time();
+        c.startTime = fc::time_point(fc::milliseconds(contest.getStartTime()));
+        c.endTime = fc::time_point(fc::milliseconds(contest.getEndTime()));
+    });
 }
 
 graphene::chain::void_result CustomEvaluator::do_apply(const CustomEvaluator::operation_type& op) {
@@ -140,6 +161,7 @@ graphene::chain::void_result CustomEvaluator::do_apply(const CustomEvaluator::op
             KJ_REQUIRE(kj::StringPtr(op.fee_payer()(db()).name) == CONTEST_PUBLISHING_ACCOUNT,
                        "Unauthorized account attempted to publish contest",
                        op.fee_payer()(db()).name, *CONTEST_PUBLISHING_ACCOUNT);
+            processContest(db(), datagramMessage.getRoot<::Contest>());
             break;
         }
         }

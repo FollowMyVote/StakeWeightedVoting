@@ -43,9 +43,12 @@ public:
     std::map<std::string, std::string> contestants;
     gch::asset_id_type coin;
     fc::time_point creationTime;
+    fc::time_point startTime;
     fc::time_point endTime;
 
+    /// Dynamic property -- could be extracted into a separate object to improve performance
     std::map<int32_t, int64_t> contestantResults;
+    /// Dynamic property -- could be extracted into a separate object to improve performance
     std::map<std::string, int64_t> writeInResults;
 };
 
@@ -64,7 +67,7 @@ using ContestIndex = gch::generic_index<Contest, ContestObjectMultiIndex>;
 } // namespace swv
 
 FC_REFLECT_DERIVED(swv::Contest, (graphene::db::object),
-                   (contestId)(creator)(name)(description)(tags)(contestants)(coin)(creationTime)(endTime)
+                   (contestId)(creator)(name)(description)(tags)(contestants)(coin)(creationTime)(startTime)(endTime)
                    (contestantResults)(writeInResults))
 
 #endif // CONTEST_HPP
