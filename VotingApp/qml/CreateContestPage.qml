@@ -51,6 +51,8 @@ Page {
             onCompleted: swiper.currentIndex++
         }
         SponsorshipForm {
+            onBack: swiper.currentIndex--
+
             onCompleted: {
                 try {
                     var purchaseRequest = contestCreator.getPurchaseContestRequest()
@@ -103,6 +105,7 @@ Page {
         anchors.horizontalCenter: parent.horizontalCenter
         pages: swiper.count
         currentPage: swiper.currentIndex
+        indicatorSize: window.dp(8)
     }
 
     Component {
