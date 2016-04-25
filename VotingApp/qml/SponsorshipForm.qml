@@ -29,6 +29,7 @@ Flickable {
     property alias incentive: incentiveField.text
 
     signal completed
+    signal back
 
     flickableDirection: Flickable.VerticalFlick
     
@@ -96,11 +97,20 @@ Flickable {
                 }
             }
         }
+        Row{
+            spacing: window.dp(16)
+        AppButton {
+            implicitWidth: contentWidth
+            implicitHeight: contentHeight
+            text: qsTr("Back")
+            onClicked: back()
+        }
+
         AppButton {
             implicitWidth: contentWidth
             implicitHeight: contentHeight
             text: qsTr("Continue")
             onClicked: completed()
-        }
+        }}
     }
 }

@@ -1,5 +1,6 @@
 import QtQuick 2.5
 import QtQuick.Layouts 1.1
+import QtQuick.Controls 1.4
 
 import VPlayApps 1.0
 
@@ -46,31 +47,31 @@ Item {
         interactive: true
         flickableDirection: Flickable.VerticalFlick
         contentHeight: createContestFormColumn.height
-        
-        ExtraAnchors.leftDock: parent
-        anchors.right: parent.horizontalCenter
+        width: parent.width
         anchors.rightMargin: window.dp(8)
         
         Column {
             id: createContestFormColumn
             width: parent.width
             spacing: window.dp(8)
+            anchors.centerIn: parent
             ExtraAnchors.topLeftCorner: parent
             anchors.margins: window.dp(16)
             
             AppTextField {
                 id: contestName
-                width: parent.width
+                width: parent.width - window.dp(32)
                 placeholderText: qsTr("Contest Name")
-                maximumLength: contestLimits[ContestLimits.NameLength]
+//                maximumLength: contestLimits[ContestLimits.NameLength]
                 Component.onCompleted: forceActiveFocus()
                 KeyNavigation.tab: contestDescription
             }
-            AppTextEdit {
+            // Temporarily a one line field because multi line edits aren't developed enough
+            AppTextField {
                 id: contestDescription
-                width: parent.width
+                width: parent.width - window.dp(32)
                 placeholderText: qsTr("Description")
-                wrapMode: TextEdit.Wrap
+//                wrapMode: TextEdit.Wrap
             }
             Row {
                 spacing: window.dp(8)
@@ -78,7 +79,10 @@ Item {
                 AppText {
                     id: weightCoinLabel
                     text: qsTr("Coin to Poll:")
+                    font.pixelSize: sp(18)
+
                 }
+
                 ComboList {
                     id: weightCoin
                     width: window.dp(120)
@@ -92,6 +96,8 @@ Item {
             }
             Column {
                 width: parent.width
+//                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.centerIn:parent
                 spacing: window.dp(8)
                 Repeater {
                     id: contestantRepeater
@@ -164,7 +170,9 @@ Item {
                 AppText {
                     id: contestEndsLabel
                     text: qsTr("Contest Ends")
+                    font.pixelSize: sp(16)
                 }
+
                 ComboList {
                     id: contestEndsTime
                     width: window.dp(100)
@@ -175,8 +183,11 @@ Item {
                     Component.onCompleted: currentIdx = 0
                 }
             }
+            Calendar{
+
+            }
             AppButton {
-                text: qsTr("Continue")
+                text: qsTr("Continue >>")
                 onClicked: completed()
                 implicitHeight: contentHeight
                 implicitWidth: contentWidth
