@@ -20,7 +20,7 @@ See [Architecture](Architecture.md) for more information on how the components i
 - [Cap'n Proto](https://capnproto.org) 0.5.3+
 - [Qt](https://qt.io) 5.6+ including QBS
 - [V-Play](http://v-play.net) 2.7.0+
-- [Graphene](https://github.com/followmyvote/graphene) (Optional)
+- [Graphene](https://github.com/cryptonomex/graphene) (Optional)
  - Be sure to use develop branch!
  
 A video showing how to set up the development environment is available [here](https://youtu.be/lvTyZ0GAT-k)
