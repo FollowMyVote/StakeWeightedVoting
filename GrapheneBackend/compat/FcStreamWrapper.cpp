@@ -23,33 +23,6 @@
 
 namespace swv {
 
-struct FcStreamWrapper::WriteContext {
-    WriteContext(kj::Own<kj::PromiseFulfiller<void>>&& fulfiller, const void* buffer, size_t length)
-        : fulfiller(kj::mv(fulfiller)),
-          buffer(buffer),
-          length(length) {}
-
-    kj::Own<kj::PromiseFulfiller<void>> fulfiller;
-    const void* buffer = nullptr;
-    size_t length = 0;
-};
-
-struct FcStreamWrapper::ReadContext {
-    ReadContext(kj::Own<kj::PromiseFulfiller<size_t>>&& fulfiller, void* buffer,
-                size_t minBytes, size_t maxBytes, bool truncateForEof)
-        : fulfiller(kj::mv(fulfiller)),
-          buffer(buffer),
-          minBytes(minBytes),
-          maxBytes(maxBytes),
-          truncateForEof(truncateForEof) {}
-
-    kj::Own<kj::PromiseFulfiller<size_t>> fulfiller;
-    void* buffer;
-    size_t minBytes;
-    size_t maxBytes;
-    bool truncateForEof;
-};
-
 FcStreamWrapper::FcStreamWrapper(kj::Own<fc::iostream> wrappedStream)
     : wrappedStream(kj::mv(wrappedStream)) {}
 

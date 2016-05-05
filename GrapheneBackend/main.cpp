@@ -81,7 +81,7 @@ int main(int argc, char** argv) {
             ("data-dir,d", bpo::value<boost::filesystem::path>()->default_value(
 #ifdef __linux__
                  fc::app_path() / ".followmyvote/GrapheneBackendData"),
-#elif
+#else
                  fc::app_path() / "Follow My Vote/GrapheneBackendData"),
 #endif
              "Directory containing databases, configuration file, etc.")
@@ -125,17 +125,6 @@ int main(int argc, char** argv) {
          // get the basic options
          bpo::store(bpo::parse_config_file<char>(config_ini_path.preferred_string().c_str(), cfg_options, true), options);
 
-         // try to get logging options from the config file.
-         try
-         {
-            fc::optional<fc::logging_config> logging_config = load_logging_config_from_ini_file(config_ini_path);
-            if (logging_config)
-               fc::configure_logging(*logging_config);
-         }
-         catch (const fc::exception&)
-         {
-            wlog("Error parsing logging config from config file ${config}, using default config", ("config", config_ini_path.preferred_string()));
-         }
       }
       else
       {
