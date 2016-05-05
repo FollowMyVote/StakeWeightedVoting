@@ -214,7 +214,8 @@ kj::Promise<void> StubChainAdaptor::publishDatagram(QByteArray payerBalanceId, Q
             builder.setAmount(builder.getAmount() - 10);
 
             auto index = dgram.getReader().getIndex();
-            KJ_LOG(DBG, "Publishing datagram.", publisherBalanceId.toHex().toStdString(), static_cast<uint16_t>(index.getType()), index.getKey());
+            KJ_LOG(DBG, "Storing datagram in stub chain",
+                   publisherBalanceId.toHex().toStdString(), static_cast<uint16_t>(index.getType()), index.getKey());
             std::vector<kj::byte> key(index.getKey().begin(), index.getKey().end());
             datagrams[std::make_tuple(publisherBalanceId, index.getType(), kj::mv(key))] = kj::mv(dgram);
             return kj::READY_NOW;
