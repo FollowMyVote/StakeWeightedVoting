@@ -17,14 +17,15 @@
  */
 #include "BackendPlugin.hpp"
 #include "BackendServer.hpp"
+#include "VoteDatabase.hpp"
+#include "compat/FcStreamWrapper.hpp"
 
-#include <TwoPartyServer.hpp>
+#include <capnp/rpc-twoparty.h>
 
 namespace swv {
 
 BackendPlugin::BackendPlugin()
-    : server(kj::heap<TwoPartyServer>(kj::heap<BackendServer>())) {}
-
+    : tasks(errorLogger) {}
 BackendPlugin::~BackendPlugin() noexcept {}
 
 std::string BackendPlugin::plugin_name() const {
@@ -33,12 +34,23 @@ std::string BackendPlugin::plugin_name() const {
 
 void BackendPlugin::plugin_initialize(const boost::program_options::variables_map& options) {
     serverPort = options["port"].as<uint16_t>();
+    database = kj::heap<VoteDatabase>(*app().chain_database());
+    database->registerIndexes();
+    KJ_LOG(INFO, "Follow My Vote plugin initialized");
 }
 
 void BackendPlugin::plugin_startup() {
+    running = true;
+    server.listen(serverPort);
+    KJ_LOG(INFO, "Server is up", server.get_port());
+    fc::async([this]{acceptLoop();});
 }
 
 void BackendPlugin::plugin_shutdown() {
+    KJ_LOG(INFO, "Follow My Vote plugin shutting down");
+    running = false;
+    server.close();
+    clients.clear();
 }
 
 void BackendPlugin::plugin_set_program_options(boost::program_options::options_description& command_line_options,
@@ -48,6 +60,44 @@ void BackendPlugin::plugin_set_program_options(boost::program_options::options_d
                                        "The port for the server to listen on");
     config_file_options.add_options()("port,p", bpo::value<uint16_t>()->default_value(17073),
                                       "The port for the server to listen on");
+}
+
+struct BackendPlugin::ClientConnection {
+    BackendServer& server;
+    kj::Own<kj::AsyncIoStream> connection;
+    capnp::TwoPartyVatNetwork network;
+    capnp::RpcSystem<capnp::rpc::twoparty::VatId> rpcSystem;
+
+    ClientConnection(kj::Own<BackendServer> server,
+                 kj::Own<kj::AsyncIoStream>&& connectionParam)
+        : server(*server),
+          connection(kj::mv(connectionParam)),
+          network(*connection, capnp::rpc::twoparty::Side::SERVER),
+          rpcSystem(makeRpcServer(network, kj::mv(server))) {}
+};
+
+void BackendPlugin::acceptLoop() {
+    while (running) {
+        try {
+            auto client = kj::heap<fc::tcp_socket>();
+            server.accept(*client);
+            auto clientId = nextClientId++;
+            KJ_LOG(INFO, "FMV client connected", std::string(client->remote_endpoint()), clientId);
+            auto itr = clients.emplace(std::make_pair(clientId, prepareClient(kj::mv(client)))).first;
+            tasks.add(itr->second->network.onDisconnect().then([this, clientId] {
+                KJ_LOG(INFO, "FMV client disconnected", clientId);
+                clients.erase(clientId);
+            }));
+        } catch (kj::Exception e) {
+            KJ_LOG(ERROR, "Exception while processing client", e);
+        }
+    }
+}
+
+kj::Own<BackendPlugin::ClientConnection> BackendPlugin::prepareClient(kj::Own<fc::tcp_socket> clientSocket) {
+    // TODO: authenticate client, setup encryption
+    return kj::heap<BackendPlugin::ClientConnection>(kj::heap<BackendServer>(),
+                                                     kj::heap<FcStreamWrapper>(kj::mv(clientSocket)));
 }
 
 } // namespace swv

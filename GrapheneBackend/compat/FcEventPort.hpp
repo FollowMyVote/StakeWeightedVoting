@@ -20,6 +20,8 @@
 
 #include <kj/async.h>
 
+namespace swv {
+
 class FcEventPort : public kj::EventPort
 {
     // Simple EventPort implementation to allow a KJ event loop to run in a thread scheduled by an FC event loop
@@ -46,5 +48,7 @@ public:
     virtual bool poll() override;
     virtual void setRunnable(bool runnable) override;
 };
+
+} // namespace swv
 
 #endif // FCEVENTPORT_HPP

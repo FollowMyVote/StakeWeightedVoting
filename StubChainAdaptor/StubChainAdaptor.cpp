@@ -17,14 +17,16 @@
  */
 #include "BackendStub.hpp"
 
+#include <signed.capnp.h>
+
 #include <capnp/dynamic.h>
 
 #include <QDebug>
 #include <QDateTime>
 
-#include <functional>
-
 #include <kj/debug.h>
+
+#include <functional>
 
 namespace swv {
 
@@ -87,7 +89,7 @@ StubChainAdaptor::StubChainAdaptor(QObject* parent)
     balance.setAmount(1000000000);
     balance.setType(0);
 
-    auto contest = createContest().getContest();
+    auto contest = createContest().getValue();
     contest.setCoin(1);
     contest.setName("Lunch poll");
     contest.setDescription("Where should we go for lunch?");
@@ -102,15 +104,15 @@ StubChainAdaptor::StubChainAdaptor(QObject* parent)
     contestants[2].setValue("Sub Shop on University City Blvd");
 
     // Total of 10 contests
-    createContest().setContest(contests.back().getReader().getContest());
-    createContest().setContest(contests.back().getReader().getContest());
-    createContest().setContest(contests.back().getReader().getContest());
-    createContest().setContest(contests.back().getReader().getContest());
-    createContest().setContest(contests.back().getReader().getContest());
-    createContest().setContest(contests.back().getReader().getContest());
-    createContest().setContest(contests.back().getReader().getContest());
-    createContest().setContest(contests.back().getReader().getContest());
-    createContest().setContest(contests.back().getReader().getContest());
+    createContest().setValue(contests.back().getReader().getValue());
+    createContest().setValue(contests.back().getReader().getValue());
+    createContest().setValue(contests.back().getReader().getValue());
+    createContest().setValue(contests.back().getReader().getValue());
+    createContest().setValue(contests.back().getReader().getValue());
+    createContest().setValue(contests.back().getReader().getValue());
+    createContest().setValue(contests.back().getReader().getValue());
+    createContest().setValue(contests.back().getReader().getValue());
+    createContest().setValue(contests.back().getReader().getValue());
 }
 
 StubChainAdaptor::~StubChainAdaptor() noexcept {}
@@ -169,10 +171,10 @@ kj::Promise<kj::Array<Balance::Reader>> StubChainAdaptor::getBalancesForOwner(QS
     return results.finish();
 }
 
-Contest::Reader StubChainAdaptor::getContest(capnp::Data::Reader contestId) const
+Signed<Contest>::Reader StubChainAdaptor::getContest(capnp::Data::Reader contestId) const
 {
     for (auto& contest : contests)
-        if (contest.getReader().getContest().getId() == contestId)
+        if (contest.getReader().getValue().getId() == contestId)
             return contest.getReader();
     KJ_FAIL_REQUIRE("Could not find the specified contest", contestId);
 }
@@ -187,10 +189,10 @@ Datagram::Builder StubChainAdaptor::createDatagram()
     return KJ_ASSERT_NONNULL(pendingDatagram).get();
 }
 
-kj::Promise<Contest::Reader> StubChainAdaptor::getContest(QByteArray contestId) const
+kj::Promise<Signed<Contest>::Reader> StubChainAdaptor::getContest(QByteArray contestId) const
 {
     for (auto& contest : contests)
-        if (*contest.getReader().getContest().getId().begin() == *contestId.begin())
+        if (*contest.getReader().getValue().getId().begin() == *contestId.begin())
             return contest.getReader();
     return KJ_EXCEPTION(FAILED, "Could not find the specified contest", contestId.toHex().toStdString());
 }
@@ -329,10 +331,11 @@ kj::Maybe<const capnp::Orphan<Coin>&> StubChainAdaptor::getCoinOrphan(QString na
     return *itr;
 }
 
-Contest::Builder StubChainAdaptor::createContest()
+Signed<Contest>::Builder StubChainAdaptor::createContest()
 {
-    auto newContest = contests.emplace(contests.begin(), message.getOrphanage().newOrphan<::Contest>())->get();
-    newContest.initContest().initId(1)[0] = contests.size() - 1;
+    auto newContest = contests.emplace(contests.begin(),
+                                       message.getOrphanage().newOrphan<::Signed<::Contest>>())->get();
+    newContest.initValue().initId(1)[0] = contests.size() - 1;
     return newContest;
 }
 

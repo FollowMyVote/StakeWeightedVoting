@@ -355,8 +355,7 @@ Promise* VotingSystem::castCurrentDecision(swv::ContestWrapper* contest) {
         for (auto balance : balances) {
             auto dgram = chain->getNewDatagram();
             dgram.initIndex().setType(Datagram::DatagramType::DECISION);
-            auto binaryId = QByteArray::fromHex(contest->id().toLocal8Bit());
-            dgram.getIndex().setKey(convertBlob(binaryId));
+            dgram.getIndex().setKey(balance.getId());
             dgram.setContent(convertBlob(serialDecision));
 
             promises.add(chain->adaptor()->publishDatagram(convertBlob(balance.getId())));

@@ -41,10 +41,33 @@ class FcStreamWrapper : public kj::AsyncIoStream
     // This class allows subsequent calls to read(), tryRead(), or write() before previous calls' promises have
     // resolved, and will fulfill promises in order and with uncorrupted data.
 
-    struct WriteContext;
-    struct ReadContext;
+    struct WriteContext {
+        WriteContext(kj::Own<kj::PromiseFulfiller<void>>&& fulfiller, const void* buffer, size_t length)
+            : fulfiller(kj::mv(fulfiller)),
+              buffer(buffer),
+              length(length) {}
 
-    fc::iostream& wrappedStream;
+        kj::Own<kj::PromiseFulfiller<void>> fulfiller;
+        const void* buffer = nullptr;
+        size_t length = 0;
+    };
+    struct ReadContext {
+        ReadContext(kj::Own<kj::PromiseFulfiller<size_t>>&& fulfiller, void* buffer,
+                    size_t minBytes, size_t maxBytes, bool truncateForEof)
+            : fulfiller(kj::mv(fulfiller)),
+              buffer(buffer),
+              minBytes(minBytes),
+              maxBytes(maxBytes),
+              truncateForEof(truncateForEof) {}
+
+        kj::Own<kj::PromiseFulfiller<size_t>> fulfiller;
+        void* buffer;
+        size_t minBytes;
+        size_t maxBytes;
+        bool truncateForEof;
+    };
+
+    kj::Own<fc::iostream> wrappedStream;
 
     std::queue<WriteContext> pendingWrites;
     bool writesProcessing = false;
@@ -55,7 +78,7 @@ class FcStreamWrapper : public kj::AsyncIoStream
     bool eof = false;
 
 public:
-    FcStreamWrapper(fc::iostream& wrappedStream);
+    FcStreamWrapper(kj::Own<fc::iostream> wrappedStream);
     virtual ~FcStreamWrapper();
 
     // AsyncOutputStream interface

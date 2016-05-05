@@ -14,23 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with SWV.  If not, see <http://www.gnu.org/licenses/>.
 
-@0xd073c95fea7a1ec4;
+@0xcad2eddd7876acbe;
 
-using Map = import "map.capnp".Map;
-
-const contestPublishingAccount :Text = "follow-my-vote";
-
-struct Contest {
-    id @0 :Data;
-    name @1 :Text;
-    description @2 :Text;
-    tags @3 :Map(Text, Text);
-    # Map of key to value
-    contestants @4 :Map(Text, Text);
-    # Map of name to description
-    coin @5 :UInt64;
-    startTime @6 :UInt64;
-    # Millisecond timestamp of contest beginning
-    endTime @7 :UInt64;
-    # Millisecond timestamp of contest end
+struct Signed(Value) {
+    value @0 :Value;
+    signature @1 :Data;
 }

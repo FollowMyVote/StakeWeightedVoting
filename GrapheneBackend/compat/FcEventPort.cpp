@@ -20,6 +20,8 @@
 
 #include <fc/thread/thread.hpp>
 
+namespace swv {
+
 void FcEventPort::processKjEvents()
 {
     if (kjLoop)
@@ -50,3 +52,5 @@ void FcEventPort::setRunnable(bool runnable) {
         // Schedule the kj events to be processed
         fc::async([this]{processKjEvents();});
 }
+
+} // namespace swv

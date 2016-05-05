@@ -25,10 +25,11 @@
 #include <kj/common.h>
 #include <kj/debug.h>
 
-#include "balance.capnp.h"
-#include "coin.capnp.h"
-#include "datagram.capnp.h"
-#include "contest.capnp.h"
+#include "capnp/balance.capnp.h"
+#include "capnp/coin.capnp.h"
+#include "capnp/datagram.capnp.h"
+#include "capnp/contest.capnp.h"
+#include "capnp/signed.capnp.h"
 
 /**
  * @brief The BlockchainAdaptorInterface class defines an interface which blockchain adaptors must implement
@@ -88,7 +89,7 @@ public:
      * @param contestId ID of the contest to retrieve
      * @return Promise for the contest having the provided ID. Promise will be broken if contest is not found.
      */
-    virtual kj::Promise<Contest::Reader> getContest(QByteArray contestId) const = 0;
+    virtual kj::Promise<::Signed<Contest>::Reader> getContest(QByteArray contestId) const = 0;
 
     /**
      * @brief Create a datagram for publishing

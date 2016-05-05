@@ -36,7 +36,7 @@ namespace swv {
  * concept of the Current Decision for the contest. The current decision is the @ref swv::Decision which should be
  * displayed in the UI as the decision on the contest.
  */
-class ContestWrapper : public QObject, public ::UnsignedContest::Reader
+class ContestWrapper : public QObject, public ::Contest::Reader
 {
 private:
     Q_OBJECT
@@ -52,7 +52,7 @@ private:
     OwningWrapper<DecisionWrapper>* m_currentDecision = nullptr;
 
 public:
-    ContestWrapper(::UnsignedContest::Reader r, QObject* parent = nullptr);
+    ContestWrapper(::Contest::Reader r, QObject* parent = nullptr);
 
     // Hexadecimal string containing the ID of the contest
     QString id() const;

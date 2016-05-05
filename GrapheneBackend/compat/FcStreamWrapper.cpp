@@ -23,42 +23,14 @@
 
 namespace swv {
 
-struct FcStreamWrapper::WriteContext {
-    WriteContext(kj::Own<kj::PromiseFulfiller<void>>&& fulfiller, const void* buffer, size_t length)
-        : fulfiller(kj::mv(fulfiller)),
-          buffer(buffer),
-          length(length) {}
-
-    kj::Own<kj::PromiseFulfiller<void>> fulfiller;
-    const void* buffer = nullptr;
-    size_t length = 0;
-};
-
-struct FcStreamWrapper::ReadContext {
-    ReadContext(kj::Own<kj::PromiseFulfiller<size_t>>&& fulfiller, void* buffer,
-                size_t minBytes, size_t maxBytes, bool truncateForEof)
-        : fulfiller(kj::mv(fulfiller)),
-          buffer(buffer),
-          minBytes(minBytes),
-          maxBytes(maxBytes),
-          truncateForEof(truncateForEof) {}
-
-    kj::Own<kj::PromiseFulfiller<size_t>> fulfiller;
-    void* buffer;
-    size_t minBytes;
-    size_t maxBytes;
-    bool truncateForEof;
-};
-
-FcStreamWrapper::FcStreamWrapper(fc::iostream& wrappedStream)
-    : wrappedStream(wrappedStream) {}
+FcStreamWrapper::FcStreamWrapper(kj::Own<fc::iostream> wrappedStream)
+    : wrappedStream(kj::mv(wrappedStream)) {}
 
 FcStreamWrapper::~FcStreamWrapper() {}
 
-
 kj::Promise<void> FcStreamWrapper::write(const void* buffer, size_t size) {
     if (flushWrites)
-        return KJ_EXCEPTION(FAILED, "write() called after shutdownWrite() has been called");
+        return KJ_EXCEPTION(DISCONNECTED, "write() called after shutdownWrite() has been called");
     auto promiseAndFulfiller = kj::newPromiseAndFulfiller<void>();
 
     pendingWrites.emplace(kj::mv(promiseAndFulfiller.fulfiller), buffer, size);
@@ -68,7 +40,7 @@ kj::Promise<void> FcStreamWrapper::write(const void* buffer, size_t size) {
 
 kj::Promise<void> FcStreamWrapper::write(kj::ArrayPtr<const kj::ArrayPtr<const kj::byte>> pieces) {
     if (flushWrites)
-        return KJ_EXCEPTION(FAILED, "write() called after shutdownWrite() has been called");
+        return KJ_EXCEPTION(DISCONNECTED, "write() called after shutdownWrite() has been called");
     return kj::joinPromises(KJ_MAP(piece, pieces) {
                                 return write(piece.begin(), piece.size());
                             });
@@ -76,7 +48,7 @@ kj::Promise<void> FcStreamWrapper::write(kj::ArrayPtr<const kj::ArrayPtr<const k
 
 kj::Promise<size_t> FcStreamWrapper::read(void* buffer, size_t minBytes, size_t maxBytes) {
     if (eof)
-        return KJ_EXCEPTION(FAILED, "EOF when attempting to read", eof, minBytes);
+        return KJ_EXCEPTION(DISCONNECTED, "EOF when attempting to read", eof, minBytes);
     auto promiseAndFulfiller = kj::newPromiseAndFulfiller<size_t>();
 
     pendingReads.emplace(kj::mv(promiseAndFulfiller.fulfiller), buffer, minBytes, maxBytes, false);
@@ -101,49 +73,44 @@ void FcStreamWrapper::shutdownWrite() {
 
 void FcStreamWrapper::startWrites() {
     // If there is not already a context processing pending writes, queue one up
-    if (!writesProcessing)
+    if (!writesProcessing) {
+        writesProcessing = true;
         fc::async([this] {processWrites();});
+    }
 }
 
 void FcStreamWrapper::startReads() {
     // If there is not already a context processing pending reads, queue one up
-    if (!readsProcessing)
+    if (!readsProcessing) {
+        readsProcessing = true;
         fc::async([this] {processReads();});
+    }
 }
 
-class FlagGuard {
-    // This is a canary class. It sets the guarded boolean to true when created, and sets it to false when destroyed.
-
-    bool& guardedFlag;
-
-public:
-    FlagGuard (bool& guardedFlag)
-        : guardedFlag(guardedFlag) {
-        this->guardedFlag = true;
-    }
-    ~FlagGuard() {
-        guardedFlag = false;
-    }
-};
-
 void FcStreamWrapper::processWrites() {
-    FlagGuard guard(writesProcessing);
-
     while (!pendingWrites.empty()) {
         auto& currentWrite = pendingWrites.front();
-        wrappedStream.write(static_cast<const char*>(currentWrite.buffer), currentWrite.length);
-        currentWrite.fulfiller->fulfill();
+        if (!eof) {
+            wrappedStream->write(static_cast<const char*>(currentWrite.buffer), currentWrite.length);
+            currentWrite.fulfiller->fulfill();
+        } else {
+            // When FC streams (at least, fc::tcp_sockets) read EOF, writing tends to hang forever. I attempted to
+            // write anyways with fc::async and a timeout, but fc::future::wait(100ms) also hangs forever (!) when
+            // I tried to write to the stream in the async call.
+            currentWrite.fulfiller->reject(KJ_EXCEPTION(DISCONNECTED,
+                                                        "Cowardly refusing to write to EOF'd FC stream."));
+        }
         pendingWrites.pop();
     }
 
     if (flushWrites)
-        wrappedStream.flush();
+        wrappedStream->flush();
+
+    writesProcessing = false;
 }
 
 void FcStreamWrapper::processReads()
 {
-    FlagGuard guard(readsProcessing);
-
     while (!pendingReads.empty()) {
         auto& currentRead = pendingReads.front();
         size_t totalBytes = 0;
@@ -153,20 +120,26 @@ void FcStreamWrapper::processReads()
             while (totalBytes < currentRead.minBytes) {
                 // Ask for maxBytes -- readsome will give us all of them if they're available, or fewer if not.
                 // It will only throw if it gets an EOF before the first byte is read.
-                totalBytes += wrappedStream.readsome(static_cast<char*>(currentRead.buffer) + totalBytes,
+                totalBytes += wrappedStream->readsome(static_cast<char*>(currentRead.buffer) + totalBytes,
                                                      currentRead.maxBytes - totalBytes);
             }
         };
 
-        if (kj::runCatchingExceptions(kj::mv(reader)) == nullptr || currentRead.truncateForEof)
-            // Either there was no exception, or we're truncating on EOF. Either way, report how many bytes were read.
+        if (kj::runCatchingExceptions(kj::mv(reader)) == nullptr)
+            // Nominal case -- everything is fine
             currentRead.fulfiller->fulfill(kj::mv(totalBytes));
-        else
-            // We got an exception and we're not truncing for EOF. Break the promise.
-            currentRead.fulfiller->reject(KJ_EXCEPTION(FAILED, "EOF when attempting to read",
-                                                       totalBytes, currentRead.minBytes));
+        else {
+            eof = true;
+            if (currentRead.truncateForEof)
+                currentRead.fulfiller->fulfill(kj::mv(totalBytes));
+            else
+                currentRead.fulfiller->reject(KJ_EXCEPTION(DISCONNECTED, "EOF when attempting to read",
+                                                           totalBytes, currentRead.minBytes));
+        }
         pendingReads.pop();
     }
+
+    readsProcessing = false;
 }
 
 } // namespace swv

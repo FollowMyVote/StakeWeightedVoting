@@ -47,7 +47,7 @@ void TwoPartyServer::accept(kj::Own<kj::AsyncIoStream>&& connection) {
   auto connectionState = kj::heap<AcceptedConnection>(bootstrapInterface, kj::mv(connection));
 
   // Run the connection until disconnect.
-  auto promise = connectionState->network.onDisconnect();
+  auto promise = connectionState->network.onDisconnect().then([]{KJ_DBG("Disconnected");});
   tasks.add(promise.attach(kj::mv(connectionState)));
 }
 

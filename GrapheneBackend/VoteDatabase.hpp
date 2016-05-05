@@ -15,24 +15,27 @@
  * You should have received a copy of the GNU General Public License
  * along with SWV.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef BACKENDSERVER_HPP
-#define BACKENDSERVER_HPP
+#ifndef VOTEDATABASE_HPP
+#define VOTEDATABASE_HPP
 
-#include <capnp/backend.capnp.h>
+#include "Types.hpp"
 
-class BackendServer : public Backend::Server
+#include <graphene/chain/database.hpp>
+
+namespace swv {
+
+/**
+ * @brief The VoteDatabase class monitors the blockchain and maintains a database of all voting-related content
+ */
+class VoteDatabase
 {
+    gch::database& chain;
 public:
-    BackendServer();
-    virtual ~BackendServer();
+    VoteDatabase(gch::database& chain);
 
-    // Backend::Server interface
-protected:
-    virtual ::kj::Promise<void> getContestFeed(GetContestFeedContext context) override;
-    virtual ::kj::Promise<void> searchContests(SearchContestsContext context) override;
-    virtual ::kj::Promise<void> getContestResults(GetContestResultsContext context) override;
-    virtual ::kj::Promise<void> createContest(CreateContestContext context) override;
-    virtual ::kj::Promise<void> getCoinDetails(GetCoinDetailsContext context) override;
+    void registerIndexes() const;
 };
 
-#endif // BACKENDSERVER_HPP
+} // namespace swv
+
+#endif // VOTEDATABASE_HPP

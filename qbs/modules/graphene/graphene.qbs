@@ -14,8 +14,8 @@ Module {
         "boost_chrono",
         "boost_date_time",
         "boost_coroutine",
-        "boost_context",
-        "boost_thread",
+        qbs.hostOS.contains("osx")? "boost_context-mt" : "boost_context",
+        qbs.hostOS.contains("osx")? "boost_thread-mt" : "boost_thread",
         "ssl",
         "crypto",
         "graphene_app",
@@ -27,7 +27,7 @@ Module {
         "graphene_db",
         "graphene_debug_witness",
         "graphene_market_history",
-        "fc",
+        qbs.hostOS.contains("osx")? "fc_debug" : "fc",
         "secp256k1",
         "z"
     ]

@@ -21,16 +21,35 @@
 #include <graphene/app/plugin.hpp>
 
 #include <kj/async-io.h>
+#include <kj/debug.h>
+
+#include <fc/network/tcp_socket.hpp>
+
+#include <map>
 
 namespace swv {
-class TwoPartyServer;
+class VoteDatabase;
 
 class BackendPlugin : public graphene::app::plugin
 {
-    kj::Own<TwoPartyServer> server;
-    kj::AsyncIoContext asyncIo = kj::setupAsyncIo();
-    kj::Promise<void> serverPromise = kj::READY_NOW;
+    struct ClientConnection;
+    class : public kj::TaskSet::ErrorHandler {
+    public:
+        virtual void taskFailed(kj::Exception&& e) override {
+            KJ_LOG(ERROR, "Exception from BackendPlugin tasks", e);
+        }
+    } errorLogger;
+
+    bool running = false;
     uint16_t serverPort = 17073;
+    fc::tcp_server server;
+    std::map<uint64_t, kj::Own<ClientConnection>> clients;
+    uint64_t nextClientId = 0;
+    kj::TaskSet tasks;
+    kj::Own<VoteDatabase> database;
+
+    void acceptLoop();
+    kj::Own<ClientConnection> prepareClient(kj::Own<fc::tcp_socket> clientSocket);
 
 public:
     BackendPlugin();

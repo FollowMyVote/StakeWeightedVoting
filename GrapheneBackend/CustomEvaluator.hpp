@@ -15,24 +15,31 @@
  * You should have received a copy of the GNU General Public License
  * along with SWV.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef BACKENDSERVER_HPP
-#define BACKENDSERVER_HPP
+#ifndef CUSTOMEVALUATOR_HPP
+#define CUSTOMEVALUATOR_HPP
 
-#include <capnp/backend.capnp.h>
+#include "Types.hpp"
 
-class BackendServer : public Backend::Server
+#include <graphene/chain/evaluator.hpp>
+#include <graphene/chain/protocol/custom.hpp>
+
+namespace swv {
+
+/**
+ * @brief The CustomEvaluator class implements an evaluator for custom_operation ops, specifically for voting
+ */
+class CustomEvaluator : public gch::evaluator<CustomEvaluator>
 {
 public:
-    BackendServer();
-    virtual ~BackendServer();
+    using operation_type = gch::custom_operation;
 
-    // Backend::Server interface
-protected:
-    virtual ::kj::Promise<void> getContestFeed(GetContestFeedContext context) override;
-    virtual ::kj::Promise<void> searchContests(SearchContestsContext context) override;
-    virtual ::kj::Promise<void> getContestResults(GetContestResultsContext context) override;
-    virtual ::kj::Promise<void> createContest(CreateContestContext context) override;
-    virtual ::kj::Promise<void> getCoinDetails(GetCoinDetailsContext context) override;
+    gch::void_result do_evaluate(const operation_type& op) { return {}; }
+    gch::void_result do_apply(const operation_type& op);
+
+    /// Will be set to true by @ref do_evaluate if there is something to do. False otherwise.
+    bool shouldApply = false;
 };
 
-#endif // BACKENDSERVER_HPP
+} // namespace swv
+
+#endif // CUSTOMEVALUATOR_HPP

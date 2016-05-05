@@ -23,9 +23,9 @@
 
 namespace swv {
 
-ContestWrapper::ContestWrapper(UnsignedContest::Reader r, QObject* parent)
+ContestWrapper::ContestWrapper(Contest::Reader r, QObject* parent)
     : QObject(parent),
-      ::UnsignedContest::Reader(r)
+      Contest::Reader(r)
 {}
 
 QString ContestWrapper::id() const

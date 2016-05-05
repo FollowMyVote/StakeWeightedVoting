@@ -19,7 +19,7 @@
 
 #include <kj/debug.h>
 
-swv::ContestGenerator::ContestGenerator(std::vector<Contest::Reader> contests)
+swv::ContestGenerator::ContestGenerator(std::vector<Signed<Contest>::Reader> contests)
     : contests(kj::mv(contests))
 {}
 
@@ -30,7 +30,7 @@ swv::ContestGenerator::~ContestGenerator()
 {
     KJ_REQUIRE(!contests.empty(), "No more contests available.");
     auto contest = context.initResults().initNextContest();
-    contest.setContestId(contests.back().getContest().getId());
+    contest.setContestId(contests.back().getValue().getId());
     contests.pop_back();
     contest.setTracksLiveResults(false);
     contest.setVotingStake(0);
@@ -42,7 +42,7 @@ swv::ContestGenerator::~ContestGenerator()
     auto contestCount = std::min<int>(contests.size(), context.getParams().getCount());
     auto resultContests = context.initResults().initNextContests(contestCount);
     for (auto contest : resultContests) {
-        contest.setContestId(contests.back().getContest().getId());
+        contest.setContestId(contests.back().getValue().getId());
         contests.pop_back();
         contest.setTracksLiveResults(false);
         contest.setVotingStake(0);

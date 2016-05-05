@@ -15,24 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with SWV.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef BACKENDSERVER_HPP
-#define BACKENDSERVER_HPP
+#include "Contest.hpp"
 
-#include <capnp/backend.capnp.h>
+namespace swv {
 
-class BackendServer : public Backend::Server
-{
-public:
-    BackendServer();
-    virtual ~BackendServer();
+Contest::~Contest() {}
 
-    // Backend::Server interface
-protected:
-    virtual ::kj::Promise<void> getContestFeed(GetContestFeedContext context) override;
-    virtual ::kj::Promise<void> searchContests(SearchContestsContext context) override;
-    virtual ::kj::Promise<void> getContestResults(GetContestResultsContext context) override;
-    virtual ::kj::Promise<void> createContest(CreateContestContext context) override;
-    virtual ::kj::Promise<void> getCoinDetails(GetCoinDetailsContext context) override;
-};
-
-#endif // BACKENDSERVER_HPP
+} // namespace swv

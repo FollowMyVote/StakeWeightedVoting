@@ -16,13 +16,19 @@
 
 @0x8ed11a20887e5444;
 
+const voteMagic :Data = 0x"BA1107";
+# Magic number that goes at the beginning of all vote-related datagrams, to identify them as vote-related datagrams
+
 struct Datagram {
 # A piece of data stored on the blockchain. Datagrams are stored as belonging to a particular Balance, and the datagram
 # index is unique per-balance.
 
     enum DatagramType {
         decision @0;
-        # Marks a datagram as containing a decision
+        # Marks a datagram as containing a decision. Key will be the publishing balance ID, content will be a Decision
+        # struct
+        contest @1;
+        # Marks a datagram as containing a contest to be created. Key will be empty, content will be a Contest struct
     }
 
     index :group {

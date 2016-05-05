@@ -15,24 +15,35 @@
  * You should have received a copy of the GNU General Public License
  * along with SWV.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef BACKENDSERVER_HPP
-#define BACKENDSERVER_HPP
+#ifndef TYPES_HPP
+#define TYPES_HPP
 
-#include <capnp/backend.capnp.h>
+#include <graphene/chain/protocol/types.hpp>
+#include <graphene/db/generic_index.hpp>
 
-class BackendServer : public Backend::Server
-{
-public:
-    BackendServer();
-    virtual ~BackendServer();
+#ifndef VOTE_SPACE_ID
+#define VOTE_SPACE_ID 7
+#endif
 
-    // Backend::Server interface
-protected:
-    virtual ::kj::Promise<void> getContestFeed(GetContestFeedContext context) override;
-    virtual ::kj::Promise<void> searchContests(SearchContestsContext context) override;
-    virtual ::kj::Promise<void> getContestResults(GetContestResultsContext context) override;
-    virtual ::kj::Promise<void> createContest(CreateContestContext context) override;
-    virtual ::kj::Promise<void> getCoinDetails(GetCoinDetailsContext context) override;
+namespace swv {
+namespace gch = graphene::chain;
+namespace gdb = graphene::db;
+
+namespace ObjectIds {
+enum VoteObjectTypes {
+    Contest = 1,
+    Decision
 };
+}
 
-#endif // BACKENDSERVER_HPP
+class Contest;
+class Decision;
+
+using ContestObjectId = gdb::object_id<VOTE_SPACE_ID, ObjectIds::Contest, Contest>;
+using DecisionObjectId = gdb::object_id<VOTE_SPACE_ID, ObjectIds::Decision, Decision>;
+
+namespace bmi = boost::multi_index;
+struct ById;
+}
+
+#endif // TYPES_HPP
