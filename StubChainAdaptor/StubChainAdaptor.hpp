@@ -70,7 +70,10 @@ protected:
     std::vector<capnp::Orphan<Coin>> coins;
     std::vector<capnp::Orphan<Signed<Contest>>> contests;
     std::map<QString, std::vector<capnp::Orphan<Balance>>> balances;
-    std::map<std::tuple<QByteArray, Datagram::DatagramType, std::vector<kj::byte>>, capnp::Orphan<::Datagram>> datagrams;
+    /// Map of (Publisher Balance ID, Type, Key) to Datagram
+    /// See shared/capnp/datagram.capnp for a list of datagram types and what the key is for each type
+    std::map<std::tuple<QByteArray, Datagram::DatagramType, std::vector<kj::byte>>,
+             capnp::Orphan<::Datagram>> datagrams;
     kj::Maybe<capnp::Orphan<::Datagram>> pendingDatagram;
     quint8 nextBalanceId = 0;
 

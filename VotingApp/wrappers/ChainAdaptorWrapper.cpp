@@ -65,6 +65,8 @@ kj::Promise<OwningWrapper<DecisionWrapper>*> ChainAdaptorWrapper::_getDecision(Q
     if (!hasAdaptor()) return KJ_EXCEPTION(FAILED, "No blockchain adaptor is set.");
 
     using Reader = ::Balance::Reader;
+    // First fetch the contest object, and all balances belonging to this owner so we can search those balances for
+    // datagrams pertaining to the contest
     auto promise = m_adaptor->getContest(QByteArray::fromHex(contestId.toLocal8Bit())).then(
                        [=](::Signed<Contest>::Reader c) {
         return m_adaptor->getBalancesForOwner(owner).then([c](kj::Array<Reader> balances) {
@@ -75,14 +77,17 @@ kj::Promise<OwningWrapper<DecisionWrapper>*> ChainAdaptorWrapper::_getDecision(Q
         kj::Array<Reader> balances;
         std::tie(contest, balances) = kj::mv(contestAndBalances);
 
+        // Filter out all balances which are not in the coin this contest is weighted in; only balances in the coin the
+        // contest is weighted in can have valid decisions on that contest
         auto newEnd = std::remove_if(balances.begin(), balances.end(), [contest](Reader balance) {
             return balance.getType() != contest.getValue().getCoin();
         });
         KJ_REQUIRE(newEnd - balances.begin() > 0, "No balances found in the contest's coin, so no decision exists.");
+        KJ_DBG("Looking for decisions on balances", balances);
 
         // This struct is basically a lambda on steroids. I'm using it to transform the array of balances into an array
-        // of datagrams containing the decision I want on each of those balances. Also, make sure the newest balance's
-        // decision is in the front (I don't care about preserving order) so that the newest decision will be returned.
+        // of datagrams by looking up relevant datagrams on each balance. Also, make sure the newest balance's decision
+        // is in the front (I don't care about preserving order) so that the newest decision will be returned.
         struct {
             // Capture this
             ChainAdaptorWrapper* wrapper;
@@ -101,7 +106,7 @@ kj::Promise<OwningWrapper<DecisionWrapper>*> ChainAdaptorWrapper::_getDecision(Q
                 // Start a lookup for the datagram and store the promise.
                 auto promise = wrapper->m_adaptor->getDatagram(convertBlob(balance.getId()),
                                                                Datagram::DatagramType::DECISION,
-                                                               contestId);
+                                                               convertBlob(balance.getId()).toHex());
                 datagramPromises.add(promise.then([](::Datagram::Reader r) -> kj::Maybe<::Datagram::Reader> {
                         return r;
                     }, [](kj::Exception e) -> kj::Maybe<::Datagram::Reader> {

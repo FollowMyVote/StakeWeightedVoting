@@ -9,7 +9,6 @@ import FollowMyVote.StakeWeightedVoting 1.0
 
 
 Rectangle {
-
     id: createContestBar
 
     color: "white"
@@ -36,7 +35,6 @@ Rectangle {
         radius: 5
     }
 
-
     AppButton {
         id: createContestButton
         anchors.right: createContestBar.right
@@ -47,7 +45,7 @@ Rectangle {
             console.log("Begin contest creation")
             myContestsPage.navigationStack.push(Qt.resolvedUrl("CreateContestPage.qml"),
                                                 {"contestCreator": votingSystem.backend.contestCreator,
-                                                    "votingSystem": votingSystem})
+                                                   "votingSystem": votingSystem})
         }
 
         RowLayout {
