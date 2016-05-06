@@ -27,17 +27,21 @@ namespace swv {
 
 /**
  * @brief The CustomEvaluator class implements an evaluator for custom_operation ops, specifically for voting
+ *
+ * The voting system uses graphene's custom_operation to update the voting application state. This evaluator processes
+ * these operations and determines whether they are relevant to the voting system, and if so, processes them to update
+ * the database state.
+ *
+ * The data in a relevant custom_operation is a serialized Datagram. For the operation types and descriptions of their
+ * behavior, see datagram.capnp
  */
 class CustomEvaluator : public gch::evaluator<CustomEvaluator>
 {
 public:
     using operation_type = gch::custom_operation;
 
-    gch::void_result do_evaluate(const operation_type& op) { return {}; }
+    gch::void_result do_evaluate(const operation_type&) { return {}; }
     gch::void_result do_apply(const operation_type& op);
-
-    /// Will be set to true by @ref do_evaluate if there is something to do. False otherwise.
-    bool shouldApply = false;
 };
 
 } // namespace swv

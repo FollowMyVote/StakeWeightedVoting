@@ -103,16 +103,26 @@ interface ContestCreator {
     struct ContestCreationRequest {
     # This contains all of the information necessary to request a contest be created and get a complete price.
 
-        contestType @0 :ContestTypes;
-        tallyAlgorithm @1 :TallyAlgorithms;
-        contestName @2 :Text;
-        contestDescription @3 :Text;
-        weightCoin @4 :UInt64;
-        # ID of the coin to weight responses to this contest in
-        contestants @5 :Map(Text, Text);
-        # Map of contestant name to description
-        contestExpiration @6 :Int64;
-        # Millisecond timestamp of end date; zero indicates no end
+        contestOptions :group {
+        # These are the details for the contest to create
+            contestType @0 :ContestTypes;
+            tallyAlgorithm @1 :TallyAlgorithms;
+            contestName @2 :Text;
+            contestDescription @3 :Text;
+            weightCoin @4 :UInt64;
+            # ID of the coin to weight responses to this contest in
+            contestants @5 :Map(Text, Text);
+            # Map of contestant name to description
+            contestExpiration @6 :Int64;
+            # Millisecond timestamp of end date; zero indicates no end
+        }
+        creator :union {
+        # If the creator wishes to publicly state that he created this contest, he must populate creatorSignature with
+        # his signature of the contestOptions group using his memo key. Otherwise, he may set anonymousCreator and his
+        # identity will not be revealed.
+            anonymousCreator @12 :Void;
+            creatorSignature @13 :Data;
+        }
         sponsorship :union {
             noSponsorship @7 :Void;
             options :group {

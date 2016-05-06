@@ -79,7 +79,7 @@ StubChainAdaptor::ContestCreator::~ContestCreator()
 
 ::kj::Promise<void> StubChainAdaptor::ContestCreator::purchaseContest(ContestCreator::Server::PurchaseContestContext context) {
     int64_t price = 0;
-    auto creationRequest = context.getParams().getRequest();
+    auto creationRequest = context.getParams().getRequest().getContestOptions();
     bool longText = false;
 
     // Check limits
