@@ -29,13 +29,21 @@
 #include <kj/debug.h>
 
 #include <graphene/chain/database.hpp>
+#include <graphene/chain/protocol/types.hpp>
 #include <graphene/chain/operation_history_object.hpp>
+
+#include <fc/io/raw_variant.hpp>
+#include <fc/crypto/elliptic.hpp>
+#include <fc/crypto/digest.hpp>
 
 namespace swv {
 
 template <typename T>
 inline T unpack(capnp::Data::Reader r) {
     return fc::raw::unpack<T>(std::vector<char>(r.begin(), r.end()));
+}
+fc::sha256 digest(capnp::Data::Reader r) {
+    return fc::digest(std::vector<char>(r.begin(), r.end()));
 }
 
 inline std::map<std::string, std::string> convertMap(::Map<capnp::Text, capnp::Text>::Reader map) {
@@ -121,15 +129,23 @@ void processDecision(gch::database& db, gch::account_balance_id_type publisherId
         });
 }
 
-void processContest(gch::database& db, ::Contest::Reader contest) {
+void processContest(gch::database& db, capnp::Data::Reader creatorAndSignature,
+                    fc::sha256 contestDigest, ::Contest::Reader contest) {
     // All relevant data consistency checks should have been done before FMV published the contest to the chain. We
     // should be able to skip them here, relying on the FMV signature to be sure this is a legitimate contest creation
     // request.
-    db.create<Contest>([&db, contest](Contest& c) {
+    db.create<Contest>([&db, creatorAndSignature, contestDigest, contest](Contest& c) {
         auto& index = db.get_index_type<gch::simple_index<gch::operation_history_object>>();
         c.contestId = gch::operation_history_id_type(index.size() - 1);
-        // TODO #111: set c.creator if creator is public. Not yet sure how to get the creator's signature...
-        c.creator = GRAPHENE_NULL_ACCOUNT;
+        if (creatorAndSignature.size()) {
+            auto idAndSignature = unpack<std::pair<graphene::chain::account_id_type,
+                                                   fc::ecc::compact_signature>>(creatorAndSignature);
+            auto creatorKey = fc::ecc::public_key(idAndSignature.second, contestDigest);
+            KJ_REQUIRE(idAndSignature.first(db).options.memo_key == creatorKey,
+                       "Failed to create contest: creator's signature was invalid.");
+            c.creator = idAndSignature.first;
+        } else
+            c.creator = GRAPHENE_NULL_ACCOUNT;
         c.name = contest.getName();
         c.description = contest.getDescription();
         c.tags = convertMap(contest.getTags());
@@ -166,7 +182,8 @@ graphene::chain::void_result CustomEvaluator::do_apply(const CustomEvaluator::op
             KJ_REQUIRE(kj::StringPtr(op.fee_payer()(db()).name) == CONTEST_PUBLISHING_ACCOUNT,
                        "Unauthorized account attempted to publish contest",
                        op.fee_payer()(db()).name, *CONTEST_PUBLISHING_ACCOUNT);
-            processContest(db(), datagramMessage.getRoot<::Contest>());
+            processContest(db(), datagram.getIndex().getKey(), digest(datagram.getContent()),
+                           datagramMessage.getRoot<::Contest>());
             break;
         }
         }
