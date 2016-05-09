@@ -28,7 +28,9 @@ struct Datagram {
         # Marks a datagram as containing a decision. Key will be the publishing balance ID, content will be a Decision
         # struct
         contest @1;
-        # Marks a datagram as containing a contest to be created. Key will be empty, content will be a Contest struct
+        # Marks a datagram as containing a contest to be created. Key will be empty for anonymous creator or FC-
+        # serialized std::pair<account_id_type, fc::ecc:compact_signature> with creators account ID and signature;
+        # content will be a Contest struct
     }
 
     index :group {
