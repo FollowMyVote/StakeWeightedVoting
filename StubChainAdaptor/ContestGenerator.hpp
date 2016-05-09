@@ -29,9 +29,7 @@ namespace swv {
 class ContestGenerator : public ::ContestGenerator::Server
 {
 public:
-    /// Contests will be generated in reverse order of contests; i.e. the vector will be traversed back to front
-    /// Thus contests should contain the oldest/least relevant contest at the beginning and the newest at the end
-    ContestGenerator(std::vector<Signed<Contest>::Reader> contests);
+    ContestGenerator(int contestCount);
     virtual ~ContestGenerator();
 
 protected:
@@ -41,7 +39,8 @@ protected:
     ::kj::Promise<void> logEngagement(LogEngagementContext);
 
 private:
-    std::vector<Signed<Contest>::Reader> contests;
+    int contestCount;
+    int generated = 0;
 };
 
 } // namespace swv

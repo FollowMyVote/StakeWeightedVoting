@@ -17,24 +17,13 @@
         return;
 
 // Macro to generate getter and setter for text properties in the contestOptions
-#define TEXT_GETTER_SETTER(property, upperProperty, requestField) \
+#define TEXT_GETTER_SETTER(property, requestField) \
     QString PurchaseContestRequestWrapper::property() const { \
         return convertText(request.asReader().getRequest().getContestOptions().get ## requestField ()); \
     } \
-    void PurchaseContestRequestWrapper::set ## upperProperty(QString property) { \
+    void PurchaseContestRequestWrapper::set ## requestField(QString property) { \
         _CHECK_NOT_SAME(property) \
         request.getRequest().getContestOptions().set ## requestField(convertText(property)); \
-        emit property ## Changed(property); \
-    }
-
-// Macro to generate getter and setter for enum properties in the contestOptions
-#define ENUM_GETTER_SETTER(property, upperProperty) \
-    upperProperty::Type PurchaseContestRequestWrapper::property() const { \
-        return static_cast<upperProperty::Type>(request.asReader().getRequest().getContestOptions().get ## upperProperty ()); \
-    } \
-    void PurchaseContestRequestWrapper::set ## upperProperty(upperProperty::Type property) { \
-        _CHECK_NOT_SAME(property) \
-        request.getRequest().getContestOptions().set ## upperProperty (static_cast<::ContestCreator::upperProperty ## s>(property)); \
         emit property ## Changed(property); \
     }
 
@@ -77,12 +66,30 @@ PurchaseContestRequestWrapper::PurchaseContestRequestWrapper(PurchaseRequest&& r
       request(kj::mv(request))
 {}
 
-ENUM_GETTER_SETTER(contestType, ContestType)
-ENUM_GETTER_SETTER(tallyAlgorithm, TallyAlgorithm)
-TEXT_GETTER_SETTER(name, Name, ContestName)
-TEXT_GETTER_SETTER(description, Description, ContestDescription)
-SIMPLE_GETTER_SETTER(weightCoin, WeightCoin, quint64, WeightCoin)
-SIMPLE_GETTER_SETTER(expiration, Expiration, qint64, ContestExpiration)
+ContestType::Type PurchaseContestRequestWrapper::contestType() const {
+    return static_cast<ContestType::Type>(request.asReader().getRequest().getContestOptions().getType());
+}
+void PurchaseContestRequestWrapper::setContestType(ContestType::Type type) {
+    if (type == contestType())
+        return;
+    request.getRequest().getContestOptions().setType(static_cast<::Contest::Type>(type));
+    emit contestTypeChanged(type);
+}
+
+TallyAlgorithm::Type PurchaseContestRequestWrapper::tallyAlgorithm() const {
+    return static_cast<TallyAlgorithm::Type>(request.asReader().getRequest().getContestOptions().getTallyAlgorithm());
+}
+void PurchaseContestRequestWrapper::setTallyAlgorithm(TallyAlgorithm::Type algorithm) {
+    if (algorithm == tallyAlgorithm())
+        return;
+    request.getRequest().getContestOptions().setTallyAlgorithm(static_cast<::Contest::TallyAlgorithm>(algorithm));
+    emit tallyAlgorithmChanged(algorithm);
+}
+
+TEXT_GETTER_SETTER(name, Name)
+TEXT_GETTER_SETTER(description, Description)
+SIMPLE_GETTER_SETTER(weightCoin, WeightCoin, quint64, Coin)
+SIMPLE_GETTER_SETTER(expiration, Expiration, qint64, EndTime)
 
 bool PurchaseContestRequestWrapper::sponsorshipEnabled() const {
     return request.asReader().getRequest().getSponsorship().isOptions();
@@ -90,7 +97,7 @@ bool PurchaseContestRequestWrapper::sponsorshipEnabled() const {
 
 PurchaseWrapper* PurchaseContestRequestWrapper::submit() {
     updateContestants();
-    KJ_LOG(DBG, "Submitting purchase request", request, request.getRequest().getContestOptions().getContestName());
+    KJ_LOG(DBG, "Submitting purchase request", request, request.getRequest().getContestOptions().getName());
 
     auto promise = request.send();
     auto purchase = promise.getPurchaseApi();

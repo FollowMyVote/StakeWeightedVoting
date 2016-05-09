@@ -104,15 +104,15 @@ StubChainAdaptor::StubChainAdaptor(QObject* parent)
     contestants[2].setValue("Sub Shop on University City Blvd");
 
     // Total of 10 contests
-    createContest().setValue(contests.back().getReader().getValue());
-    createContest().setValue(contests.back().getReader().getValue());
-    createContest().setValue(contests.back().getReader().getValue());
-    createContest().setValue(contests.back().getReader().getValue());
-    createContest().setValue(contests.back().getReader().getValue());
-    createContest().setValue(contests.back().getReader().getValue());
-    createContest().setValue(contests.back().getReader().getValue());
-    createContest().setValue(contests.back().getReader().getValue());
-    createContest().setValue(contests.back().getReader().getValue());
+    createContest().setValue(contest);
+    createContest().setValue(contest);
+    createContest().setValue(contest);
+    createContest().setValue(contest);
+    createContest().setValue(contest);
+    createContest().setValue(contest);
+    createContest().setValue(contest);
+    createContest().setValue(contest);
+    createContest().setValue(contest);
 }
 
 StubChainAdaptor::~StubChainAdaptor() noexcept {}
@@ -173,9 +173,9 @@ kj::Promise<kj::Array<Balance::Reader>> StubChainAdaptor::getBalancesForOwner(QS
 
 Signed<Contest>::Reader StubChainAdaptor::getContest(capnp::Data::Reader contestId) const
 {
-    for (auto& contest : contests)
-        if (contest.getReader().getValue().getId() == contestId)
-            return contest.getReader();
+    QByteArray id = QByteArray::fromRawData((char*)contestId.begin(), contestId.size());
+    if (contests.count(id))
+        return contests.at(id).getReader();
     KJ_FAIL_REQUIRE("Could not find the specified contest", contestId);
 }
 
@@ -191,9 +191,8 @@ Datagram::Builder StubChainAdaptor::createDatagram()
 
 kj::Promise<Signed<Contest>::Reader> StubChainAdaptor::getContest(QByteArray contestId) const
 {
-    for (auto& contest : contests)
-        if (*contest.getReader().getValue().getId().begin() == *contestId.begin())
-            return contest.getReader();
+    if (contests.count(contestId))
+        return contests.at(contestId).getReader();
     return KJ_EXCEPTION(FAILED, "Could not find the specified contest", contestId.toHex().toStdString());
 }
 
@@ -334,10 +333,9 @@ kj::Maybe<const capnp::Orphan<Coin>&> StubChainAdaptor::getCoinOrphan(QString na
 
 Signed<Contest>::Builder StubChainAdaptor::createContest()
 {
-    auto newContest = contests.emplace(contests.begin(),
-                                       message.getOrphanage().newOrphan<::Signed<::Contest>>())->get();
-    newContest.initValue().initId(1)[0] = contests.size() - 1;
-    return newContest;
+    auto pair = contests.insert(std::make_pair(QByteArray(1, contests.size()-1),
+                                               message.getOrphanage().newOrphan<Signed<Contest>>()));
+    return pair.first->second.get();
 }
 
 Balance::Builder StubChainAdaptor::createBalance(QString owner)
