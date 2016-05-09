@@ -50,9 +50,10 @@ private:
     Q_PROPERTY(swv::DecisionWrapper* currentDecision READ currentDecision WRITE setCurrentDecision NOTIFY currentDecisionChanged)
 
     OwningWrapper<DecisionWrapper>* m_currentDecision = nullptr;
+    QString m_id;
 
 public:
-    ContestWrapper(::Contest::Reader r, QObject* parent = nullptr);
+    ContestWrapper(QString id, ::Contest::Reader r, QObject* parent = nullptr);
 
     // Hexadecimal string containing the ID of the contest
     QString id() const;

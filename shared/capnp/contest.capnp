@@ -20,17 +20,32 @@ using Map = import "map.capnp".Map;
 
 const contestPublishingAccount :Text = "follow-my-vote";
 
+# TODO refactor: This struct is pretty highly redundant with the contestOptions in contestcreator.capnp. These ought to
+# be unified into a single structure defined in this file and referenced from contestcreator.capnp.
+
 struct Contest {
-    id @0 :Data;
-    name @1 :Text;
-    description @2 :Text;
-    tags @3 :Map(Text, Text);
+    name @0 :Text;
+    description @1 :Text;
+    type @2 :Type;
+    tallyAlgorithm @3 :TallyAlgorithm;
+    tags @4 :Map(Text, Text);
     # Map of key to value
-    contestants @4 :Map(Text, Text);
+    contestants @5 :Map(Text, Text);
     # Map of name to description
-    coin @5 :UInt64;
-    startTime @6 :UInt64;
+    coin @6 :UInt64;
+    startTime @7 :UInt64;
     # Millisecond timestamp of contest beginning
-    endTime @7 :UInt64;
+    endTime @8 :UInt64;
     # Millisecond timestamp of contest end
+
+    enum Type {
+    # An enumeration of all types of contests known to the system
+        oneOfN @0;
+        # A contest with N contestants, where the voter selects at most one
+    }
+    enum TallyAlgorithm {
+    # An enumeration of all tally algorithms known to the system
+        plurality @0;
+        # The contestant with the plurality of votes wins the contest
+    }
 }

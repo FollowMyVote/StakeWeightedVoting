@@ -14,10 +14,10 @@ namespace swv {
 class PurchaseWrapper;
 
 QML_ENUM_CLASS(ContestType,
-               OneOfN = static_cast<uint16_t>(::ContestCreator::ContestTypes::ONE_OF_N)
+               OneOfN = static_cast<uint16_t>(::Contest::Type::ONE_OF_N)
         )
 QML_ENUM_CLASS(TallyAlgorithm,
-               Plurality = static_cast<uint16_t>(::ContestCreator::TallyAlgorithms::PLURALITY)
+               Plurality = static_cast<uint16_t>(::Contest::TallyAlgorithm::PLURALITY)
         )
 
 /**
@@ -88,8 +88,8 @@ public slots:
     void setDescription(QString description);
     void setWeightCoin(quint64 weightCoin);
     void setExpiration(qint64 expiration);
-    void setContestType(ContestType::Type contestType);
-    void setTallyAlgorithm(TallyAlgorithm::Type tallyAlgorithm);
+    void setContestType(ContestType::Type type);
+    void setTallyAlgorithm(TallyAlgorithm::Type algorithm);
     void setSponsorshipEnabled(bool enabled);
     void setSponsorMaxVotes(qint64 sponsorMaxVotes);
     void setSponsorMaxRevotes(qint32 sponsorMaxRevotes);

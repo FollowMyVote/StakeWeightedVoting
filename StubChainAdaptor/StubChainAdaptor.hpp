@@ -68,7 +68,7 @@ public:
 protected:
     capnp::MallocMessageBuilder message;
     std::vector<capnp::Orphan<Coin>> coins;
-    std::vector<capnp::Orphan<Signed<Contest>>> contests;
+    std::map<QByteArray, capnp::Orphan<Signed<Contest>>> contests;
     std::map<QString, std::vector<capnp::Orphan<Balance>>> balances;
     /// Map of (Publisher Balance ID, Type, Key) to Datagram
     /// See shared/capnp/datagram.capnp for a list of datagram types and what the key is for each type

@@ -203,9 +203,9 @@ Promise* ChainAdaptorWrapper::getContest(QString contestId)
 {
     QByteArray realContestId = QByteArray::fromHex(contestId.toLocal8Bit());
     if (hasAdaptor()) {
-        auto promise = m_adaptor->getContest(realContestId).then([this](::Signed<::Contest>::Reader r) {
+        auto promise = m_adaptor->getContest(realContestId).then([this, contestId](::Signed<::Contest>::Reader r) {
             //TODO: Check signature
-            auto contest = new ContestWrapper(r.getValue());
+            auto contest = new ContestWrapper(contestId, r.getValue());
             QQmlEngine::setObjectOwnership(contest, QQmlEngine::JavaScriptOwnership);
             auto decision = new OwningWrapper<DecisionWrapper>(contest);
 

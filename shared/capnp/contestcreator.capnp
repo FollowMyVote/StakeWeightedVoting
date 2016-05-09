@@ -18,6 +18,7 @@
 
 using Map = import "map.capnp".Map;
 using Purchase = import "purchase.capnp".Purchase;
+using ContestOptions = import "contest.capnp".Contest;
 
 interface ContestCreator {
 # The ContestCreator interface handles the protocol for creating a contest, including getting pricing information,
@@ -90,39 +91,27 @@ interface ContestCreator {
         value @0 :Int64;
     }
 
-    enum ContestTypes {
-    # An enumeration of all types of contests known to the system
-        oneOfN @0;
-        # A contest with N contestants, where the voter selects at most one
-    }
-    enum TallyAlgorithms {
-    # An enumeration of all tally algorithms known to the system
-        plurality @0;
-        # The contestant with the plurality of votes wins the contest
-    }
     struct ContestCreationRequest {
     # This contains all of the information necessary to request a contest be created and get a complete price.
 
-        contestType @0 :ContestTypes;
-        tallyAlgorithm @1 :TallyAlgorithms;
-        contestName @2 :Text;
-        contestDescription @3 :Text;
-        weightCoin @4 :UInt64;
-        # ID of the coin to weight responses to this contest in
-        contestants @5 :Map(Text, Text);
-        # Map of contestant name to description
-        contestExpiration @6 :Int64;
-        # Millisecond timestamp of end date; zero indicates no end
+        contestOptions @0 :ContestOptions;
+        creator :union {
+        # If the creator wishes to publicly state that he created this contest, he must populate creatorSignature with
+        # his signature of the contestOptions group using his memo key. Otherwise, he may set anonymousCreator and his
+        # identity will not be revealed.
+            anonymousCreator @1 :Void;
+            creatorSignature @2 :Data;
+        }
         sponsorship :union {
-            noSponsorship @7 :Void;
+            noSponsorship @3 :Void;
             options :group {
-                maxVotes @8 :Int64;
+                maxVotes @4 :Int64;
                 # Maximum number of votes to sponsor; zero indicates unlimited
-                maxRevotes @9 :Int32;
+                maxRevotes @5 :Int32;
                 # Maximum number of revotes per voter to sponsor; zero indicates unlimited
-                endDate @10 :Int64;
+                endDate @6 :Int64;
                 # Microsecond timestamp of end of vote sponsorship period
-                incentive @11 :Int64;
+                incentive @7 :Int64;
                 # Balance to pay each voter as an incentive for voting on this contest
             }
         }

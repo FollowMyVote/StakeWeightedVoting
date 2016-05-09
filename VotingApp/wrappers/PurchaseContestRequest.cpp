@@ -4,29 +4,26 @@
 
 #include <PromiseConverter.hpp>
 
+/*
+ * If it looks scary in here, that's because it is. Getting and setting from the capnp structs involves a lot of
+ * boilerplate, which I've mostly tried to distil out into what turns out to be a fairly convoluted system of macros.
+ * In hindsight, it may not have been any simpler to use the macros, but it works now, so I'm going with it. If the
+ * requirements evolve and fixing the macros is too much of a pain, it may be simpler to just scrap them and have a ton
+ * of redundant code.
+ */
+
 #define _CHECK_NOT_SAME(property) \
     if (property == this->property()) \
         return;
 
-// Macro to generate getter and setter for text properties
-#define TEXT_GETTER_SETTER(property, upperProperty, requestField) \
+// Macro to generate getter and setter for text properties in the contestOptions
+#define TEXT_GETTER_SETTER(property, requestField) \
     QString PurchaseContestRequestWrapper::property() const { \
-        return convertText(request.asReader().getRequest().get ## requestField ()); \
+        return convertText(request.asReader().getRequest().getContestOptions().get ## requestField ()); \
     } \
-    void PurchaseContestRequestWrapper::set ## upperProperty(QString property) { \
+    void PurchaseContestRequestWrapper::set ## requestField(QString property) { \
         _CHECK_NOT_SAME(property) \
-        request.getRequest().set ## requestField(convertText(property)); \
-        emit property ## Changed(property); \
-    }
-
-// Macro to generate getter and setter for enum properties
-#define ENUM_GETTER_SETTER(property, upperProperty) \
-    upperProperty::Type PurchaseContestRequestWrapper::property() const { \
-        return static_cast<upperProperty::Type>(request.asReader().getRequest().get ## upperProperty ()); \
-    } \
-    void PurchaseContestRequestWrapper::set ## upperProperty(upperProperty::Type property) { \
-        _CHECK_NOT_SAME(property) \
-        request.getRequest().set ## upperProperty (static_cast<::ContestCreator::upperProperty ## s>(property)); \
+        request.getRequest().getContestOptions().set ## requestField(convertText(property)); \
         emit property ## Changed(property); \
     }
 
@@ -37,13 +34,13 @@
     request.getRequest().requestMethod; \
     emit property ## Changed(property);
 
-// Macro to generate getter and setter for properties which require no special conversion steps
+// Macro to generate getter and setter for properties in the contestOptions which require no special conversion steps
 #define SIMPLE_GETTER_SETTER(property, upperProperty, type, requestField) \
     type PurchaseContestRequestWrapper::property() const { \
-        _SIMPLE_GETTER_IMPL(requestField) \
+        _SIMPLE_GETTER_IMPL(ContestOptions().get ## requestField) \
     } \
     void PurchaseContestRequestWrapper::set ## upperProperty(type property) { \
-        _SIMPLE_SETTER_IMPL(property, set ## requestField(property)) \
+        _SIMPLE_SETTER_IMPL(property, getContestOptions().set ## requestField(property)) \
     }
 
 // Macro to generate getter and setter for simple properties in the sponsorship options
@@ -69,12 +66,30 @@ PurchaseContestRequestWrapper::PurchaseContestRequestWrapper(PurchaseRequest&& r
       request(kj::mv(request))
 {}
 
-ENUM_GETTER_SETTER(contestType, ContestType)
-ENUM_GETTER_SETTER(tallyAlgorithm, TallyAlgorithm)
-TEXT_GETTER_SETTER(name, Name, ContestName)
-TEXT_GETTER_SETTER(description, Description, ContestDescription)
-SIMPLE_GETTER_SETTER(weightCoin, WeightCoin, quint64, WeightCoin)
-SIMPLE_GETTER_SETTER(expiration, Expiration, qint64, ContestExpiration)
+ContestType::Type PurchaseContestRequestWrapper::contestType() const {
+    return static_cast<ContestType::Type>(request.asReader().getRequest().getContestOptions().getType());
+}
+void PurchaseContestRequestWrapper::setContestType(ContestType::Type type) {
+    if (type == contestType())
+        return;
+    request.getRequest().getContestOptions().setType(static_cast<::Contest::Type>(type));
+    emit contestTypeChanged(type);
+}
+
+TallyAlgorithm::Type PurchaseContestRequestWrapper::tallyAlgorithm() const {
+    return static_cast<TallyAlgorithm::Type>(request.asReader().getRequest().getContestOptions().getTallyAlgorithm());
+}
+void PurchaseContestRequestWrapper::setTallyAlgorithm(TallyAlgorithm::Type algorithm) {
+    if (algorithm == tallyAlgorithm())
+        return;
+    request.getRequest().getContestOptions().setTallyAlgorithm(static_cast<::Contest::TallyAlgorithm>(algorithm));
+    emit tallyAlgorithmChanged(algorithm);
+}
+
+TEXT_GETTER_SETTER(name, Name)
+TEXT_GETTER_SETTER(description, Description)
+SIMPLE_GETTER_SETTER(weightCoin, WeightCoin, quint64, Coin)
+SIMPLE_GETTER_SETTER(expiration, Expiration, qint64, EndTime)
 
 bool PurchaseContestRequestWrapper::sponsorshipEnabled() const {
     return request.asReader().getRequest().getSponsorship().isOptions();
@@ -82,7 +97,7 @@ bool PurchaseContestRequestWrapper::sponsorshipEnabled() const {
 
 PurchaseWrapper* PurchaseContestRequestWrapper::submit() {
     updateContestants();
-    KJ_LOG(DBG, "Submitting purchase request", request, request.getRequest().getContestName());
+    KJ_LOG(DBG, "Submitting purchase request", request, request.getRequest().getContestOptions().getName());
 
     auto promise = request.send();
     auto purchase = promise.getPurchaseApi();
@@ -107,7 +122,7 @@ SPONSORSHIP_SIMPLE_GETTER_SETTER(sponsorIncentive, SponsorIncentive, qint64, Inc
 
 void PurchaseContestRequestWrapper::updateContestants()
 {
-    auto target = request.getRequest().initContestants().initEntries(m_contestants.count());
+    auto target = request.getRequest().getContestOptions().initContestants().initEntries(m_contestants.count());
     for (uint i = 0; i < target.size(); ++i) {
         auto contestant = m_contestants.get(i).value<QObject*>();
         target[i].setKey(convertText(contestant->property("name").toString()));

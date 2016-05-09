@@ -23,16 +23,15 @@
 
 namespace swv {
 
-ContestWrapper::ContestWrapper(Contest::Reader r, QObject* parent)
+ContestWrapper::ContestWrapper(QString id, Contest::Reader r, QObject* parent)
     : QObject(parent),
-      Contest::Reader(r)
+      Contest::Reader(r),
+      m_id(id)
 {}
 
 QString ContestWrapper::id() const
 {
-    auto data = getId();
-    return QByteArray::fromRawData(reinterpret_cast<const char*>(data.begin()),
-                                   static_cast<signed>(data.size())).toHex();
+    return m_id;
 }
 
 QVariantMap ContestWrapper::tags() const

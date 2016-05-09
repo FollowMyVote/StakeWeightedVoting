@@ -66,6 +66,9 @@ void processDecision(gch::database& db, gch::account_balance_id_type publisherId
     auto& decisionIndex = db.get_index_type<DecisionIndex>().indices().get<ByVoter>();
     auto decisionItr = decisionIndex.upper_bound(boost::make_tuple(publisherId, contest.contestId));
     if (decisionItr != decisionIndex.end() && decisionItr->opinions.size() > 0) {
+        // We use DASSERTs here because we're sanity-checking internal data, which should be guaranteed valid. If it's
+        // not, there's a bug somewhere in the code that created it (likely in the call stack of CustomEvaluator, since
+        // that's what creates and maintains this data)
         KJ_DASSERT(decisionItr->opinions.size() == 1);
         KJ_DASSERT(contest.coin == decisionItr->voter(db).asset_type);
         // There is an old decision currently in effect. Untally it
@@ -119,11 +122,13 @@ void processDecision(gch::database& db, gch::account_balance_id_type publisherId
 }
 
 void processContest(gch::database& db, ::Contest::Reader contest) {
-    // All relevant data consistency checks should have been done before FMV published the contest to the chain.
+    // All relevant data consistency checks should have been done before FMV published the contest to the chain. We
+    // should be able to skip them here, relying on the FMV signature to be sure this is a legitimate contest creation
+    // request.
     db.create<Contest>([&db, contest](Contest& c) {
         auto& index = db.get_index_type<gch::simple_index<gch::operation_history_object>>();
         c.contestId = gch::operation_history_id_type(index.size() - 1);
-        // TODO: set c.creator if creator is public. Not yet sure how to get the creator's signature...
+        // TODO #111: set c.creator if creator is public. Not yet sure how to get the creator's signature...
         c.creator = GRAPHENE_NULL_ACCOUNT;
         c.name = contest.getName();
         c.description = contest.getDescription();

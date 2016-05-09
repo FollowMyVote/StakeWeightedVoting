@@ -17,21 +17,23 @@
  */
 #include "ContestGenerator.hpp"
 
+#include <numeric>
+
 #include <kj/debug.h>
 
-swv::ContestGenerator::ContestGenerator(std::vector<Signed<Contest>::Reader> contests)
-    : contests(kj::mv(contests))
-{}
+swv::ContestGenerator::ContestGenerator(int contestCount)
+    : contestCount(contestCount) {
+    KJ_REQUIRE(contestCount <= std::numeric_limits<char>::max());
+}
 
 swv::ContestGenerator::~ContestGenerator()
 {}
 
 ::kj::Promise<void> swv::ContestGenerator::getContest(ContestGenerator::Server::GetContestContext context)
 {
-    KJ_REQUIRE(!contests.empty(), "No more contests available.");
+    KJ_REQUIRE(generated < contestCount, "No more contests available.");
     auto contest = context.initResults().initNextContest();
-    contest.setContestId(contests.back().getValue().getId());
-    contests.pop_back();
+    contest.initContestId(1)[0] = generated++;
     contest.setTracksLiveResults(false);
     contest.setVotingStake(0);
     return kj::READY_NOW;
@@ -39,11 +41,10 @@ swv::ContestGenerator::~ContestGenerator()
 
 ::kj::Promise<void> swv::ContestGenerator::getContests(ContestGenerator::Server::GetContestsContext context)
 {
-    auto contestCount = std::min<int>(contests.size(), context.getParams().getCount());
-    auto resultContests = context.initResults().initNextContests(contestCount);
+    auto count = std::min<int>(contestCount - generated, context.getParams().getCount());
+    auto resultContests = context.initResults().initNextContests(count);
     for (auto contest : resultContests) {
-        contest.setContestId(contests.back().getValue().getId());
-        contests.pop_back();
+        contest.initContestId(1)[0] = generated++;
         contest.setTracksLiveResults(false);
         contest.setVotingStake(0);
     }

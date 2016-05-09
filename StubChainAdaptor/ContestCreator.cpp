@@ -79,21 +79,21 @@ StubChainAdaptor::ContestCreator::~ContestCreator()
 
 ::kj::Promise<void> StubChainAdaptor::ContestCreator::purchaseContest(ContestCreator::Server::PurchaseContestContext context) {
     int64_t price = 0;
-    auto creationRequest = context.getParams().getRequest();
+    auto contestOptions = context.getParams().getRequest().getContestOptions();
     bool longText = false;
 
     // Check limits
-    KJ_REQUIRE(creationRequest.getContestName().size() > 0, "Contest must have a name", creationRequest);
-    KJ_REQUIRE(creationRequest.getContestName().size() <= 100, "Contest name is too long", creationRequest);
-    KJ_REQUIRE(creationRequest.getContestDescription().size() <= 10240,
-               "Contest description is too long", creationRequest);
-    if (creationRequest.getContestDescription().size() > 500)
+    KJ_REQUIRE(contestOptions.getName().size() > 0, "Contest must have a name", contestOptions);
+    KJ_REQUIRE(contestOptions.getName().size() <= 100, "Contest name is too long", contestOptions);
+    KJ_REQUIRE(contestOptions.getDescription().size() <= 10240,
+               "Contest description is too long", contestOptions);
+    if (contestOptions.getDescription().size() > 500)
         longText = true;
-    KJ_REQUIRE(creationRequest.getContestants().getEntries().size() > 0, "Contest must have at least one contestant",
-               creationRequest);
-    KJ_REQUIRE(creationRequest.getContestants().getEntries().size() <= 8,
-               "Contest has too many contestants", creationRequest);
-    for (auto contestant : creationRequest.getContestants().getEntries()) {
+    KJ_REQUIRE(contestOptions.getContestants().getEntries().size() > 0, "Contest must have at least one contestant",
+               contestOptions);
+    KJ_REQUIRE(contestOptions.getContestants().getEntries().size() <= 8,
+               "Contest has too many contestants", contestOptions);
+    for (auto contestant : contestOptions.getContestants().getEntries()) {
         KJ_REQUIRE(contestant.getKey().size() > 0, "Contestant must have a name", contestant);
         KJ_REQUIRE(contestant.getKey().size() <= 30, "Contestant name is too long", contestant);
         KJ_REQUIRE(contestant.getValue().size() <= 10240, "Contestant description is too long", contestant);
@@ -104,25 +104,25 @@ StubChainAdaptor::ContestCreator::~ContestCreator()
                               std::chrono::system_clock::now().time_since_epoch() +
                               std::chrono::minutes(10)
                           ).count();
-    KJ_REQUIRE(creationRequest.getContestExpiration() == 0 || creationRequest.getContestExpiration() > minimumEndDate,
-               "Contest expiration must be at least 10 minutes in the future.", creationRequest);
+    KJ_REQUIRE(contestOptions.getEndTime() == 0 || contestOptions.getEndTime() > minimumEndDate,
+               "Contest end time must be at least 10 minutes in the future.", contestOptions);
 
-    switch(creationRequest.getContestType()) {
-    case ::ContestCreator::ContestTypes::ONE_OF_N:
+    switch(contestOptions.getType()) {
+    case ::Contest::Type::ONE_OF_N:
         price += 40000;
         break;
     }
 
     // Count up the base cost
-    switch(creationRequest.getTallyAlgorithm()) {
-    case ::ContestCreator::TallyAlgorithms::PLURALITY:
+    switch(contestOptions.getTallyAlgorithm()) {
+    case ::Contest::TallyAlgorithm::PLURALITY:
         price += 10000;
         break;
     }
 
-    switch(creationRequest.getContestants().getEntries().size()) {
+    switch(contestOptions.getContestants().getEntries().size()) {
     // Fall-through is intentional
-    default: price += (creationRequest.getContestants().getEntries().size() - 6) * 2000;
+    default: price += (contestOptions.getContestants().getEntries().size() - 6) * 2000;
     case 6: price += 2500;
     case 5: price += 2500;
     case 4: price += 5000;
@@ -132,28 +132,28 @@ StubChainAdaptor::ContestCreator::~ContestCreator()
         break;
     }
 
-    if (creationRequest.getContestExpiration() == 0)
+    if (contestOptions.getEndTime() == 0)
         price += 50000;
 
     // Calculate surcharges
     std::map<std::string, int64_t> surcharges;
     if (longText) {
-        auto charge = ((creationRequest.totalSize().wordCount * capnp::BYTES_PER_WORD) / 1024) * 10000;
+        auto charge = ((contestOptions.totalSize().wordCount * capnp::BYTES_PER_WORD) / 1024) * 10000;
         surcharges["Long descriptions"] = charge;
     }
 
     std::map<std::string, std::string> contestants;
-    for (auto contestant : creationRequest.getContestants().getEntries())
+    for (auto contestant : contestOptions.getContestants().getEntries())
         contestants.insert(std::make_pair<std::string, std::string>(contestant.getKey(), contestant.getValue()));
     context.getResults().setPurchaseApi(kj::heap<Purchase>(
                                             price,
                                             KJ_ASSERT_NONNULL(adaptor.getCoinOrphan("VOTE")).getReader().getId(),
                                             [&adaptor = adaptor,
-                                             name = std::string(creationRequest.getContestName()),
-                                             descripton = std::string(creationRequest.getContestDescription()),
+                                             name = std::string(contestOptions.getName()),
+                                             descripton = std::string(contestOptions.getDescription()),
                                              contestants = kj::mv(contestants),
-                                             weightCoin = creationRequest.getWeightCoin(),
-                                             endTime = creationRequest.getContestExpiration()] {
+                                             weightCoin = contestOptions.getCoin(),
+                                             endTime = contestOptions.getEndTime()] {
         auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
                        std::chrono::steady_clock::now().time_since_epoch()).count();
         auto contest = adaptor.createContest().getValue();
