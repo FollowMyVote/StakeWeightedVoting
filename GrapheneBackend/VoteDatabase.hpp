@@ -18,9 +18,12 @@
 #ifndef VOTEDATABASE_HPP
 #define VOTEDATABASE_HPP
 
-#include "Types.hpp"
+#include "Contest.hpp"
+#include "Decision.hpp"
 
 #include <graphene/chain/database.hpp>
+
+#include <kj/debug.h>
 
 namespace swv {
 
@@ -30,10 +33,35 @@ namespace swv {
 class VoteDatabase
 {
     gch::database& chain;
+    gdb::primary_index<ContestIndex>* _contestIndex = nullptr;
+    gdb::primary_index<DecisionIndex>* _decisionIndex = nullptr;
 public:
     VoteDatabase(gch::database& chain);
 
-    void registerIndexes() const;
+    void registerIndexes();
+
+    gch::database& db() {
+        return chain;
+    }
+    const gch::database& db() const {
+        return chain;
+    }
+    auto& decisionIndex() {
+        KJ_ASSERT(_decisionIndex != nullptr, "Not yet initialized: call registerIndexes first");
+        return *_decisionIndex;
+    }
+    auto& decisionIndex() const {
+        KJ_ASSERT(_decisionIndex != nullptr, "Not yet initialized: call registerIndexes first");
+        return *_decisionIndex;
+    }
+    auto& contestIndex() {
+        KJ_ASSERT(_contestIndex != nullptr, "Not yet initialized: call registerIndexes first");
+        return *_contestIndex;
+    }
+    auto& contestIndex() const {
+        KJ_ASSERT(_contestIndex != nullptr, "Not yet initialized: call registerIndexes first");
+        return *_contestIndex;
+    }
 };
 
 } // namespace swv

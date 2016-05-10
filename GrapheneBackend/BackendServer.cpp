@@ -16,10 +16,14 @@
  * along with SWV.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "BackendServer.hpp"
+#include "VoteDatabase.hpp"
 
 #include <kj/debug.h>
 
-BackendServer::BackendServer() {}
+namespace swv {
+
+BackendServer::BackendServer(VoteDatabase& db)
+    : db(db) {}
 BackendServer::~BackendServer() {}
 
 ::kj::Promise<void> BackendServer::getContestFeed(Backend::Server::GetContestFeedContext context) {
@@ -41,3 +45,5 @@ BackendServer::~BackendServer() {}
 ::kj::Promise<void> BackendServer::getCoinDetails(Backend::Server::GetCoinDetailsContext context) {
     return KJ_EXCEPTION(UNIMPLEMENTED, "NYI");
 }
+
+} // namespace swv

@@ -26,10 +26,10 @@ VoteDatabase::VoteDatabase(gch::database& chain)
     : chain(chain) {
 }
 
-void VoteDatabase::registerIndexes() const {
+void VoteDatabase::registerIndexes() {
     chain.register_evaluator<CustomEvaluator>();
-    chain.add_index<gdb::primary_index<ContestIndex>>();
-    chain.add_index<gdb::primary_index<DecisionIndex>>();
+    _contestIndex = chain.add_index<gdb::primary_index<ContestIndex>>();
+    _decisionIndex = chain.add_index<gdb::primary_index<DecisionIndex>>();
 }
 
 } // namespace swv

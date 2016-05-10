@@ -33,7 +33,6 @@ struct Datagram {
     }
     struct ContestKey {
     # The schema for the Key field of a contest datagram
-
         key :union {
             anonymous @0 :Void;
             # No signature; creator is anonymous
