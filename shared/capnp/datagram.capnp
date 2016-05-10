@@ -25,12 +25,25 @@ struct Datagram {
 
     enum DatagramType {
         decision @0;
-        # Marks a datagram as containing a decision. Key will be the publishing balance ID, content will be a Decision
-        # struct
+        # Marks a datagram as containing a decision. Key will be the publishing balance ID (FC-serialized
+        # account_id_type), content will be a Decision struct
         contest @1;
-        # Marks a datagram as containing a contest to be created. Key will be empty for anonymous creator or FC-
-        # serialized std::pair<account_id_type, fc::ecc:compact_signature> with creators account ID and signature;
-        # content will be a Contest struct
+        # Marks a datagram as containing a contest to be created. Key will be a ContestKey; content will be a Contest
+        # struct
+    }
+    struct ContestKey {
+    # The schema for the Key field of a contest datagram
+
+        key :union {
+            anonymous @0 :Void;
+            # No signature; creator is anonymous
+            signature :group {
+                id @1 :Data;
+                # FC-serialized graphene::chain::account_id_type, the creator's account ID
+                signature @2 :Data;
+                # FC-serialized fc::ecc::compact_signature, signature from the creator's memo key
+            }
+        }
     }
 
     index :group {

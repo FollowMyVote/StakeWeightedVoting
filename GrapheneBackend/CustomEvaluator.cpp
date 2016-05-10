@@ -53,6 +53,27 @@ inline std::map<std::string, std::string> convertMap(::Map<capnp::Text, capnp::T
     return result;
 }
 
+struct BlobMessageReader {
+    kj::ArrayInputStream stream;
+    capnp::PackedMessageReader reader;
+public:
+    BlobMessageReader(capnp::Data::Reader blob)
+        : stream(blob), reader(stream) {}
+
+    capnp::PackedMessageReader* operator->() {
+        return &reader;
+    }
+    const capnp::PackedMessageReader* operator->() const {
+        return &reader;
+    }
+    capnp::PackedMessageReader& operator*() {
+        return reader;
+    }
+    const capnp::PackedMessageReader& operator*() const {
+        return reader;
+    }
+};
+
 void processDecision(gch::database& db, gch::account_balance_id_type publisherId, ::Decision::Reader decision) {
     KJ_REQUIRE(decision.getOpinions().size() <= 1, "Only single-candidate votes are supported", decision);
     // Recall that contests are ID'd by their operation history ID, not the object ID
@@ -129,21 +150,22 @@ void processDecision(gch::database& db, gch::account_balance_id_type publisherId
         });
 }
 
-void processContest(gch::database& db, capnp::Data::Reader creatorAndSignature,
+void processContest(gch::database& db, ::Datagram::ContestKey::Key::Reader key,
                     fc::sha256 contestDigest, ::Contest::Reader contest) {
     // All relevant data consistency checks should have been done before FMV published the contest to the chain. We
     // should be able to skip them here, relying on the FMV signature to be sure this is a legitimate contest creation
     // request.
-    db.create<Contest>([&db, creatorAndSignature, contestDigest, contest](Contest& c) {
+    db.create<Contest>([&db, key, contestDigest, contest](Contest& c) {
         auto& index = db.get_index_type<gch::simple_index<gch::operation_history_object>>();
         c.contestId = gch::operation_history_id_type(index.size() - 1);
-        if (creatorAndSignature.size()) {
-            auto idAndSignature = unpack<std::pair<graphene::chain::account_id_type,
-                                                   fc::ecc::compact_signature>>(creatorAndSignature);
-            auto creatorKey = fc::ecc::public_key(idAndSignature.second, contestDigest);
-            KJ_REQUIRE(idAndSignature.first(db).options.memo_key == creatorKey,
+        if (key.isSignature()) {
+            auto signaturePack = key.getSignature();
+            auto id = unpack<gch::account_id_type>(signaturePack.getId());
+            auto signature = unpack<fc::ecc::compact_signature>(signaturePack.getSignature());
+            auto creatorKey = fc::ecc::public_key(signature, contestDigest);
+            KJ_REQUIRE(id(db).options.memo_key == creatorKey,
                        "Failed to create contest: creator's signature was invalid.");
-            c.creator = idAndSignature.first;
+            c.creator = id;
         } else
             c.creator = GRAPHENE_NULL_ACCOUNT;
         c.name = contest.getName();
@@ -164,26 +186,25 @@ graphene::chain::void_result CustomEvaluator::do_apply(const CustomEvaluator::op
         return {};
 
     try {
-        kj::ArrayInputStream dataStream(data.slice(VOTE_MAGIC->size(), data.size()));
-        capnp::PackedMessageReader message(dataStream);
-        auto datagram = message.getRoot<Datagram>();
-        kj::ArrayInputStream datagramContents(datagram.getContent());
-        capnp::PackedMessageReader datagramMessage(datagramContents);
+        BlobMessageReader message(data.slice(VOTE_MAGIC->size(), data.size()));
+        auto datagram = message->getRoot<Datagram>();
+        BlobMessageReader datagramMessage(datagram.getContent());
 
         switch (datagram.getIndex().getType()) {
         case Datagram::DatagramType::DECISION: {
             auto publisherId = unpack<gch::account_balance_id_type>(datagram.getIndex().getKey());
             KJ_REQUIRE(publisherId(db()).owner == op.fee_payer(),
                        "Nice try. You may not publish decisions for someone else");
-            processDecision(db(), publisherId, datagramMessage.getRoot<::Decision>());
+            processDecision(db(), publisherId, datagramMessage->getRoot<::Decision>());
             break;
         }
         case Datagram::DatagramType::CONTEST: {
             KJ_REQUIRE(kj::StringPtr(op.fee_payer()(db()).name) == CONTEST_PUBLISHING_ACCOUNT,
                        "Unauthorized account attempted to publish contest",
                        op.fee_payer()(db()).name, *CONTEST_PUBLISHING_ACCOUNT);
-            processContest(db(), datagram.getIndex().getKey(), digest(datagram.getContent()),
-                           datagramMessage.getRoot<::Contest>());
+            BlobMessageReader keyReader(datagram.getIndex().getKey());
+            processContest(db(), keyReader->getRoot<::Datagram::ContestKey>().getKey(), digest(datagram.getContent()),
+                           datagramMessage->getRoot<::Contest>());
             break;
         }
         }
