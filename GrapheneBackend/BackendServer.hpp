@@ -25,10 +25,10 @@ class VoteDatabase;
 
 class BackendServer : public Backend::Server
 {
-    VoteDatabase& db;
+    VoteDatabase& vdb;
 
 public:
-    BackendServer(VoteDatabase& db);
+    BackendServer(VoteDatabase& vdb);
     virtual ~BackendServer();
 
     // Backend::Server interface

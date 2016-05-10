@@ -17,17 +17,21 @@
  */
 #include "BackendServer.hpp"
 #include "VoteDatabase.hpp"
-
-#include <kj/debug.h>
+#include "FeedGenerator.hpp"
 
 namespace swv {
 
 BackendServer::BackendServer(VoteDatabase& db)
-    : db(db) {}
+    : vdb(db) {}
 BackendServer::~BackendServer() {}
 
 ::kj::Promise<void> BackendServer::getContestFeed(Backend::Server::GetContestFeedContext context) {
-    return KJ_EXCEPTION(UNIMPLEMENTED, "NYI");
+    auto& contestIndex = vdb.contestIndex().indices();
+    auto& startTimeIndex = contestIndex.get<ByStartTime>();
+    auto itr = startTimeIndex.lower_bound(vdb.db().head_block_time());
+    context.initResults().setGenerator(kj::heap<FeedGenerator>(itr == startTimeIndex.end()? nullptr : &*itr,
+                                                               vdb.db()));
+    return kj::READY_NOW;
 }
 
 ::kj::Promise<void> BackendServer::searchContests(Backend::Server::SearchContestsContext context) {
