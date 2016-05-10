@@ -20,10 +20,15 @@
 
 #include <capnp/backend.capnp.h>
 
+namespace swv {
+class VoteDatabase;
+
 class BackendServer : public Backend::Server
 {
+    VoteDatabase& vdb;
+
 public:
-    BackendServer();
+    BackendServer(VoteDatabase& vdb);
     virtual ~BackendServer();
 
     // Backend::Server interface
@@ -34,5 +39,7 @@ protected:
     virtual ::kj::Promise<void> createContest(CreateContestContext context) override;
     virtual ::kj::Promise<void> getCoinDetails(GetCoinDetailsContext context) override;
 };
+
+} // namespace swv
 
 #endif // BACKENDSERVER_HPP

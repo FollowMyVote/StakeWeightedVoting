@@ -19,6 +19,8 @@ CppApplication {
         "CustomEvaluator.hpp",
         "Decision.cpp",
         "Decision.hpp",
+        "FeedGenerator.cpp",
+        "FeedGenerator.hpp",
         "Types.hpp",
         "VoteDatabase.cpp",
         "VoteDatabase.hpp",

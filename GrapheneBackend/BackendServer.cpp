@@ -16,14 +16,22 @@
  * along with SWV.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "BackendServer.hpp"
+#include "VoteDatabase.hpp"
+#include "FeedGenerator.hpp"
 
-#include <kj/debug.h>
+namespace swv {
 
-BackendServer::BackendServer() {}
+BackendServer::BackendServer(VoteDatabase& db)
+    : vdb(db) {}
 BackendServer::~BackendServer() {}
 
 ::kj::Promise<void> BackendServer::getContestFeed(Backend::Server::GetContestFeedContext context) {
-    return KJ_EXCEPTION(UNIMPLEMENTED, "NYI");
+    auto& contestIndex = vdb.contestIndex().indices();
+    auto& startTimeIndex = contestIndex.get<ByStartTime>();
+    auto itr = startTimeIndex.lower_bound(vdb.db().head_block_time());
+    context.initResults().setGenerator(kj::heap<FeedGenerator>(itr == startTimeIndex.end()? nullptr : &*itr,
+                                                               vdb.db()));
+    return kj::READY_NOW;
 }
 
 ::kj::Promise<void> BackendServer::searchContests(Backend::Server::SearchContestsContext context) {
@@ -41,3 +49,5 @@ BackendServer::~BackendServer() {}
 ::kj::Promise<void> BackendServer::getCoinDetails(Backend::Server::GetCoinDetailsContext context) {
     return KJ_EXCEPTION(UNIMPLEMENTED, "NYI");
 }
+
+} // namespace swv
