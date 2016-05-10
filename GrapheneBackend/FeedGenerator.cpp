@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /*
  * Copyright 2015 Follow My Vote, Inc.
  * This file is part of The Follow My Vote Stake-Weighted Voting Application ("SWV").
@@ -15,6 +16,8 @@
  * You should have received a copy of the GNU General Public License
  * along with SWV.  If not, see <http://www.gnu.org/licenses/>.
  */
+=======
+>>>>>>> 311a0730c77bc995976304c0d167a781a2a1f185
 #include "FeedGenerator.hpp"
 
 #include <graphene/chain/database.hpp>
