@@ -23,12 +23,18 @@
 #include <graphene/db/object.hpp>
 #include <graphene/db/generic_index.hpp>
 
+namespace graphene { namespace chain { class database; } }
+
 namespace swv {
 
 class Contest : public gdb::abstract_object<Contest>
 {
 public:
     virtual ~Contest();
+    Contest() = default;
+    Contest(const Contest&) = default;
+    Contest(Contest&&) = default;
+    Contest& operator=(const Contest&) = default;
 
     static const uint8_t space_id = ContestObjectId::space_id;
     static const uint8_t type_id = ContestObjectId::type_id;
@@ -50,6 +56,10 @@ public:
     std::map<int32_t, int64_t> contestantResults;
     /// Dynamic property -- could be extracted into a separate object to improve performance
     std::map<std::string, int64_t> writeInResults;
+
+    /// Returns true if this contest is active; false otherwise.
+    /// Currently this just checks if the current time is in [startTime, endTime]
+    bool isActive(const gch::database& db) const;
 };
 
 struct ByCreator;
