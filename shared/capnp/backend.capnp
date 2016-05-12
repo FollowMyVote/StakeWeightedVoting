@@ -78,6 +78,8 @@ interface Backend {
         # The URL to the icon to display for this coin (may be empty)
         activeContestCount @0 :Int32;
         # The total number of active contests in this coin
+        totalContestCount @5 :Int32;
+        # The total number of contests, active or inactive, in this coin
 
         volumeHistory :union {
             noHistory @2 :Void;

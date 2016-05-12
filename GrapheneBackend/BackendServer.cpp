@@ -47,7 +47,18 @@ BackendServer::~BackendServer() {}
 }
 
 ::kj::Promise<void> BackendServer::getCoinDetails(Backend::Server::GetCoinDetailsContext context) {
-    return KJ_EXCEPTION(UNIMPLEMENTED, "NYI");
+    auto details = context.initResults().initDetails();
+    auto& index = vdb.contestIndex().indices().get<ByCoin>();
+    auto range = index.equal_range(gch::asset_id_type(context.getParams().getCoinId()));
+    details.setActiveContestCount(std::count_if(range.first, range.second, [this](const Contest& c) {
+        return c.isActive(vdb.db());
+    }));
+    details.setTotalContestCount(std::distance(range.first, range.second));
+
+    // TODO: Icon URL, voting volume histogram
+    details.initVolumeHistory().setNoHistory();
+
+    return kj::READY_NOW;
 }
 
 } // namespace swv
