@@ -22,6 +22,7 @@ See [Architecture](Architecture.md) for more information on how the components i
 - [V-Play](http://v-play.net) 2.7.0+
 - [Graphene](https://github.com/cryptonomex/graphene) (Optional)
  - Be sure to use develop branch!
+ - If building with graphene, be sure to set the `GRAPHENE_PATH` environment variable to the path graphene is installed to
  
 A video showing how to set up the development environment is available [here](https://youtu.be/lvTyZ0GAT-k)
 
@@ -33,6 +34,11 @@ Once the dependencies are installed, building the application is as simple as ru
 To configure qbs, make sure your compiler is in PATH and run `qbs-setup-toolchains --detect`. This should configure your toolchain(s) automatically. Next, point it at Qt. If Qt 5.5 is in PATH, you may simply `qbs-setup-qt --detect`; otherwise, use `qbs-setup-qt /path/to/qt5.5/bin/qmake qt5`. It may also be necessary to run `qbs-config profiles.qt5.baseProfile gcc` to direct qbs to use `gcc` when using the qt5 profile, and/or run `qbs-config defaultProfile qt5` to direct qbs to use the qt5 profile by default.
 
 Binaries will be placed in a build folder created by qbs, probably named `qt5-debug/install-root` or similar, in the top level directory.
+
+### Troubleshooting:
+On Mac, it may be necessary to update the PATH variable if CapnProto's binaries are not in PATH. In Qt Creator, you can update this from the Projects view, available in the left nagivation panel. If you've installed CapnProto through Homebrew, you will need to add /usr/local/bin to PATH.
+
+Also on Mac, if Graphene is linked against OpenSSL from Homebrew, linking GrapheneBackend may fail unless the `LIBRARY_PATH` environment variable is set to `/usr/local/lib`.
 
 ### Running:
 You may use qbs to run the app:
