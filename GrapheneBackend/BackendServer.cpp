@@ -21,6 +21,25 @@
 
 namespace swv {
 
+void populateCoinVolumeHistory(Backend::CoinDetails::VolumeHistory::Builder builder,
+                               int32_t historyLength, const CoinVolumeHistory& historyRecord) {
+    if (historyLength <= 0) {
+        builder.setNoHistory();
+        return;
+    }
+    auto history = builder.initHistory();
+    auto lastUpdate = historyRecord.hourOfLastUpdate.sec_since_epoch();
+    history.setHistoryEndTimestamp(lastUpdate * 1000);
+    auto histogram = history.initHistogram(historyLength);
+    for (int i = 0; i < historyLength; ++i) {
+        auto itr = historyRecord.volumeHistogram.find(fc::time_point_sec(lastUpdate - 3600*i));
+        if (itr != historyRecord.volumeHistogram.end())
+            histogram.set(historyLength - i - 1, itr->second.value);
+        else
+            histogram.set(historyLength - i - 1, 0);
+    }
+}
+
 BackendServer::BackendServer(VoteDatabase& db)
     : vdb(db) {}
 BackendServer::~BackendServer() {}
@@ -48,15 +67,21 @@ BackendServer::~BackendServer() {}
 
 ::kj::Promise<void> BackendServer::getCoinDetails(Backend::Server::GetCoinDetailsContext context) {
     auto details = context.initResults().initDetails();
-    auto& index = vdb.contestIndex().indices().get<ByCoin>();
-    auto range = index.equal_range(gch::asset_id_type(context.getParams().getCoinId()));
+    auto& contestsByCoin = vdb.contestIndex().indices().get<ByCoin>();
+    auto coinId = gch::asset_id_type(context.getParams().getCoinId());
+    auto range = contestsByCoin.equal_range(coinId);
     details.setActiveContestCount(std::count_if(range.first, range.second, [this](const Contest& c) {
         return c.isActive(vdb.db());
     }));
     details.setTotalContestCount(std::distance(range.first, range.second));
 
-    // TODO: Icon URL, voting volume histogram
-    details.initVolumeHistory().setNoHistory();
+    // TODO: Icon URL
+    auto& historyByCoin = vdb.coinVolumeHistoryIndex().indices().get<ByCoin>();
+    auto itr = historyByCoin.find(coinId);
+    if (itr == historyByCoin.end())
+        details.initVolumeHistory().setNoHistory();
+    else
+        populateCoinVolumeHistory(details.initVolumeHistory(), context.getParams().getVolumeHistoryLength(), *itr);
 
     return kj::READY_NOW;
 }

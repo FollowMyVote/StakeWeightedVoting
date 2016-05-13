@@ -18,6 +18,7 @@
 #include "CustomEvaluator.hpp"
 #include "Contest.hpp"
 #include "Decision.hpp"
+#include "CoinVolumeHistory.hpp"
 
 #include <datagram.capnp.h>
 #include <decision.capnp.h>
@@ -148,6 +149,21 @@ void processDecision(gch::database& db, gch::account_balance_id_type publisherId
                 result += newDecision.voter(db).balance.value;
             }
         });
+
+    // Register decision with coin volume history mechanism
+    {
+        auto& coinVolumeIndex = db.get_index_type<CoinVolumeHistoryIndex>().indices().get<ByCoin>();
+        auto itr = coinVolumeIndex.find(contest.coin);
+        if (itr == coinVolumeIndex.end())
+            db.create<CoinVolumeHistory>([&newDecision, &contest, &db](CoinVolumeHistory& volumeHistory) {
+                volumeHistory.coinId = contest.coin;
+                volumeHistory.recordDecision(newDecision, db);
+            });
+        else
+            db.modify(*itr, [&newDecision, &db](CoinVolumeHistory& volumeHistory) {
+                volumeHistory.recordDecision(newDecision, db);
+            });
+    }
 }
 
 void processContest(gch::database& db, ::Datagram::ContestKey::Key::Reader key,
