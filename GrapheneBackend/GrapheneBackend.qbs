@@ -13,6 +13,8 @@ CppApplication {
         "BackendPlugin.hpp",
         "BackendServer.cpp",
         "BackendServer.hpp",
+        "CoinVolumeHistory.cpp",
+        "CoinVolumeHistory.hpp",
         "Contest.cpp",
         "Contest.hpp",
         "CustomEvaluator.cpp",

@@ -30,6 +30,7 @@ void VoteDatabase::registerIndexes() {
     chain.register_evaluator<CustomEvaluator>();
     _contestIndex = chain.add_index<gdb::primary_index<ContestIndex>>();
     _decisionIndex = chain.add_index<gdb::primary_index<DecisionIndex>>();
+    _coinVolumeHistoryIndex = chain.add_index<gdb::primary_index<CoinVolumeHistoryIndex>>();
 }
 
 } // namespace swv

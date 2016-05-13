@@ -20,10 +20,22 @@
 
 #include "Contest.hpp"
 #include "Decision.hpp"
+#include "CoinVolumeHistory.hpp"
 
 #include <graphene/chain/database.hpp>
 
 #include <kj/debug.h>
+
+#define INDEX_GETTER(name) \
+    auto& name() { \
+        KJ_ASSERT(_ ## name != nullptr, "Not yet initialized: call registerIndexes first"); \
+        return *_ ## name; \
+    } \
+    auto& name() const { \
+        KJ_ASSERT(_ ## name != nullptr, "Not yet initialized: call registerIndexes first"); \
+        return *_ ## name; \
+    }
+
 
 namespace swv {
 
@@ -35,6 +47,7 @@ class VoteDatabase
     gch::database& chain;
     gdb::primary_index<ContestIndex>* _contestIndex = nullptr;
     gdb::primary_index<DecisionIndex>* _decisionIndex = nullptr;
+    gdb::primary_index<CoinVolumeHistoryIndex>* _coinVolumeHistoryIndex = nullptr;
 public:
     VoteDatabase(gch::database& chain);
 
@@ -46,24 +59,13 @@ public:
     const gch::database& db() const {
         return chain;
     }
-    auto& decisionIndex() {
-        KJ_ASSERT(_decisionIndex != nullptr, "Not yet initialized: call registerIndexes first");
-        return *_decisionIndex;
-    }
-    auto& decisionIndex() const {
-        KJ_ASSERT(_decisionIndex != nullptr, "Not yet initialized: call registerIndexes first");
-        return *_decisionIndex;
-    }
-    auto& contestIndex() {
-        KJ_ASSERT(_contestIndex != nullptr, "Not yet initialized: call registerIndexes first");
-        return *_contestIndex;
-    }
-    auto& contestIndex() const {
-        KJ_ASSERT(_contestIndex != nullptr, "Not yet initialized: call registerIndexes first");
-        return *_contestIndex;
-    }
+
+    INDEX_GETTER(contestIndex)
+    INDEX_GETTER(decisionIndex)
+    INDEX_GETTER(coinVolumeHistoryIndex)
 };
 
 } // namespace swv
 
+#undef INDEX_GETTER
 #endif // VOTEDATABASE_HPP

@@ -23,8 +23,6 @@
 #include <graphene/db/object.hpp>
 #include <graphene/db/generic_index.hpp>
 
-namespace graphene { namespace chain { class database; } }
-
 namespace swv {
 
 class Contest : public gdb::abstract_object<Contest>
