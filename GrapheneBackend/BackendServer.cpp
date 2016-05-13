@@ -23,6 +23,8 @@ namespace swv {
 
 void populateCoinVolumeHistory(Backend::CoinDetails::VolumeHistory::Builder builder,
                                int32_t historyLength, const CoinVolumeHistory& historyRecord) {
+    KJ_REQUIRE(historyLength <= 1000000,
+               "OK, let's be reasonable here. You don't need a million hours of volume history.");
     if (historyLength <= 0) {
         builder.setNoHistory();
         return;
