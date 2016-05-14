@@ -22,8 +22,6 @@
 
 #include <contestgenerator.capnp.h>
 
-namespace graphene { namespace chain { class database; } }
-
 namespace swv {
 
 class FeedGenerator : public ContestGenerator::Server {

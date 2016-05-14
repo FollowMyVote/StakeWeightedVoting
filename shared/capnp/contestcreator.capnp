@@ -110,7 +110,7 @@ interface ContestCreator {
                 maxRevotes @5 :Int32;
                 # Maximum number of revotes per voter to sponsor; zero indicates unlimited
                 endDate @6 :Int64;
-                # Microsecond timestamp of end of vote sponsorship period
+                # Millisecond timestamp of end of vote sponsorship period
                 incentive @7 :Int64;
                 # Balance to pay each voter as an incentive for voting on this contest
             }

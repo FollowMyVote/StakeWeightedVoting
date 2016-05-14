@@ -25,6 +25,8 @@
 #define VOTE_SPACE_ID 7
 #endif
 
+namespace graphene { namespace chain { class database; } }
+
 namespace swv {
 namespace gch = graphene::chain;
 namespace gdb = graphene::db;
@@ -32,15 +34,18 @@ namespace gdb = graphene::db;
 namespace ObjectIds {
 enum VoteObjectTypes {
     Contest = 1,
-    Decision
+    Decision,
+    CoinVolumeHistory
 };
 }
 
 class Contest;
 class Decision;
+class CoinVolumeHistory;
 
 using ContestObjectId = gdb::object_id<VOTE_SPACE_ID, ObjectIds::Contest, Contest>;
 using DecisionObjectId = gdb::object_id<VOTE_SPACE_ID, ObjectIds::Decision, Decision>;
+using CoinVolumeHistoryObjectId = gdb::object_id<VOTE_SPACE_ID, ObjectIds::CoinVolumeHistory, CoinVolumeHistory>;
 
 namespace bmi = boost::multi_index;
 struct ById;

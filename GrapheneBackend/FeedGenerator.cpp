@@ -66,7 +66,7 @@ swv::FeedGenerator::~FeedGenerator(){}
         currentContest = nullptr;
         return kj::READY_NOW;
     }
-    while (++itr != index.end() && itr->endTime < fc::time_point(db.head_block_time()));
+    while (++itr != index.end() && itr->isActive(db));
     if (itr == index.end()) {
         currentContest = nullptr;
         return kj::READY_NOW;
@@ -89,7 +89,7 @@ swv::FeedGenerator::~FeedGenerator(){}
 
     kj::Vector<const Contest*> contestsToReturn;
     while (++itr != index.end() && contestsToReturn.size() < context.getParams().getCount()) {
-        if (itr->endTime < fc::time_point(db.head_block_time()))
+        if (!itr->isActive(db))
             continue;
         contestsToReturn.add(&*itr);
     }

@@ -21,7 +21,7 @@ PurchaseWrapper::PurchaseWrapper(Purchase::Client&& api, kj::TaskSet& tasks, QOb
     class CompleteNotifier : public Notifier<capnp::Text>::Server {
         PurchaseWrapper& wrapper;
         virtual ::kj::Promise<void> notify(NotifyContext context) {
-            wrapper.setComplete(context.getParams().getMessage() == "true");
+            wrapper.setComplete(context.getParams().getNotification() == "true");
             return kj::READY_NOW;
         }
 

@@ -17,8 +17,15 @@
  */
 #include "Contest.hpp"
 
+#include <graphene/chain/database.hpp>
+
 namespace swv {
 
 Contest::~Contest() {}
+
+bool Contest::isActive(const gch::database& db) const {
+    auto now = db.head_block_time();
+    return now >= startTime && now <= endTime;
+}
 
 } // namespace swv
