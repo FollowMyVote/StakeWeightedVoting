@@ -18,6 +18,8 @@
 #include "BackendServer.hpp"
 #include "VoteDatabase.hpp"
 #include "FeedGenerator.hpp"
+#include "ContestResultsServer.hpp"
+#include "Utilities.hpp"
 
 namespace swv {
 
@@ -60,7 +62,9 @@ BackendServer::~BackendServer() {}
 }
 
 ::kj::Promise<void> BackendServer::getContestResults(Backend::Server::GetContestResultsContext context) {
-    return KJ_EXCEPTION(UNIMPLEMENTED, "NYI");
+    auto contestId = unpack<gch::operation_history_id_type>(context.getParams().getContestId());
+    context.initResults().setResults(kj::heap<ContestResultsServer>(vdb, contestId));
+    return kj::READY_NOW;
 }
 
 ::kj::Promise<void> BackendServer::createContest(Backend::Server::CreateContestContext context) {

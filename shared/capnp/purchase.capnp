@@ -51,5 +51,5 @@ interface Notifier(T) {
     # notification occurs. If the event is a single-occurrence event, and it has already occurred when the notifying
     # party receives the Notifier, that party should send the notification immediately; not allow it to go unnotified.
 
-    notify @0 (message :T) -> ();
+    notify @0 (notification :T) -> ();
 }

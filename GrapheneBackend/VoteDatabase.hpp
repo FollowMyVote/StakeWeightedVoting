@@ -26,7 +26,9 @@
 
 #include <kj/debug.h>
 
-#define INDEX_GETTER(name) \
+#include <boost/signals2.hpp>
+
+#define GETTERS(name) \
     auto& name() { \
         KJ_ASSERT(_ ## name != nullptr, "Not yet initialized: call registerIndexes first"); \
         return *_ ## name; \
@@ -38,6 +40,7 @@
 
 
 namespace swv {
+class CustomEvaluator;
 
 /**
  * @brief The VoteDatabase class monitors the blockchain and maintains a database of all voting-related content
@@ -45,9 +48,24 @@ namespace swv {
 class VoteDatabase
 {
     gch::database& chain;
+    CustomEvaluator* _customEvaluator = nullptr;
     gdb::primary_index<ContestIndex>* _contestIndex = nullptr;
     gdb::primary_index<DecisionIndex>* _decisionIndex = nullptr;
     gdb::primary_index<CoinVolumeHistoryIndex>* _coinVolumeHistoryIndex = nullptr;
+
+    class ResultUpdateWatcher : public gdb::secondary_index {
+        VoteDatabase* vdb = nullptr;
+    public:
+        ResultUpdateWatcher() {}
+
+        void setVoteDatabase(VoteDatabase* vdb) {
+            this->vdb = vdb;
+        }
+
+        // secondary_index interface
+        virtual void object_modified(const graphene::db::object& after) override;
+    };
+
 public:
     VoteDatabase(gch::database& chain);
 
@@ -60,12 +78,15 @@ public:
         return chain;
     }
 
-    INDEX_GETTER(contestIndex)
-    INDEX_GETTER(decisionIndex)
-    INDEX_GETTER(coinVolumeHistoryIndex)
+    GETTERS(customEvaluator)
+    GETTERS(contestIndex)
+    GETTERS(decisionIndex)
+    GETTERS(coinVolumeHistoryIndex)
+
+    boost::signals2::signal<void(gch::operation_history_id_type)> contestResultsUpdated;
 };
 
 } // namespace swv
 
-#undef INDEX_GETTER
+#undef GETTERS
 #endif // VOTEDATABASE_HPP

@@ -29,8 +29,19 @@ VoteDatabase::VoteDatabase(gch::database& chain)
 void VoteDatabase::registerIndexes() {
     chain.register_evaluator<CustomEvaluator>();
     _contestIndex = chain.add_index<gdb::primary_index<ContestIndex>>();
+    // If build fails on this next line, it's because https://github.com/cryptonomex/graphene/pull/653 hasn't been
+    // merged yet. You will need that patch in order to build this.
+    _contestIndex->add_secondary_index<ResultUpdateWatcher>()->setVoteDatabase(this);
     _decisionIndex = chain.add_index<gdb::primary_index<DecisionIndex>>();
     _coinVolumeHistoryIndex = chain.add_index<gdb::primary_index<CoinVolumeHistoryIndex>>();
+}
+
+void VoteDatabase::ResultUpdateWatcher::object_modified(const graphene::db::object& after) {
+    if (vdb == nullptr)
+        return;
+    auto contest = dynamic_cast<const Contest*>(&after);
+    if (contest != nullptr)
+        vdb->contestResultsUpdated(contest->contestId);
 }
 
 } // namespace swv
