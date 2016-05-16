@@ -7,6 +7,8 @@ CppApplication {
 
     Depends { name: "shared" }
     Depends { name: "graphene" }
+    Depends { name: "capnp" }
+    capnp.importPaths: ["../shared/capnp"]
 
     files: [
         "BackendPlugin.cpp",
@@ -36,6 +38,7 @@ CppApplication {
         "compat/FcStreamWrapper.cpp",
         "compat/FcStreamWrapper.hpp",
         "main.cpp",
+        "config.capnp",
     ]
 
     Group {
