@@ -19,6 +19,7 @@
 #include "VoteDatabase.hpp"
 #include "FeedGenerator.hpp"
 #include "ContestResultsServer.hpp"
+#include "ContestCreatorServer.hpp"
 #include "Utilities.hpp"
 
 namespace swv {
@@ -68,7 +69,8 @@ BackendServer::~BackendServer() {}
 }
 
 ::kj::Promise<void> BackendServer::createContest(Backend::Server::CreateContestContext context) {
-    return KJ_EXCEPTION(UNIMPLEMENTED, "NYI");
+    context.initResults().setCreator(kj::heap<ContestCreatorServer>(vdb));
+    return kj::READY_NOW;
 }
 
 ::kj::Promise<void> BackendServer::getCoinDetails(Backend::Server::GetCoinDetailsContext context) {

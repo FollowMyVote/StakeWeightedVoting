@@ -17,6 +17,8 @@ CppApplication {
         "CoinVolumeHistory.hpp",
         "Contest.cpp",
         "Contest.hpp",
+        "ContestCreatorServer.cpp",
+        "ContestCreatorServer.hpp",
         "ContestResultsServer.cpp",
         "ContestResultsServer.hpp",
         "CustomEvaluator.cpp",
