@@ -40,6 +40,7 @@ void BackendPlugin::plugin_initialize(const boost::program_options::variables_ma
 }
 
 void BackendPlugin::plugin_startup() {
+    database->startup();
     running = true;
     server.listen(serverPort);
     KJ_LOG(INFO, "Server is up", server.get_port());

@@ -11,6 +11,8 @@ CppApplication {
     capnp.importPaths: ["../shared/capnp"]
 
     files: [
+        "BackendConfiguration.cpp",
+        "BackendConfiguration.hpp",
         "BackendPlugin.cpp",
         "BackendPlugin.hpp",
         "BackendServer.cpp",
