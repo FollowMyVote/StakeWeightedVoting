@@ -21,6 +21,7 @@
 #include "Contest.hpp"
 #include "Decision.hpp"
 #include "CoinVolumeHistory.hpp"
+#include "BackendConfiguration.hpp"
 
 #include <graphene/chain/database.hpp>
 
@@ -52,6 +53,7 @@ class VoteDatabase
     gdb::primary_index<ContestIndex>* _contestIndex = nullptr;
     gdb::primary_index<DecisionIndex>* _decisionIndex = nullptr;
     gdb::primary_index<CoinVolumeHistoryIndex>* _coinVolumeHistoryIndex = nullptr;
+    BackendConfiguration config;
 
     class ResultUpdateWatcher : public gdb::secondary_index {
         VoteDatabase* vdb = nullptr;
@@ -70,6 +72,7 @@ public:
     VoteDatabase(gch::database& chain);
 
     void registerIndexes();
+    void startup();
 
     gch::database& db() {
         return chain;

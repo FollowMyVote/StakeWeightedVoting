@@ -6,10 +6,15 @@ import qbs.ModUtils
 Module {
     // Inputs
     property string capnpPath: qbs.hostOS.contains("osx")? "/usr/local/bin" : "/usr/bin"
+    property var importPaths: []
 
     PropertyOptions {
         name: "capnpPath"
         description: "Path to the capnp executables"
+    }
+    PropertyOptions {
+        name: "importPaths"
+        description: "Directories to search for non-relative imports"
     }
 
     validate: {
@@ -50,12 +55,15 @@ Module {
         prepare: {
             var command = "capnp"
             var compilerOption = "-oc++"
+            var importPaths = product.moduleProperty("capnp", "importPaths").map(function(path) { return "-I" + path })
+            print(JSON.stringify(importPaths))
             if (product.moduleProperty("capnp", "capnpPath") !== "") {
                 command = product.moduleProperty("capnp", "capnpPath") + "/capnp"
                 compilerOption = "-o" + product.moduleProperty("capnp", "capnpPath") + "/capnpc-c++"
             }
 
-            var cmd = new Command(command, ["compile", compilerOption, input.filePath]);
+            var args = ["compile", compilerOption].concat(importPaths).concat([input.filePath]);
+            var cmd = new Command(command, args);
             cmd.description = "Generating Cap'n Proto code for " + input.fileName;
             cmd.highlight = "codegen";
             cmd.workingDirectory = FileInfo.path(input.filePath)

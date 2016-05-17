@@ -23,8 +23,7 @@
 namespace swv {
 
 VoteDatabase::VoteDatabase(gch::database& chain)
-    : chain(chain) {
-}
+    : chain(chain) {}
 
 void VoteDatabase::registerIndexes() {
     chain.register_evaluator<CustomEvaluator>();
@@ -34,6 +33,10 @@ void VoteDatabase::registerIndexes() {
     _contestIndex->add_secondary_index<ResultUpdateWatcher>()->setVoteDatabase(this);
     _decisionIndex = chain.add_index<gdb::primary_index<DecisionIndex>>();
     _coinVolumeHistoryIndex = chain.add_index<gdb::primary_index<CoinVolumeHistoryIndex>>();
+}
+
+void VoteDatabase::startup() {
+    config.open((chain.get_data_dir() / "configuration.bin").preferred_string().c_str());
 }
 
 void VoteDatabase::ResultUpdateWatcher::object_modified(const graphene::db::object& after) {

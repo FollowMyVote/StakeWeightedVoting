@@ -28,7 +28,7 @@ class ContestCreatorServer : public ContestCreator::Server
     VoteDatabase& vdb;
 
 public:
-    ContestCreatorServer();
+    ContestCreatorServer(VoteDatabase& vdb);
     virtual ~ContestCreatorServer();
 
     // ContestCreator::Server interface
