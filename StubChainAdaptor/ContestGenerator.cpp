@@ -18,6 +18,7 @@
 #include "ContestGenerator.hpp"
 
 #include <numeric>
+#include <limits>
 
 #include <kj/debug.h>
 

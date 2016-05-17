@@ -13,7 +13,7 @@ namespace swv {
 BackendConfiguration::BackendConfiguration() {}
 
 void BackendConfiguration::open(kj::StringPtr configFilePath, bool createIfMissing) {
-    auto fd = ::open(configFilePath.cStr(), O_RDONLY, S_IREAD);
+    auto fd = ::open(configFilePath.cStr(), O_RDONLY);
 
     if (!createIfMissing)
         KJ_REQUIRE(fd >= 0, "Failed to open file for reading", configFilePath, strerror(errno));
@@ -38,7 +38,7 @@ void BackendConfiguration::load(capnp::Data::Reader serialConfig) {
 }
 
 void BackendConfiguration::save() {
-    auto fd = ::open(configFilePath().cStr(), O_CREAT | O_WRONLY, S_IWRITE | S_IREAD);
+    auto fd = ::open(configFilePath().cStr(), O_CREAT | O_WRONLY);
     KJ_REQUIRE(fd >= 0, "Failed to open file for writing", configFilePath(), strerror(errno));
     kj::AutoCloseFd closer(fd);
     capnp::writeMessageToFd(fd, message);
