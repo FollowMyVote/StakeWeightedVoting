@@ -115,6 +115,14 @@ public:
     Q_INVOKABLE swv::data::Account* getAccount(QString name);
 
 signals:
+    /**
+     * @brief Notify user of an error which we can't do anything else about
+     * @param message Message to show the user describing the error
+     *
+     * Use this signal for errors which we can't easily recover from, to notify the user that the error occurred. When
+     * some smarter form of recovery is possible, implement that error handling logic closer to the code that triggered
+     * the error.
+     */
     void error(QString message);
     void isReadyChanged();
     void ready();
