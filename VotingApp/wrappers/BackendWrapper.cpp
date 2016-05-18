@@ -17,10 +17,12 @@
  */
 
 #include "BackendWrapper.hpp"
+#include "ContestResultsApi.hpp"
 #include "PromiseConverter.hpp"
 #include "wrappers/ContestGeneratorWrapper.hpp"
 #include "wrappers/PurchaseContestRequest.hpp"
 #include "wrappers/ContestCreator.hpp"
+#include "Converters.hpp"
 
 #include <Promise.hpp>
 
@@ -77,7 +79,15 @@ ContestGeneratorWrapper*BackendWrapper::getVotedContests()
     return new ContestGeneratorWrapper(request.send().getGenerator(), promiseConverter);
 }
 
-ContestCreatorWrapper*BackendWrapper::contestCreator()
+ContestResultsApi* BackendWrapper::getContestResults(QString contestId) {
+    auto request = m_backend.getContestResultsRequest();
+    auto blob = QByteArray::fromHex(contestId.toLocal8Bit());
+    request.setContestId(convertBlob(blob));
+
+    return new ContestResultsApi(request.send().getResults());
+}
+
+ContestCreatorWrapper* BackendWrapper::contestCreator()
 {
     // Lazy load the creator; most runs we will probably never need it.
     if (creator.get() == nullptr)

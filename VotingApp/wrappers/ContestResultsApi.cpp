@@ -35,4 +35,9 @@ ContestResultsApi::ResultsNotifier::ResultsNotifier(ContestResultsApi& resultsAp
     resultsApi.updateBarSeries(talliedOpinions);
 }
 
+void ContestResultsApi::ErrorHandler::taskFailed(kj::Exception&& exception) {
+    // TODO: Do something smart in the UI
+    KJ_LOG(ERROR, "Exception from RPC", exception);
+}
+
 } // namespace swv

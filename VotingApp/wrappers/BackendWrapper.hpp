@@ -28,6 +28,7 @@ class PromiseConverter;
 namespace swv {
 class ContestGeneratorWrapper;
 class ContestCreatorWrapper;
+class ContestResultsApi;
 
 /**
  * @brief The BackendWrapper class provides a QML-friendly wrapper for the backend API
@@ -59,6 +60,9 @@ public:
     Q_INVOKABLE swv::ContestGeneratorWrapper* getContestsByCoin(quint64 coinId);
     /// @brief Get the contests the current user has voted on
     Q_INVOKABLE swv::ContestGeneratorWrapper* getVotedContests();
+
+    /// @brief Get the results API for a specified contest
+    Q_INVOKABLE swv::ContestResultsApi* getContestResults(QString contestId);
 
     swv::ContestCreatorWrapper* contestCreator();
 
