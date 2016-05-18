@@ -86,6 +86,13 @@ public:
     GETTERS(decisionIndex)
     GETTERS(coinVolumeHistoryIndex)
 
+    BackendConfiguration& configuration() {
+        return config;
+    }
+    const BackendConfiguration& configuration() const {
+        return config;
+    }
+
     boost::signals2::signal<void(gch::operation_history_id_type)> contestResultsUpdated;
 };
 
