@@ -6,7 +6,7 @@ QtGuiApplication {
 
     Depends { name: "shared" }
     Depends { name: "StubChainAdaptor" }
-    Depends { name: "Qt"; submodules: ["network", "qml"] }
+    Depends { name: "Qt"; submodules: ["network", "qml", "charts"] }
     Depends { name: "libqtqmltricks-qtquickuielements" }
     Depends { name: "VPlay" }
     VPlay.sdkPath: Qt.core.incPath + "/.."
@@ -47,6 +47,8 @@ QtGuiApplication {
         "wrappers/ContestCreator.hpp",
         "wrappers/ContestGeneratorWrapper.cpp",
         "wrappers/ContestGeneratorWrapper.hpp",
+        "wrappers/ContestResultsApi.cpp",
+        "wrappers/ContestResultsApi.hpp",
         "wrappers/Decision.cpp",
         "wrappers/Decision.hpp",
         "wrappers/OwningWrapper.cpp",
