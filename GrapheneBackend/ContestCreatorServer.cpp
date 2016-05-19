@@ -17,6 +17,16 @@
  */
 #include "ContestCreatorServer.hpp"
 #include "VoteDatabase.hpp"
+#include "Utilities.hpp"
+
+#include <graphene/chain/protocol/transaction.hpp>
+
+#include <capnp/message.h>
+#include <capnp/serialize-packed.h>
+
+#include <datagram.capnp.h>
+
+#include <fc/smart_ref_impl.hpp>
 
 namespace swv {
 
@@ -24,6 +34,7 @@ class PurchaseServer : public ::Purchase::Server {
     VoteDatabase& vdb;
     int64_t votePrice;
     bool oversized;
+    capnp::MallocMessageBuilder message;
 
 public:
     PurchaseServer(VoteDatabase& vdb, int64_t votePrice, bool oversized,
@@ -86,21 +97,21 @@ ContestCreatorServer::~ContestCreatorServer() {}
     // Check limits
     KJ_REQUIRE(contestOptions.getName().size() > 0, "Contest must have a name", contestOptions);
     KJ_REQUIRE(contestOptions.getName().size() <= LIMIT(NAME_LENGTH),
-            "Contest name is too long", contestOptions, limits);
+            "Contest name is too long", contestOptions);
     KJ_REQUIRE(contestOptions.getDescription().size() <= LIMIT(DESCRIPTION_HARD_LENGTH),
-               "Contest description is too long", contestOptions, limits);
+               "Contest description is too long", contestOptions);
     if (contestOptions.getDescription().size() > LIMIT(DESCRIPTION_SOFT_LENGTH))
         longText = true;
     KJ_REQUIRE(contestOptions.getContestants().getEntries().size() > 0, "Contest must have at least one contestant",
                contestOptions);
     KJ_REQUIRE(contestOptions.getContestants().getEntries().size() <= LIMIT(CONTESTANT_COUNT),
-               "Contest has too many contestants", contestOptions, limits);
+               "Contest has too many contestants", contestOptions);
     for (auto contestant : contestOptions.getContestants().getEntries()) {
         KJ_REQUIRE(contestant.getKey().size() > 0, "Contestant must have a name", contestant);
         KJ_REQUIRE(contestant.getKey().size() <= LIMIT(CONTESTANT_NAME_LENGTH),
-                   "Contestant name is too long", contestant, limits);
+                   "Contestant name is too long", contestant);
         KJ_REQUIRE(contestant.getValue().size() <= LIMIT(CONTESTANT_DESCRIPTION_HARD_LENGTH),
-                   "Contestant description is too long", contestant, limits);
+                   "Contestant description is too long", contestant);
         if (contestant.getValue().size() > LIMIT(CONTESTANT_DESCRIPTION_SOFT_LENGTH))
             longText = true;
     }
@@ -150,19 +161,70 @@ ContestCreatorServer::~ContestCreatorServer() {}
 PurchaseServer::PurchaseServer(VoteDatabase& vdb, int64_t votePrice, bool oversized,
                                ContestCreator::ContestCreationRequest::Reader request)
     : vdb(vdb), votePrice(votePrice), oversized(oversized) {
-    // TODO: copy relevant data from request into a message owned by this object
+    auto datagram = message.initRoot<Datagram>();
+    datagram.initIndex().setType(Datagram::DatagramType::CONTEST);
+
+    {
+        ReaderPacker packer(request.getCreatorSignature());
+        datagram.getIndex().setKey(packer.array());
+    } {
+        ReaderPacker packer(request.getContestOptions());
+        datagram.setContent(packer.array());
+    }
+}
+
+::kj::Promise<void> PurchaseServer::complete(Purchase::Server::CompleteContext context) {
+
 }
 
 ::kj::Promise<void> PurchaseServer::prices(Purchase::Server::PricesContext context) {
-    // TODO: pack up the contest into a transaction to create it
+    gch::custom_operation op;
+    auto& accountIndex = vdb.db().get_index_type<gch::account_index>().indices().get<gch::by_name>();
+    auto publisher = accountIndex.find(std::string(CONTEST_PUBLISHING_ACCOUNT.get()));
+    KJ_ASSERT(publisher != accountIndex.end(), "Wat? Contest publishing account is not registered?...");
+    op.payer = publisher->id;
+    auto& assetIndex = vdb.db().get_index_type<gch::asset_index>().indices().get<gch::by_symbol>();
+    auto vote = assetIndex.find("VOTE");
+    KJ_ASSERT(vote != assetIndex.end(), "Wat? VOTE is not registered?...");
+
+    // Why do I have to explicitly cast MallocMessageBuilder to MessageBuilder&? Are you drunk, compiler?
+    ReaderPacker packer((capnp::MessageBuilder&)message);
+    op.data.resize(packer.array().size());
+    memcpy(op.data.data(), packer.array().begin(), op.data.size());
 
     // Calculate surcharges
-    std::map<std::string, int64_t> surcharges;
+    std::map<std::string, int64_t> adjustments;
     if (oversized) {
-        // TODO: figure out conversion rate between BTS/VOTE and charge for the extra data fees
+        auto fee = op.calculate_fee(vdb.db().current_fee_schedule().get<gch::custom_operation>());
+        auto charge = gch::asset(fee) * vote->options.core_exchange_rate;
+        adjustments["Oversized contest fee"] = charge.amount.value;
+        votePrice += charge.amount.value;
     }
 
-    // TODO: report price
+    // TODO: handle sponsorships
+    // TODO: handle promo codes
+    auto price = context.initResults().initPrices(1)[0];
+    price.setCoinId(vote->id.instance());
+    price.setAmount(votePrice);
+    price.setPayAddress(publisher->name);
+
+    auto finalAdjustments = context.getResults().initAdjustments().initEntries(adjustments.size());
+    auto index = 0;
+    for (const auto& adjustment : adjustments) {
+        auto finalSurcharge = finalAdjustments[index++];
+        finalSurcharge.setKey(adjustment.first);
+        finalSurcharge.initValue().setPrice(adjustment.second);
+    }
+
+    return kj::READY_NOW;
+}
+
+::kj::Promise<void> PurchaseServer::subscribe(Purchase::Server::SubscribeContext context) {
+
+}
+
+::kj::Promise<void> PurchaseServer::paymentSent(Purchase::Server::PaymentSentContext context) {
+
 }
 
 } // namespace swv
