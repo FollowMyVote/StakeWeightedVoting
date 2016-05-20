@@ -20,6 +20,8 @@
 #include "Utilities.hpp"
 
 #include <graphene/chain/protocol/transaction.hpp>
+#include <graphene/utilities/key_conversion.hpp>
+#include <graphene/net/node.hpp>
 
 #include <capnp/message.h>
 #include <capnp/serialize-packed.h>
@@ -58,8 +60,8 @@ class PurchaseServer : public ::Purchase::Server {
         return *voteItr;
     }
 
-    const gch::account_id_type& publisher = lookupPublisher().id;
-    const gch::asset_id_type& vote = lookupVote().id;
+    gch::account_id_type publisher = lookupPublisher().id;
+    gch::asset_id_type vote = lookupVote().id;
 
     struct PaymentTransferVisitor;
 
@@ -70,12 +72,13 @@ public:
 
 protected:
     void processPayment(const gch::transfer_operation& paymentTransfer);
+    gch::custom_operation buildPublishOperation();
 
     // Purchase::Server interface
     virtual ::kj::Promise<void> complete(CompleteContext context) override;
     virtual ::kj::Promise<void> prices(PricesContext context) override;
     virtual ::kj::Promise<void> subscribe(SubscribeContext context) override;
-    virtual ::kj::Promise<void> paymentSent(PaymentSentContext context) override;
+    virtual ::kj::Promise<void> paymentSent(PaymentSentContext) override;
 };
 
 ContestCreatorServer::ContestCreatorServer(VoteDatabase& vdb)
@@ -195,7 +198,6 @@ struct PurchaseServer::PaymentTransferVisitor {
     using result_type = bool;
 
     bool operator()(const gch::transfer_operation& transfer) const {
-        const auto& db = purchase.vdb.db();
         // If it's a transfer to the publishing account, and the memo matches our UUID...
         if (purchase.publisher == transfer.to && transfer.memo &&
                 std::string(transfer.memo->message.begin(), transfer.memo->message.end())
@@ -238,14 +240,47 @@ void PurchaseServer::processPayment(const graphene::chain::transfer_operation& p
     // TODO: Handle all the possible weird payment cases (payment in wrong asset, payment in wrong amount, payment in
     // multiple transfers) in some sane way, at least logging that it happened
     if (paymentTransfer.amount >= vote(vdb.db()).amount(votePrice)) {
-        purchaseCompleted = true;
-        for (auto listener : completedListeners) {
-            auto notification = listener.notifyRequest();
-            notification.setNotification("true");
-            notification.send();
+        try {
+            auto config = vdb.configuration().reader();
+            auto publisherKey = graphene::utilities::wif_to_key(config.getContestPublishingAccountWif());
+            KJ_REQUIRE(publisherKey.valid(),
+                       "Server misconfiguration: Publisher key is invalid or missing. Cannot publish contest!");
+            gch::signed_transaction trx;
+            trx.operations.emplace_back(buildPublishOperation());
+            // Set expiration to 30 secs in the future. Should be plenty of time.
+            trx.set_expiration(vdb.db().head_block_time() + 30);
+            trx.sign(*publisherKey, vdb.db().get_chain_id());
+            trx.validate();
+            vdb.node().broadcast_transaction(trx);
+
+            purchaseCompleted = true;
+            for (auto listener : completedListeners) {
+                auto notification = listener.notifyRequest();
+                notification.setNotification("true");
+                notification.send();
+            }
+        } catch (fc::exception& e) {
+            KJ_LOG(ERROR, "Caught exception while publishing a contest!", e.to_detail_string());
+            for (auto listener : completedListeners) {
+                auto notification = listener.notifyRequest();
+                notification.setNotification("false");
+                notification.send();
+            }
         }
-        // TODO: actually publish the contest. We need publisher's private key for this...
     }
+}
+
+graphene::chain::custom_operation PurchaseServer::buildPublishOperation() {
+    gch::custom_operation op;
+    op.payer = publisher;
+
+    // Why do I have to explicitly cast MallocMessageBuilder to MessageBuilder&? Are you drunk, compiler?
+    ReaderPacker packer((capnp::MessageBuilder&)message);
+    op.data.resize(packer.array().size());
+    memcpy(op.data.data(), packer.array().begin(), op.data.size());
+    op.fee = op.calculate_fee(vdb.db().current_fee_schedule().get<gch::custom_operation>());
+
+    return op;
 }
 
 ::kj::Promise<void> PurchaseServer::complete(Purchase::Server::CompleteContext context) {
@@ -255,18 +290,12 @@ void PurchaseServer::processPayment(const graphene::chain::transfer_operation& p
 
 ::kj::Promise<void> PurchaseServer::prices(Purchase::Server::PricesContext context) {
     const auto& db = vdb.db();
-    gch::custom_operation op;
-    op.payer = publisher;
-
-    // Why do I have to explicitly cast MallocMessageBuilder to MessageBuilder&? Are you drunk, compiler?
-    ReaderPacker packer((capnp::MessageBuilder&)message);
-    op.data.resize(packer.array().size());
-    memcpy(op.data.data(), packer.array().begin(), op.data.size());
+    gch::custom_operation op = buildPublishOperation();
 
     // Calculate surcharges
     std::map<std::string, int64_t> adjustments;
     if (oversized) {
-        auto fee = op.calculate_fee(db.current_fee_schedule().get<gch::custom_operation>());
+        auto fee = op.fee;
         auto charge = gch::asset(fee) * vote(db).options.core_exchange_rate;
         adjustments["Data fee"] = charge.amount.value;
         votePrice += charge.amount.value;
@@ -293,13 +322,19 @@ void PurchaseServer::processPayment(const graphene::chain::transfer_operation& p
 }
 
 ::kj::Promise<void> PurchaseServer::subscribe(Purchase::Server::SubscribeContext context) {
-    completedListeners.emplace_back(context.getParams().getNotifier());
+    if (purchaseCompleted) {
+        auto notification = context.getParams().getNotifier().notifyRequest();
+        notification.setNotification("true");
+        notification.send();
+    } else
+        completedListeners.emplace_back(context.getParams().getNotifier());
     return kj::READY_NOW;
 }
 
-::kj::Promise<void> PurchaseServer::paymentSent(Purchase::Server::PaymentSentContext context) {
+::kj::Promise<void> PurchaseServer::paymentSent(Purchase::Server::PaymentSentContext) {
     // For now, we don't actually need to do anything here. In the future, we could log this event, but we aim to
     // process the payment correctly even if the client never calls this.
+    return kj::READY_NOW;
 }
 
 } // namespace swv

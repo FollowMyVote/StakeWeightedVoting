@@ -25,7 +25,7 @@
 #define VOTE_SPACE_ID 7
 #endif
 
-namespace graphene { namespace chain { class database; } }
+namespace graphene { namespace chain { class database; } namespace net { class node; } }
 
 namespace swv {
 namespace gch = graphene::chain;

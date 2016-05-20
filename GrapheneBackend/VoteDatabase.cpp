@@ -22,8 +22,8 @@
 
 namespace swv {
 
-VoteDatabase::VoteDatabase(gch::database& chain)
-    : chain(chain) {}
+VoteDatabase::VoteDatabase(gch::database& chain, graphene::net::node& p2p_node)
+    : chain(chain), p2p_node(p2p_node) {}
 
 void VoteDatabase::registerIndexes() {
     chain.register_evaluator<CustomEvaluator>();

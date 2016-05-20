@@ -19,6 +19,7 @@
 using Map = import "map.capnp".Map;
 
 const contestPublishingAccount :Text = "follow-my-vote";
+# The account which publishes contests and accepts payments
 
 struct Contest {
     name @0 :Text;

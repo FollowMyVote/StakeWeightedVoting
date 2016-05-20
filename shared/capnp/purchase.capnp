@@ -31,6 +31,8 @@ interface Purchase {
     # description to price. Negative adjustments are discounts (usually for a promo code).
     subscribe @2 (notifier :Notifier(Text)) -> ();
     # Get notified when the purchase is complete. Notification message will either be "true" or "false"
+    # "true" indicates the purchase is completed successfully; false indicates an error occured preventing the purchase
+    # from being completed (hopefully this never happens!)
     paymentSent @3 (selectedPrice :Int16) -> ();
     # Used to notify the server that the payment has been sent. selectedPrice is the index of the price paid in the
     # array returned by prices()
