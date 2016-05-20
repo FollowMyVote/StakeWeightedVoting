@@ -17,6 +17,7 @@ ContestResultsServer::ContestResultsServer(VoteDatabase& vdb, gch::operation_his
 }
 
 ::kj::Promise<void> ContestResultsServer::subscribe(Backend::ContestResults::Server::SubscribeContext context) {
+    // TODO: Consider using database::changed_objects signal instead of a secondary index and vdb.contestResultsUpdated
     notifiers.emplace_back(context.getParams().getNotifier());
     subscriptions.emplace_back(vdb.contestResultsUpdated.connect(
                              [this] (gch::operation_history_id_type contestId) mutable -> void {

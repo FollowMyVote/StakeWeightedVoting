@@ -19,6 +19,7 @@
 using Map = import "map.capnp".Map;
 using Purchase = import "purchase.capnp".Purchase;
 using ContestOptions = import "contest.capnp".Contest;
+using ContestCreatorSignature = import "datagram.capnp".Datagram.ContestKey;
 
 interface ContestCreator {
 # The ContestCreator interface handles the protocol for creating a contest, including getting pricing information,
@@ -95,23 +96,20 @@ interface ContestCreator {
     # This contains all of the information necessary to request a contest be created and get a complete price.
 
         contestOptions @0 :ContestOptions;
-        creator :union {
+        creatorSignature @1 :ContestCreatorSignature;
         # If the creator wishes to publicly state that he created this contest, he must populate creatorSignature with
-        # his signature of the contestOptions group using his memo key. Otherwise, he may set anonymousCreator and his
-        # identity will not be revealed.
-            anonymousCreator @1 :Void;
-            creatorSignature @2 :Data;
-        }
+        # his memo key's signature on contestOptions. Otherwise, he may set anonymous and his identity will not be
+        # revealed.
         sponsorship :union {
-            noSponsorship @3 :Void;
+            noSponsorship @2 :Void;
             options :group {
-                maxVotes @4 :Int64;
+                maxVotes @3 :Int64;
                 # Maximum number of votes to sponsor; zero indicates unlimited
-                maxRevotes @5 :Int32;
+                maxRevotes @4 :Int32;
                 # Maximum number of revotes per voter to sponsor; zero indicates unlimited
-                endDate @6 :Int64;
+                endDate @5 :Int64;
                 # Millisecond timestamp of end of vote sponsorship period
-                incentive @7 :Int64;
+                incentive @6 :Int64;
                 # Balance to pay each voter as an incentive for voting on this contest
             }
         }

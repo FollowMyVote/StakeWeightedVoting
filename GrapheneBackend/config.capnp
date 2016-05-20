@@ -5,7 +5,11 @@ using Map = import "/map.capnp".Map;
 
 struct Config {
     priceSchedule @0 :List(Price);
+    # Current price schedule
     contestLimits @1 :List(ContestLimit);
+    # Current contest limits
+    contestPublishingAccountWif @2 :Text;
+    # Private key (WIF format) for the contest publishing account
 
     struct Price {
        lineItem @0 :ContestCreator.LineItems;

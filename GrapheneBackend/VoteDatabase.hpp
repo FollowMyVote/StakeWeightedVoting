@@ -49,6 +49,7 @@ class CustomEvaluator;
 class VoteDatabase
 {
     gch::database& chain;
+    graphene::net::node& p2p_node;
     CustomEvaluator* _customEvaluator = nullptr;
     gdb::primary_index<ContestIndex>* _contestIndex = nullptr;
     gdb::primary_index<DecisionIndex>* _decisionIndex = nullptr;
@@ -69,7 +70,7 @@ class VoteDatabase
     };
 
 public:
-    VoteDatabase(gch::database& chain);
+    VoteDatabase(gch::database& chain, graphene::net::node& p2p_node);
 
     void registerIndexes();
     void startup();
@@ -79,6 +80,12 @@ public:
     }
     const gch::database& db() const {
         return chain;
+    }
+    graphene::net::node& node() {
+        return p2p_node;
+    }
+    const graphene::net::node& node() const {
+        return p2p_node;
     }
 
     GETTERS(customEvaluator)

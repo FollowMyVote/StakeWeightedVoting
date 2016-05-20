@@ -25,7 +25,7 @@ inline std::map<std::string, std::string> convertMap(::Map<capnp::Text, capnp::T
     return result;
 }
 
-struct BlobMessageReader {
+class BlobMessageReader {
     kj::ArrayInputStream stream;
     capnp::PackedMessageReader reader;
 public:
@@ -43,6 +43,29 @@ public:
     }
     const capnp::PackedMessageReader& operator*() const {
         return reader;
+    }
+};
+
+class ReaderPacker {
+    kj::Array<kj::byte> packedMessage;
+    kj::ArrayOutputStream outs;
+public:
+    template<typename Reader>
+    ReaderPacker(Reader content) : outs(packedMessage) {
+        capnp::MallocMessageBuilder message;
+        message.setRoot(content);
+        packedMessage = kj::heapArray<kj::byte>(capnp::computeSerializedSizeInWords(message) * capnp::BYTES_PER_WORD);
+        capnp::writePackedMessage(outs, message);
+    }
+    ReaderPacker(capnp::MessageBuilder& message) : outs(packedMessage) {
+        packedMessage = kj::heapArray<kj::byte>(capnp::computeSerializedSizeInWords(message) * capnp::BYTES_PER_WORD);
+        capnp::writePackedMessage(outs, message);
+    }
+
+    ReaderPacker(ReaderPacker&& other)
+        : packedMessage(kj::mv(other.packedMessage)), outs(packedMessage) {}
+    kj::ArrayPtr<kj::byte> array() {
+        return outs.getArray();
     }
 };
 

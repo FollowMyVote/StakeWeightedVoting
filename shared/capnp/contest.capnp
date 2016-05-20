@@ -19,9 +19,7 @@
 using Map = import "map.capnp".Map;
 
 const contestPublishingAccount :Text = "follow-my-vote";
-
-# TODO refactor: This struct is pretty highly redundant with the contestOptions in contestcreator.capnp. These ought to
-# be unified into a single structure defined in this file and referenced from contestcreator.capnp.
+# The account which publishes contests and accepts payments
 
 struct Contest {
     name @0 :Text;
