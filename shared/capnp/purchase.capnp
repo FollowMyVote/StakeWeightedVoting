@@ -39,6 +39,7 @@ interface Purchase {
         coinId @0 :UInt64;
         amount @1 :Int64;
         payAddress @2 :Text;
+        paymentMemo @3 :Text;
     }
     struct Price {
         price @0 :Int64 = 0;

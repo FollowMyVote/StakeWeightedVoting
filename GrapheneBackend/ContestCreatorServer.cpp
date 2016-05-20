@@ -27,14 +27,41 @@
 #include <datagram.capnp.h>
 
 #include <fc/smart_ref_impl.hpp>
+#include <fc/signals.hpp>
+
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/random_generator.hpp>
+#include <boost/uuid/uuid_io.hpp>
 
 namespace swv {
 
 class PurchaseServer : public ::Purchase::Server {
     VoteDatabase& vdb;
     int64_t votePrice;
-    bool oversized;
+    bool oversized = false;
+    bool purchaseCompleted = false;
     capnp::MallocMessageBuilder message;
+    std::string purchaseUuid = boost::uuids::to_string(boost::uuids::random_generator()());
+    fc::scoped_connection newBlockSubscription;
+    std::vector<Notifier<capnp::Text>::Client> completedListeners;
+
+    const gch::account_object& lookupPublisher() {
+        auto& accountIndex = vdb.db().get_index_type<gch::account_index>().indices().get<gch::by_name>();
+        auto publisherItr = accountIndex.find(std::string(CONTEST_PUBLISHING_ACCOUNT.get()));
+        KJ_ASSERT(publisherItr != accountIndex.end(), "Wat? Contest publishing account is not registered?...");
+        return *publisherItr;
+    }
+    const gch::asset_object& lookupVote() {
+        auto& assetIndex = vdb.db().get_index_type<gch::asset_index>().indices().get<gch::by_symbol>();
+        auto voteItr = assetIndex.find("VOTE");
+        KJ_ASSERT(voteItr != assetIndex.end(), "Wat? VOTE is not registered?...");
+        return *voteItr;
+    }
+
+    const gch::account_id_type& publisher = lookupPublisher().id;
+    const gch::asset_id_type& vote = lookupVote().id;
+
+    struct PaymentTransferVisitor;
 
 public:
     PurchaseServer(VoteDatabase& vdb, int64_t votePrice, bool oversized,
@@ -42,6 +69,8 @@ public:
     virtual ~PurchaseServer(){}
 
 protected:
+    void processPayment(const gch::transfer_operation& paymentTransfer);
+
     // Purchase::Server interface
     virtual ::kj::Promise<void> complete(CompleteContext context) override;
     virtual ::kj::Promise<void> prices(PricesContext context) override;
@@ -77,6 +106,7 @@ ContestCreatorServer::~ContestCreatorServer() {}
 }
 
 ::kj::Promise<void> ContestCreatorServer::purchaseContest(ContestCreator::Server::PurchaseContestContext context) {
+    // TODO: Logging of all steps in a purchase. Useful for analytics as well as troubleshooting if something fails
     int64_t price = 0;
     auto contestOptions = context.getParams().getRequest().getContestOptions();
     auto config = vdb.configuration().reader();
@@ -158,9 +188,33 @@ ContestCreatorServer::~ContestCreatorServer() {}
 #undef PRICE
 }
 
+// Visitor on operations in a transaction, to find purchase payments and schedule them for processing
+struct PurchaseServer::PaymentTransferVisitor {
+    PurchaseServer& purchase;
+    // I don't actually use this result for anything, but I'm not allowed to set void, so whatever
+    using result_type = bool;
+
+    bool operator()(const gch::transfer_operation& transfer) const {
+        const auto& db = purchase.vdb.db();
+        // If it's a transfer to the publishing account, and the memo matches our UUID...
+        if (purchase.publisher == transfer.to && transfer.memo &&
+                std::string(transfer.memo->message.begin(), transfer.memo->message.end())
+                == purchase.purchaseUuid) {
+            // ...schedule it for payment (but don't do it now; this signal handler needs to be fast
+            fc::async([this, transfer] { purchase.processPayment(transfer); });
+            return true;
+        }
+        return false;
+    }
+    template<typename Op>
+    bool operator()(const Op&) const {return false;}
+};
+
 PurchaseServer::PurchaseServer(VoteDatabase& vdb, int64_t votePrice, bool oversized,
                                ContestCreator::ContestCreationRequest::Reader request)
     : vdb(vdb), votePrice(votePrice), oversized(oversized) {
+    // Copy the contest creation details from the creation request to a datagram which we can deploy with a
+    // custom_operation when the purchase finishes
     auto datagram = message.initRoot<Datagram>();
     datagram.initIndex().setType(Datagram::DatagramType::CONTEST);
 
@@ -171,21 +225,38 @@ PurchaseServer::PurchaseServer(VoteDatabase& vdb, int64_t votePrice, bool oversi
         ReaderPacker packer(request.getContestOptions());
         datagram.setContent(packer.array());
     }
+
+    // Go ahead and subscribe to new blocks, so we see the payment when it comes in
+    newBlockSubscription = vdb.db().applied_block.connect([this](const gch::signed_block& newBlock) {
+
+        for (const auto& trx : newBlock.transactions)
+            trx.visit(PaymentTransferVisitor{*this});
+    });
+}
+
+void PurchaseServer::processPayment(const graphene::chain::transfer_operation& paymentTransfer) {
+    // TODO: Handle all the possible weird payment cases (payment in wrong asset, payment in wrong amount, payment in
+    // multiple transfers) in some sane way, at least logging that it happened
+    if (paymentTransfer.amount >= vote(vdb.db()).amount(votePrice)) {
+        purchaseCompleted = true;
+        for (auto listener : completedListeners) {
+            auto notification = listener.notifyRequest();
+            notification.setNotification("true");
+            notification.send();
+        }
+        // TODO: actually publish the contest. We need publisher's private key for this...
+    }
 }
 
 ::kj::Promise<void> PurchaseServer::complete(Purchase::Server::CompleteContext context) {
-
+    context.initResults().setResult(purchaseCompleted);
+    return kj::READY_NOW;
 }
 
 ::kj::Promise<void> PurchaseServer::prices(Purchase::Server::PricesContext context) {
+    const auto& db = vdb.db();
     gch::custom_operation op;
-    auto& accountIndex = vdb.db().get_index_type<gch::account_index>().indices().get<gch::by_name>();
-    auto publisher = accountIndex.find(std::string(CONTEST_PUBLISHING_ACCOUNT.get()));
-    KJ_ASSERT(publisher != accountIndex.end(), "Wat? Contest publishing account is not registered?...");
-    op.payer = publisher->id;
-    auto& assetIndex = vdb.db().get_index_type<gch::asset_index>().indices().get<gch::by_symbol>();
-    auto vote = assetIndex.find("VOTE");
-    KJ_ASSERT(vote != assetIndex.end(), "Wat? VOTE is not registered?...");
+    op.payer = publisher;
 
     // Why do I have to explicitly cast MallocMessageBuilder to MessageBuilder&? Are you drunk, compiler?
     ReaderPacker packer((capnp::MessageBuilder&)message);
@@ -195,18 +266,20 @@ PurchaseServer::PurchaseServer(VoteDatabase& vdb, int64_t votePrice, bool oversi
     // Calculate surcharges
     std::map<std::string, int64_t> adjustments;
     if (oversized) {
-        auto fee = op.calculate_fee(vdb.db().current_fee_schedule().get<gch::custom_operation>());
-        auto charge = gch::asset(fee) * vote->options.core_exchange_rate;
-        adjustments["Oversized contest fee"] = charge.amount.value;
+        auto fee = op.calculate_fee(db.current_fee_schedule().get<gch::custom_operation>());
+        auto charge = gch::asset(fee) * vote(db).options.core_exchange_rate;
+        adjustments["Data fee"] = charge.amount.value;
         votePrice += charge.amount.value;
     }
 
     // TODO: handle sponsorships
     // TODO: handle promo codes
+
     auto price = context.initResults().initPrices(1)[0];
-    price.setCoinId(vote->id.instance());
+    price.setCoinId(vote.instance);
     price.setAmount(votePrice);
-    price.setPayAddress(publisher->name);
+    price.setPayAddress(publisher(db).name);
+    price.setPaymentMemo(purchaseUuid);
 
     auto finalAdjustments = context.getResults().initAdjustments().initEntries(adjustments.size());
     auto index = 0;
@@ -220,11 +293,13 @@ PurchaseServer::PurchaseServer(VoteDatabase& vdb, int64_t votePrice, bool oversi
 }
 
 ::kj::Promise<void> PurchaseServer::subscribe(Purchase::Server::SubscribeContext context) {
-
+    completedListeners.emplace_back(context.getParams().getNotifier());
+    return kj::READY_NOW;
 }
 
 ::kj::Promise<void> PurchaseServer::paymentSent(Purchase::Server::PaymentSentContext context) {
-
+    // For now, we don't actually need to do anything here. In the future, we could log this event, but we aim to
+    // process the payment correctly even if the client never calls this.
 }
 
 } // namespace swv
