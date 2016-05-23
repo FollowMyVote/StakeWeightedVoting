@@ -1,9 +1,10 @@
 import qbs
 import qbs.File
+import qbs.Environment
 
 Module {
     Depends { name: "cpp" }
-    property string graphenePath: qbs.getEnv("GRAPHENE_PATH")
+    property string graphenePath: Environment.getEnv("GRAPHENE_PATH")
     property bool found: File.exists(graphenePath+"/lib/libgraphene_app.a")
     cpp.includePaths: graphenePath+"/include"
     cpp.libraryPaths: [graphenePath+"/lib", graphenePath+"/lib/cryptonomex"]
