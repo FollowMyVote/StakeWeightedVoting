@@ -22,7 +22,7 @@ StaticLibrary {
     }
 
     cpp.cxxFlags: capnpProbe.cflags
-    cpp.linkerFlags: capnpProbe.libs
+    cpp.dynamicLibraries: capnpProbe.libs.filter(function(name) { return name.startsWith("-l") }).map(function(name) { return name.slice(2) })
 
     files: [
         "BlockchainAdaptorInterface.hpp",
@@ -37,6 +37,6 @@ StaticLibrary {
         cpp.cxxLanguageVersion: "c++14"
         cpp.cxxStandardLibrary: "libc++"
         cpp.cxxFlags: capnpProbe.cflags
-        cpp.linkerFlags: capnpProbe.libs
+        cpp.dynamicLibraries: capnpProbe.libs.filter(function(name) { return name.startsWith("-l") }).map(function(name) { return name === "-pthread"? "" : name.slice(2) })
     }
 }

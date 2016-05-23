@@ -3,6 +3,7 @@ import qbs
 QtApplication {
     name: "StubBackend"
     consoleApplication: true
+    condition: false
 
     Depends { name: "shared" }
 

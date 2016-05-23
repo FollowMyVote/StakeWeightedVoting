@@ -49,6 +49,7 @@ ContestResults::~ContestResults()
 ::kj::Promise<void> swv::ContestResults::subscribe(Backend::ContestResults::Server::SubscribeContext context)
 {
     // TODO
+    return kj::READY_NOW;
 }
 
 } // namespace swv

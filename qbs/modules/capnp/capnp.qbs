@@ -2,6 +2,7 @@ import qbs
 import qbs.File
 import qbs.FileInfo
 import qbs.ModUtils
+import qbs.Environment
 
 Module {
     // Inputs
@@ -25,7 +26,7 @@ Module {
         }
 
         var delimiter = qbs.hostOS.contains("windows")? ";" : ":"
-        var paths = qbs.getEnv("PATH").split(delimiter)
+        var paths = Environment.getEnv("PATH").split(delimiter)
         if (qbs.hostOS === "osx")
             paths.push("/usr/local/bin")
 
