@@ -53,8 +53,9 @@ BackendServer::~BackendServer() {}
     auto& contestIndex = vdb.contestIndex().indices();
     auto& startTimeIndex = contestIndex.get<ByStartTime>();
     auto itr = startTimeIndex.lower_bound(vdb.db().head_block_time());
-    context.initResults().setGenerator(kj::heap<FeedGenerator>(itr == startTimeIndex.end()? nullptr : &*itr,
-                                                               vdb.db()));
+    context.initResults().setGenerator(kj::heap<FeedGenerator<ByStartTime>>(itr == startTimeIndex.end()? nullptr
+                                                                                                       : &*itr,
+                                                                            vdb.db()));
     return kj::READY_NOW;
 }
 

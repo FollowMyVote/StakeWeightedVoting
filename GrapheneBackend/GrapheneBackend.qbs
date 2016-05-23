@@ -29,7 +29,6 @@ CppApplication {
         "CustomEvaluator.hpp",
         "Decision.cpp",
         "Decision.hpp",
-        "FeedGenerator.cpp",
         "FeedGenerator.hpp",
         "Types.hpp",
         "Utilities.hpp",
