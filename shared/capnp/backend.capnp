@@ -63,9 +63,9 @@ interface Backend {
             searchTerms @0;
             # Search for contests containing the specified search terms. Each search term is an argument
             contestCreator @1;
-            # Search for contests created by the specified account. Argument is a blockchain-specific account ID
+            # Search for contests created by the specified account. Argument is a JSON account_id_type
             contestCoin @2;
-            # Search for contests weighted by the specified coin. Argument is base-10 string of coin ID
+            # Search for contests weighted by the specified coin.
             contestVoter @3;
             # Search for contests voted on by the current user. No argument.
         }

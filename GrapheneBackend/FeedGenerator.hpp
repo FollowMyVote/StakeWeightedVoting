@@ -53,7 +53,7 @@ public:
      */
     using Filter = std::function<FilterResult(const Contest&, const gch::database&)>;
 
-    FeedGenerator(const Contest* firstContest, const gch::database& db, std::list<Filter> filters = {});
+    FeedGenerator(const Contest* firstContest, const gch::database& db, std::vector<Filter> filters = {});
     virtual ~FeedGenerator();
 
 protected:
@@ -65,7 +65,7 @@ protected:
 private:
     const Contest* currentContest = nullptr;
     const gch::database& db;
-    std::list<Filter> filters;
+    std::vector<Filter> filters;
     const typename ContestObjectMultiIndex::index<Index>::type& index;
     // Cache the results of filters, so we make sure we don't call a filter on the same contest twice
     mutable std::map<gch::operation_history_id_type, FilterResult> filterCache;
@@ -93,7 +93,7 @@ private:
 
 template<typename Index>
 FeedGenerator<Index>::FeedGenerator(const Contest* firstContest, const graphene::chain::database& db,
-                                    std::list<Filter> filters)
+                                    std::vector<Filter> filters)
     : currentContest(firstContest),
       db(db),
       index(db.get_index_type<ContestIndex>().indices().get<Index>()) {}

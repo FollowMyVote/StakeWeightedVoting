@@ -21,6 +21,9 @@
 #include "ContestResultsServer.hpp"
 #include "ContestCreatorServer.hpp"
 #include "Utilities.hpp"
+#include "Contest.hpp"
+
+#include <fc/io/json.hpp>
 
 namespace swv {
 
@@ -59,8 +62,69 @@ BackendServer::~BackendServer() {}
     return kj::READY_NOW;
 }
 
+ContestGenerator::Client FilteredGeneratorByCoin(capnp::List<Backend::Filter>::Reader filters) {
+    // TODO: Write this (quite similar to FilteredGeneratorByCreator, except swap which filter breaks vs. rejects
+    throw KJ_EXCEPTION(UNIMPLEMENTED, "TODO");
+}
+
+ContestGenerator::Client FilteredGeneratorByCreator(capnp::List<Backend::Filter>::Reader filters) {
+    std::vector<FeedGenerator<ByCreator>::Filter> filterFunctions;
+    using Filter = Backend::Filter::Type;
+    using Results = FeedGenerator<ByCreator>::FilterResult;
+
+    for (auto filter : filters) {
+        if (filter.getType() == Filter::SEARCH_TERMS) {
+            KJ_REQUIRE(filter.getArguments().size() > 0, "Search terms filter must have at least one term");
+            std::vector<std::string> terms;
+            for (auto term : filter.getArguments())
+                terms.emplace_back(term);
+            filterFunctions.emplace_back([terms = kj::mv(terms)] (const Contest& contest, const gch::database&) {
+                for (const auto& term : terms)
+                    return contest.matchesKeyword(term)? Results::Accept : Results::Reject;
+            });
+        } else if (filter.getType() == Filter::CONTEST_CREATOR) {
+            KJ_REQUIRE(filter.getArguments().size() == 1, "Unexpected number of arguments for creator filter");
+            try {
+                auto creator = fc::json::from_string(filter.getArguments()[0]).as<gch::account_id_type>();
+                filterFunctions.emplace_back([creator = kj::mv(creator)] (const Contest& contest, const gch::database&) {
+                    // Note how we break here, since we're using ByCreator as the index
+                    return contest.creator == creator? Results::Accept : Results::Break;
+                });
+            } catch (fc::exception& e) {
+                KJ_FAIL_REQUIRE("Failure parsing creator argument", filter.getArguments()[0], e.to_detail_string());
+            }
+        } else if (filter.getType() == Filter::CONTEST_COIN) {
+            KJ_REQUIRE(filter.getArguments().size() == 1, "Unexpected number of arguments for coin filter");
+            try {
+                auto coin = gch::asset_id_type(std::stoull((std::string)filter.getArguments()[0]));
+                filterFunctions.emplace_back([coin] (const Contest& contest, const gch::database&) {
+                    return contest.coin == coin? Results::Accept : Results::Reject;
+                });
+            } catch (std::invalid_argument&) {
+                KJ_FAIL_REQUIRE("Failure parsing coin for coin filter", filter.getArguments()[0]);
+            }
+        } else if (filter.getType() == Filter::CONTEST_VOTER) {
+            // TODO: Write this
+            throw KJ_EXCEPTION(UNIMPLEMENTED, "Searching for contests by voter is not yet implemented.");
+        }
+    }
+}
+
 ::kj::Promise<void> BackendServer::searchContests(Backend::Server::SearchContestsContext context) {
-    return KJ_EXCEPTION(UNIMPLEMENTED, "NYI");
+    auto filters = context.getParams().getFilters();
+
+    for (auto filter : filters) {
+        if (filter.getType() == Backend::Filter::Type::CONTEST_COIN) {
+            context.initResults().setGenerator(FilteredGeneratorByCoin(filters));
+            return kj::READY_NOW;
+        } else if (filter.getType() == Backend::Filter::Type::CONTEST_CREATOR) {
+            context.initResults().setGenerator(FilteredGeneratorByCreator(filters));
+            return kj::READY_NOW;
+        }
+    }
+
+    // TODO: Implement other search cases
+    return KJ_EXCEPTION(UNIMPLEMENTED, "Searching for contests is weird right now.");
 }
 
 ::kj::Promise<void> BackendServer::getContestResults(Backend::Server::GetContestResultsContext context) {

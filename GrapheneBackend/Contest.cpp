@@ -28,4 +28,15 @@ bool Contest::isActive(const gch::database& db) const {
     return now >= startTime && now <= endTime;
 }
 
+bool Contest::matchesKeyword(std::__1::string keyword) const {
+    using std::string;
+    auto matchHelper = [&keyword](const std::pair<std::string,std::string>& pair) {
+        return pair.first.find(keyword) != string::npos || pair.second.find(keyword) != string::npos;
+    };
+    return (name.find(keyword) != string::npos ||
+            description.find(keyword) != string::npos ||
+            std::any_of(contestants.begin(), contestants.end(), matchHelper) ||
+            std::any_of(tags.begin(), tags.end(), matchHelper));
+}
+
 } // namespace swv
