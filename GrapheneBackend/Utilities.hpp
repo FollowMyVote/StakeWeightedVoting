@@ -25,6 +25,10 @@ inline std::map<std::string, std::string> convertMap(::Map<capnp::Text, capnp::T
     return result;
 }
 
+inline capnp::Data::Reader readerOf(const std::vector<char>& data) {
+    return kj::ArrayPtr<const kj::byte>((const kj::byte*)data.data(), data.size());
+}
+
 class BlobMessageReader {
     kj::ArrayInputStream stream;
     capnp::PackedMessageReader reader;

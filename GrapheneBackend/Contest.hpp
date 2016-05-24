@@ -58,6 +58,9 @@ public:
     /// Returns true if this contest is active; false otherwise.
     /// Currently this just checks if the current time is in [startTime, endTime]
     bool isActive(const gch::database& db) const;
+
+    /// Returns true if keyword is found in contest name, description, or those of any candidate, or any tag
+    bool matchesKeyword(std::string keyword) const;
 };
 
 struct ByCreator;
