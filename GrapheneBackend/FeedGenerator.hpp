@@ -23,6 +23,8 @@
 
 #include <contestgenerator.capnp.h>
 
+#include <graphene/chain/database.hpp>
+
 #include <kj/vector.h>
 
 namespace swv {
@@ -96,7 +98,8 @@ FeedGenerator<Index>::FeedGenerator(const Contest* firstContest, const graphene:
                                     std::vector<Filter> filters)
     : currentContest(firstContest),
       db(db),
-      index(db.get_index_type<ContestIndex>().indices().get<Index>()) {}
+      index(db.get_index_type<ContestIndex>().indices().get<Index>()),
+      filters(kj::mv(filters)) {}
 
 template<typename Index>
 FeedGenerator<Index>::~FeedGenerator(){}

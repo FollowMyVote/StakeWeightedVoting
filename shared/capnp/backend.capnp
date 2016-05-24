@@ -65,9 +65,9 @@ interface Backend {
             contestCreator @1;
             # Search for contests created by the specified account. Argument is a JSON account_id_type
             contestCoin @2;
-            # Search for contests weighted by the specified coin.
+            # Search for contests weighted by the specified coin. Argument is base-10 string of coin ID
             contestVoter @3;
-            # Search for contests voted on by the current user. No argument.
+            # Search for contests voted on by the specified user. Argument is a JSON account_id_type
         }
     }
 
