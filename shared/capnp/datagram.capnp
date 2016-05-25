@@ -26,7 +26,7 @@ struct Datagram {
     enum DatagramType {
         decision @0;
         # Marks a datagram as containing a decision. Key will be the publishing balance ID (FC-serialized
-        # account_id_type), content will be a Decision struct
+        # account_balance_id_type), content will be a Decision struct
         contest @1;
         # Marks a datagram as containing a contest to be created. Key will be a ContestKey; content will be a Contest
         # struct
