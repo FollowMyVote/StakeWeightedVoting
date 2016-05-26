@@ -10,6 +10,8 @@
 #include <vector>
 #include <map>
 
+namespace swv {
+
 class FakeBlockchain : public BlockchainWallet::Server {
 public:
     class BackendStub;
@@ -42,11 +44,10 @@ private:
     /// See shared/capnp/datagram.capnp for a list of datagram types and what the key is for each type
     std::map<std::tuple<std::vector<kj::byte>, Datagram::DatagramType, std::vector<kj::byte>>,
              capnp::Orphan<::Datagram>> datagrams;
-    kj::Maybe<capnp::Orphan<::Datagram>> pendingDatagram;
     uint8_t nextBalanceId = 0;
 
-    kj::Maybe<capnp::Orphan<Balance>&> getBalanceOrphan(kj::ArrayPtr<kj::byte> id);
-    kj::Maybe<const capnp::Orphan<Balance>&> getBalanceOrphan(kj::ArrayPtr<kj::byte> id) const;
+    kj::Maybe<capnp::Orphan<Balance>&> getBalanceOrphan(capnp::Data::Reader id);
+    kj::Maybe<const capnp::Orphan<Balance>&> getBalanceOrphan(capnp::Data::Reader id) const;
     kj::Maybe<capnp::Orphan<Coin>&> getCoinOrphan(kj::StringPtr name);
     kj::Maybe<const capnp::Orphan<Coin>&> getCoinOrphan(kj::StringPtr name) const;
     ::Signed<::Contest>::Builder createContest();
@@ -54,4 +55,5 @@ private:
     ::Coin::Builder createCoin();
 };
 
+} // namespace swv
 #endif // FAKEBLOCKCHAIN_HPP
