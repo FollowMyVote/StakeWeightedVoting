@@ -17,6 +17,8 @@ DynamicLibrary {
         "ContestGenerator.hpp",
         "ContestResults.cpp",
         "ContestResults.hpp",
+        "FakeBlockchain.cpp",
+        "FakeBlockchain.hpp",
         "StubChainAdaptor.cpp",
         "StubChainAdaptor.hpp",
         "Purchase.cpp",
