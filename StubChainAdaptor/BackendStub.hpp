@@ -18,7 +18,7 @@
 #ifndef BACKENDSTUB_HPP
 #define BACKENDSTUB_HPP
 
-#include "StubChainAdaptor.hpp"
+#include "FakeBlockchain.hpp"
 
 #include <backend.capnp.h>
 
@@ -27,10 +27,10 @@ namespace swv {
 /*!
  * \brief The BackendStub class works in conjunction with the StubChainAdaptor to emulate a fully functioning blockchain
  */
-class StubChainAdaptor::BackendStub : public ::Backend::Server
+class FakeBlockchain::BackendStub : public ::Backend::Server
 {
 public:
-    BackendStub(StubChainAdaptor& adaptor);
+    BackendStub(FakeBlockchain& chain);
     virtual ~BackendStub();
 
     // Backend::Server interface
@@ -42,7 +42,7 @@ protected:
     ::kj::Promise<void> createContest(CreateContestContext context);
 
 private:
-    StubChainAdaptor& adaptor;
+    FakeBlockchain& chain;
 };
 
 } // namespace swv

@@ -24,52 +24,42 @@
 
 #include <capnp/serialize.h>
 
+#include <kj/debug.h>
+
 #include <chrono>
 
 namespace swv {
 
-// -------------------------------------------------------------------
-// --- Reversed iterable
-// --- Taken from http://stackoverflow.com/questions/8542591/c11-reverse-range-based-for-loop
-using namespace std; // for rbegin() and rend()
+capnp::Data::Reader readerize(std::vector<kj::byte>& vector) {
+    return kj::ArrayPtr<const kj::byte>(vector.data(), vector.size());
+}
 
-template <typename T>
-struct reversion_wrapper { T& iterable; };
-
-template <typename T>
-auto begin (reversion_wrapper<T> w) { return rbegin(w.iterable); }
-
-template <typename T>
-auto end (reversion_wrapper<T> w) { return rend(w.iterable); }
-
-template <typename T>
-reversion_wrapper<T> reverse (T&& iterable) { return { iterable }; }
-
-StubChainAdaptor::BackendStub::BackendStub(StubChainAdaptor &adaptor)
-    : adaptor(adaptor)
+FakeBlockchain::BackendStub::BackendStub(FakeBlockchain& chain)
+    : chain(chain)
 {}
 
-StubChainAdaptor::BackendStub::~BackendStub()
+FakeBlockchain::BackendStub::~BackendStub()
 {}
 
-::kj::Promise<void> StubChainAdaptor::BackendStub::getContestFeed(Backend::Server::GetContestFeedContext context) {
-    context.initResults().setGenerator(kj::heap<swv::ContestGenerator>(adaptor.contests.size()));
+::kj::Promise<void> FakeBlockchain::BackendStub::getContestFeed(Backend::Server::GetContestFeedContext context) {
+    context.initResults().setGenerator(kj::heap<swv::ContestGenerator>(chain.contests.size()));
     return kj::READY_NOW;
 }
 
-::kj::Promise<void> StubChainAdaptor::BackendStub::searchContests(Backend::Server::SearchContestsContext context) {
+::kj::Promise<void> FakeBlockchain::BackendStub::searchContests(Backend::Server::SearchContestsContext context) {
     // TODO: Implement filtering
-    context.initResults().setGenerator(kj::heap<swv::ContestGenerator>(adaptor.contests.size()));
+    context.initResults().setGenerator(kj::heap<swv::ContestGenerator>(chain.contests.size()));
     return kj::READY_NOW;
 }
 
-::kj::Promise<void> StubChainAdaptor::BackendStub::getContestResults(Backend::Server::GetContestResultsContext context) {
+::kj::Promise<void> FakeBlockchain::BackendStub::getContestResults(Backend::Server::GetContestResultsContext context) {
     auto contestId = context.getParams().getContestId();
-    auto contest = adaptor.getContest(contestId).getValue();
+    auto contest = KJ_REQUIRE_NONNULL(chain.getContestById(contestId),
+                                      "Contest not found", contestId).getReader().getValue();
     std::map<int32_t, int64_t> contestantTallies;
     std::map<kj::String, int64_t> writeInTallies;
 
-    for (const auto& datagramPair : adaptor.datagrams) {
+    for (const auto& datagramPair : chain.datagrams) {
         auto datagram = datagramPair.second.getReader();
         // If this is a decision on the contest we're tallying...
         if (datagram.getIndex().getType() == Datagram::DatagramType::DECISION &&
@@ -99,7 +89,8 @@ StubChainAdaptor::BackendStub::~BackendStub()
                 continue;
             }
 
-            KJ_IF_MAYBE(balancePointer, adaptor.getBalanceOrphan(std::get<0>(datagramPair.first))) {
+            auto balanceId = std::get<0>(datagramPair.first);
+            KJ_IF_MAYBE(balancePointer, chain.getBalanceOrphan(readerize(balanceId))) {
                 auto balance = balancePointer->getReader();
 
                 if (balance.getType() != contest.getCoin()) {
@@ -116,7 +107,7 @@ StubChainAdaptor::BackendStub::~BackendStub()
                 }
             } else {
                 KJ_LOG(WARNING, "Unable to find balance for decision",
-                       decision, std::get<0>(datagramPair.first).toHex().toStdString());
+                       decision, readerize(balanceId));
                 continue;
             }
         }
@@ -126,15 +117,14 @@ StubChainAdaptor::BackendStub::~BackendStub()
     return kj::READY_NOW;
 }
 
-::kj::Promise<void> StubChainAdaptor::BackendStub::createContest(Backend::Server::CreateContestContext context) {
-    context.getResults().setCreator(kj::heap<ContestCreator>(adaptor));
+::kj::Promise<void> FakeBlockchain::BackendStub::createContest(Backend::Server::CreateContestContext context) {
+    context.getResults().setCreator(kj::heap<ContestCreator>(chain));
     return kj::READY_NOW;
 }
 
-::kj::Promise<void> StubChainAdaptor::BackendStub::getCoinDetails(Backend::Server::GetCoinDetailsContext context) {
+::kj::Promise<void> FakeBlockchain::BackendStub::getCoinDetails(Backend::Server::GetCoinDetailsContext context) {
     auto results = context.getResults().initDetails();
-    results.setIconUrl("https://followmyvote.com/wp-content/uploads"
-                                                  "/2014/02/Follow-My-Vote-Logo.png");
+    results.setIconUrl("https://followmyvote.com/wp-content/uploads/2014/02/Follow-My-Vote-Logo.png");
     results.setActiveContestCount(15);
 
     auto historyLength = context.getParams().getVolumeHistoryLength();

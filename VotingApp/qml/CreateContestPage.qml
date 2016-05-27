@@ -75,10 +75,10 @@ Page {
                     var dialog = purchaseDialog.createObject(createContestPage,
                                                              {"purchaseApi": purchaseRequest.submit()})
                     dialog.accepted.connect(function() {
-                        var transferPromise = votingSystem.adaptor.transfer(votingSystem.currentAccount.name,
-                                                                            dialog.selectedPrice.payAddress,
-                                                                            dialog.selectedPrice.amount,
-                                                                            dialog.selectedPrice.coinId);
+                        var transferPromise = votingSystem.chain.transfer(votingSystem.currentAccount.name,
+                                                                          dialog.selectedPrice.payAddress,
+                                                                          dialog.selectedPrice.amount,
+                                                                          dialog.selectedPrice.coinId);
                         transferPromise.then(function() {
                             dialog.purchaseApi.paymentSent(dialog.selectedPriceIndex)
                             dialog.close()
@@ -120,8 +120,6 @@ Page {
             contentHeight: window.height * .6
 
             function updatePrices(totals, adjustments) {
-                console.log(JSON.stringify(totals))
-                console.log(JSON.stringify(adjustments))
                 priceList.model = totals
                 priceList.currentIdx = 0
                 adjustmentRepeater.model = adjustments

@@ -35,12 +35,12 @@
 #include "PromiseConverter.hpp"
 #include "TwoPartyClient.hpp"
 
+#include <FakeBlockchain.hpp>
+
 #include "capnqt/QSocketWrapper.hpp"
 
 #include <capnp/message.h>
 #include <capnp/serialize-packed.h>
-
-#include <StubChainAdaptor.hpp>
 
 namespace swv {
 
@@ -58,7 +58,7 @@ public:
         : q_ptr(q_ptr),
           tasks(*this),
           promiseConverter(kj::heap<PromiseConverter>(tasks)),
-          adaptor(kj::heap<ChainAdaptorWrapper>(*promiseConverter)),
+          chain(kj::heap<ChainAdaptorWrapper>(*promiseConverter)),
           socket(kj::heap<QTcpSocket>())
     {
         // Funky syntax is because QAbstractSocket::error is overloaded.
@@ -74,12 +74,11 @@ public:
     QString lastError;
     kj::TaskSet tasks;
     kj::Own<PromiseConverter> promiseConverter;
-    kj::Own<ChainAdaptorWrapper> adaptor;
+    kj::Own<ChainAdaptorWrapper> chain;
     kj::Own<TwoPartyClient> client;
     kj::Own<BackendWrapper> backend;
     kj::Own<QTcpSocket> socket;
     kj::Own<QSocketWrapper> socketWrapper;
-    kj::Array<::Coin::Reader> kjCoins;
     swv::data::Account* currentAccount = nullptr;
 
     void completeConnection(Promise* connectionPromise) {
@@ -142,9 +141,7 @@ VotingSystem::VotingSystem(QObject *parent)
     });
 
     connect(this, &VotingSystem::backendConnectedChanged, this, &VotingSystem::isReadyChanged);
-    connect(this, &VotingSystem::adaptorReadyChanged, this, &VotingSystem::isReadyChanged);
-    connect(d->adaptor, &ChainAdaptorWrapper::hasAdaptorChanged, this, &VotingSystem::adaptorReadyChanged);
-    connect(d->adaptor, &ChainAdaptorWrapper::error, this, [this](QString error) {
+    connect(d->chain, &ChainAdaptorWrapper::error, this, [this](QString error) {
         setLastError(error);
     });
     connect(this, &VotingSystem::isReadyChanged, this, [this, d] {
@@ -152,44 +149,49 @@ VotingSystem::VotingSystem(QObject *parent)
             emit ready();
 
             // Fetch coin list, populate property
-            d->promiseConverter->adopt(d->adaptor->adaptor()->listAllCoins().then(
-                                          [this, d](kj::Array<::Coin::Reader> coins) {
+            d->promiseConverter->adopt(d->chain->chain().getAllCoinsRequest().send().then(
+                                          [this, d](capnp::Response<BlockchainWallet::GetAllCoinsResults> response) {
                 for (int i = 0; i < m_coins->count(); ++i)
                     m_coins->get(i)->deleteLater();
                 m_coins->clear();
-                d->kjCoins = kj::mv(coins);
 
                 // For each coin, fetch the statistics and return a promise for the coin and statistics
-                return kj::joinPromises(KJ_MAP(coin, d->kjCoins) {
-                         auto request = d->backend->backend().getCoinDetailsRequest();
-                         request.setCoinId(coin.getId());
-                         // Get one week of volume history
-                         request.setVolumeHistoryLength(24 * 7);
-                         return request.send().then([coin](capnp::Response<Backend::GetCoinDetailsResults> r) {
-                             return std::make_tuple(coin, kj::mv(r));
-                         });
-                     });
-            }).then([this, d](kj::Array<std::tuple<Coin::Reader, capnp::Response<Backend::GetCoinDetailsResults>>> r) {
+                return kj::joinPromises(KJ_MAP(coin, response.getCoins()) {
+                                            auto wrapper = new CoinWrapper(this);
+                                            wrapper->updateFields(coin);
+
+                                            auto request = d->backend->backend().getCoinDetailsRequest();
+                                            request.setCoinId(coin.getId());
+                                            // Get one week of volume history
+                                            request.setVolumeHistoryLength(24 * 7);
+                                            return request.send().then([wrapper](auto r) {
+                                                return std::make_tuple(wrapper, kj::mv(r));
+                                            });
+                                        });
+            }).then([this, d](kj::Array<std::tuple<CoinWrapper*, capnp::Response<Backend::GetCoinDetailsResults>>> r) {
                 // Create wrappers for the coins with statistics set
                 for (const auto& tuple : r) {
-                    auto wrapper = new CoinWrapper(this);
-                    wrapper->updateFields(std::get<0>(tuple));
+                    auto wrapper = std::get<0>(tuple);
                     wrapper->updateFields(std::get<1>(tuple).getDetails());
                     m_coins->append(wrapper);
                 }
             }));
 
             // Get my accounts, populate property
-            using BalanceList = kj::Array<::Balance::Reader>;
-            d->promiseConverter->adopt(d->adaptor->adaptor()->getMyAccounts().then(
-                                           [this, d](kj::Array<QString> accountNames) {
+            using BalanceList = capnp::Response<BlockchainWallet::GetBalancesBelongingToResults>;
+            d->promiseConverter->adopt(d->chain->chain().listMyAccountsRequest().send().then(
+                                           [this, d](auto response) {
+                auto accountNames = response.getAccountNames();
                 // Get balances for each account
                 auto accounts = kj::heapArrayBuilder<kj::Promise<std::tuple<QString,
                                                                             BalanceList>>>(accountNames.size());
-                for (QString name : accountNames)
-                    accounts.add(d->adaptor->adaptor()->getBalancesForOwner(name).then([name](BalanceList bals) {
-                                     return std::make_tuple(name, kj::mv(bals));
-                                 }));
+                for (auto name : accountNames) {
+                    auto request = d->chain->chain().getBalancesBelongingToRequest();
+                    request.setOwner(name);
+                    accounts.add(request.send().then([name = QString::fromStdString(name)](BalanceList response) {
+                        return std::make_tuple(name, kj::mv(response));
+                    }));
+                }
                 return kj::joinPromises(accounts.finish());
             }).then([this, d](kj::Array<std::tuple<QString, BalanceList>> accountsBalances) {
                 // Get the persisted current account name, if any
@@ -197,16 +199,15 @@ VotingSystem::VotingSystem(QObject *parent)
 
                 // Create Account object with AccountBalances populated, add them to myAccounts list
                 for (auto& tuple : accountsBalances) {
-                    QString name;
-                    BalanceList balances;
-                    std::tie(name, balances) = kj::mv(tuple);
+                    QString name = std::get<0>(tuple);
+                    BalanceList balances = kj::mv(std::get<1>(tuple));
 
                     auto account = new data::Account(this);
                     account->update_name(name);
 
                     // Sum up balances by coin ID
                     std::map<quint64, qint64> balanceSums;
-                    for (Balance::Reader balance : balances)
+                    for (Balance::Reader balance : balances.getBalances())
                         balanceSums[balance.getType()] += balance.getAmount();
                     // Store balance sums in Account object
                     for (auto balPair : balanceSums) {
@@ -237,7 +238,7 @@ QString VotingSystem::lastError() const {
 }
 
 bool VotingSystem::isReady() const {
-    return backendConnected() && adaptorReady();
+    return backendConnected();
 }
 
 bool VotingSystem::backendConnected() const {
@@ -245,13 +246,8 @@ bool VotingSystem::backendConnected() const {
     return bool(d->backend);
 }
 
-bool VotingSystem::adaptorReady() const {
-    Q_D(const VotingSystem);
-    return d->adaptor->hasAdaptor();
-}
-
-ChainAdaptorWrapper* VotingSystem::adaptor() { Q_D(VotingSystem);
-    return d->adaptor;
+ChainAdaptorWrapper* VotingSystem::chain() { Q_D(VotingSystem);
+    return d->chain;
 }
 
 BackendWrapper* VotingSystem::backend() { Q_D(VotingSystem);
@@ -288,12 +284,13 @@ void VotingSystem::configureChainAdaptor(bool useTestingBackend) {
     Q_D(VotingSystem);
 
     //TODO: make a real implementation of this
-    auto adaptor = kj::heap<StubChainAdaptor>(d->adaptor);
+    auto chain = kj::heap<FakeBlockchain>();
+    auto backendStub = chain->getBackendStub();
+    d->chain->setChain(kj::mv(chain));
     if (useTestingBackend) {
-        d->backend = kj::heap<BackendWrapper>(adaptor->getBackendStub(), *d->promiseConverter);
+        d->backend = kj::heap<BackendWrapper>(backendStub, *d->promiseConverter);
         emit backendConnectedChanged(true);
     }
-    d->adaptor->setAdaptor(kj::mv(adaptor));
 }
 
 Promise* VotingSystem::castCurrentDecision(swv::ContestWrapper* contest) {
@@ -324,22 +321,23 @@ Promise* VotingSystem::castCurrentDecision(swv::ContestWrapper* contest) {
         return nullptr;
     }
 
-    auto chain = adaptor();
+    auto chain = this->chain();
     if (chain == nullptr) {
-        setLastError(tr("Oops! A bug is preventing your vote from being cast. (Chain adaptor is not ready)"));
+        setLastError(tr("Oops! A bug is preventing your vote from being cast. (Chain is not ready)"));
         return nullptr;
     }
 
     // Get all balances for current account, filter out the ones in a coin other than this contest's coin
-    auto future = chain->adaptor()->getBalancesForOwner(d->currentAccount->get_name());
-    auto finishPromise = future.then([this, d, decision, chain, contest](kj::Array<::Balance::Reader> balances) {
+    auto request = chain->chain().getBalancesBelongingToRequest();
+    request.setOwner(d->currentAccount->get_name().toStdString());
+    auto finishPromise = request.send().then([this, d, decision, chain, contest](auto response) {
+        auto balances = kj::heapArray<Balance::Reader>(response.getBalances().begin(), response.getBalances().end());
         auto newEnd = std::remove_if(balances.begin(), balances.end(), [contest](::Balance::Reader b) {
-                           return b.getType() != contest->getCoin();
+                           return b.getType() != contest->get_coin();
                        });
-        balances = kj::heapArray<::Balance::Reader>(balances.begin(), newEnd);
 
-        if (balances.size() == 0) {
-            auto coin = getCoin(contest->getCoin());
+        if (newEnd == balances.begin()) {
+            auto coin = getCoin(contest->get_coin());
             if (coin == nullptr) {
                 setLastError(tr("Unable to cast vote because the coin for the contest was not found."));
                 KJ_FAIL_REQUIRE("Couldn't cast vote because the contest weight coin was not found.");
@@ -349,16 +347,21 @@ Promise* VotingSystem::castCurrentDecision(swv::ContestWrapper* contest) {
                          .arg(d->currentAccount->get_name()).arg(coin->get_name()));
             KJ_FAIL_REQUIRE("Couldn't cast vote because voting account has no balances in the coin");
         }
+        balances = kj::heapArray<::Balance::Reader>(balances.begin(), newEnd);
 
         auto serialDecision = decision->serialize();
         auto promises = kj::heapArrayBuilder<kj::Promise<void>>(balances.size());
         for (auto balance : balances) {
-            auto dgram = chain->getNewDatagram();
+            auto request = chain->chain().publishDatagramRequest();
+            request.setPayingBalance(balance.getId());
+            request.setPublishingBalance(balance.getId());
+
+            auto dgram = request.initDatagram();
             dgram.initIndex().setType(Datagram::DatagramType::DECISION);
             dgram.getIndex().setKey(balance.getId());
             dgram.setContent(convertBlob(serialDecision));
 
-            promises.add(chain->adaptor()->publishDatagram(convertBlob(balance.getId())));
+            promises.add(request.send().then([](auto){}));
         }
 
         return kj::joinPromises(promises.finish());
@@ -367,24 +370,21 @@ Promise* VotingSystem::castCurrentDecision(swv::ContestWrapper* contest) {
     return d->promiseConverter->convert(kj::mv(finishPromise));
 }
 
-CoinWrapper* VotingSystem::getCoin(quint64 id)
-{
+CoinWrapper* VotingSystem::getCoin(quint64 id) {
     for (CoinWrapper* coin : m_coins->toList())
         if (coin->get_coinId() == id)
             return coin;
     return nullptr;
 }
 
-CoinWrapper* VotingSystem::getCoin(QString name)
-{
+CoinWrapper* VotingSystem::getCoin(QString name) {
     for (CoinWrapper* coin : m_coins->toList())
         if (coin->get_name() == name)
             return coin;
     return nullptr;
 }
 
-data::Account*VotingSystem::getAccount(QString name)
-{
+data::Account*VotingSystem::getAccount(QString name) {
     for (auto account : m_myAccounts->toList())
         if (account->get_name() == name)
             return account;
@@ -406,7 +406,7 @@ void VotingSystem::cancelCurrentDecision(ContestWrapper* contest) {
         return;
     }
 
-    auto promise = d->adaptor->_getDecision(currentAccount()->get_name(), contest->id());
+    auto promise = d->chain->_getDecision(currentAccount()->get_name(), contest->get_id());
     d->tasks.add(promise.then([contest](swv::DecisionWrapper* decision) {
         contest->setCurrentDecision(decision);
     }, [contest](kj::Exception) {

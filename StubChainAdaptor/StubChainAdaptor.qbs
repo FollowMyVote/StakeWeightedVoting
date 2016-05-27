@@ -17,11 +17,10 @@ DynamicLibrary {
         "ContestGenerator.hpp",
         "ContestResults.cpp",
         "ContestResults.hpp",
-        "StubChainAdaptor.cpp",
-        "StubChainAdaptor.hpp",
+        "FakeBlockchain.cpp",
+        "FakeBlockchain.hpp",
         "Purchase.cpp",
         "Purchase.hpp",
-        "StubChainAdaptor_global.hpp",
     ]
 
     property bool install: true

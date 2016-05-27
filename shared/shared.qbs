@@ -25,7 +25,6 @@ StaticLibrary {
     cpp.dynamicLibraries: capnpProbe.libs.filter(function(name) { return name.startsWith("-l") }).map(function(name) { return name.slice(2) })
 
     files: [
-        "BlockchainAdaptorInterface.hpp",
         "TwoPartyServer.cpp",
         "TwoPartyServer.hpp",
         "capnp/*.capnp",

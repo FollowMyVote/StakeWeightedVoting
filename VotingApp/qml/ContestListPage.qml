@@ -81,7 +81,7 @@ ListPage {
 
             contestGenerator.getContests(3).then(function (contests) {
                 contests.forEach(function(contest) {
-                    votingSystem.adaptor.getContest(contest.contestId).then(function(contestObject) {
+                    votingSystem.chain.getContest(contest.contestId).then(function(contestObject) {
                         contest.contestObject = contestObject
                         contestList.append(contest)
                     }, function(error) {

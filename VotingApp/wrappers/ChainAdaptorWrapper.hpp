@@ -21,6 +21,7 @@
 
 #include "capnp/coin.capnp.h"
 #include "capnp/datagram.capnp.h"
+#include "capnp/blockchainwallet.capnp.h"
 
 #include "Coin.hpp"
 #include "Contest.hpp"
@@ -54,58 +55,32 @@ class BalanceWrapper;
 class ChainAdaptorWrapper : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(bool hasAdaptor READ hasAdaptor NOTIFY hasAdaptorChanged)
 
 public:
     ChainAdaptorWrapper(PromiseConverter& promiseConverter, QObject *parent = 0);
     ~ChainAdaptorWrapper() noexcept;
 
     /**
-     * @brief Set the blockchain adaptor. The wrapper takes ownership of the adaptor.
-     * @param adaptor The adaptor to use
-     *
-     * If any other adaptor was set previously, it will be destroyed in favor of the new one.
+     * @brief Set the blockchain client
+     * @param chain The BlockchainWallet to use
      */
-    void setAdaptor(kj::Own<BlockchainAdaptorInterface> m_adaptor);
+    void setChain(BlockchainWallet::Client chain);
     /**
-     * @brief Get a non-owning pointer to the blockchain adaptor
-     * @return Pointer to the adaptor, does not confer ownership
+     * @brief Get the BlockchainWallet
+     * @return Client for the BlockchainWallet, does not confer ownership
      */
-    BlockchainAdaptorInterface* adaptor() {
-        return m_adaptor.get();
-    }
-    /**
-     * @brief Extract the blockchain adaptor. The caller takes ownership.
-     * @return The blockchain adaptor currently in use
-     *
-     * The wrapper relinquishes ownership of the adaptor; after this call, the wrapper will have no adaptor until
-     * setAdaptor is called.
-     */
-    kj::Own<BlockchainAdaptorInterface> takeAdaptor();
-    /**
-     * @brief Check if the adaptor is set
-     * @return true if adaptor is set; false otherwise.
-     */
-    bool hasAdaptor() const {
-        return m_adaptor.get() != nullptr;
+    BlockchainWallet::Client chain() {
+        return m_chain;
     }
 
     /**
      * @brief Get a balance by ID
      * @param id ID of the balance to retrieve
-     * @return Balance having the provided ID, or nullptr if adaptor is not set or balance not found
+     * @return Balance having the provided ID
      *
      * The wrapper maintains ownership of the returned object.
      */
     Q_INVOKABLE Promise* getBalance(QByteArray id);
-    /**
-     * @brief Get all balances spendable by a specified account
-     * @return All balances controlled by the named account
-     *
-     * The wrapper maintains ownership of the returned objects. The returned list will be empty if the adaptor is not
-     * set.
-     */
-    Q_INVOKABLE Promise* getAccountBalances(QString account);
     /**
      * @brief Get all balances belonging to the specified owner
      * @param owner Unambiguous ID of the owner; exact semantics are chain-specific
@@ -117,7 +92,7 @@ public:
      * The wrapper maintains ownership of the returned objects. The returned list will be empty if the adaptor is not
      * set.
      */
-    Q_INVOKABLE Promise* getBalancesForOwner(QString owner);
+    Q_INVOKABLE Promise* getBalancesBelongingTo(QString owner);
 
     /**
      * @brief Get the contest with the specified ID
@@ -147,19 +122,6 @@ public:
     kj::Promise<OwningWrapper<DecisionWrapper>*> _getDecision(QString owner, QString contestId);
 
     /**
-     * @brief Get a new datagram
-     * @return A wrapped datagram, suitable for populating and passing to @ref publishDatagram
-     */
-    Datagram::Builder getNewDatagram();
-    /**
-     * @brief Publish a datagram to the blockchain
-     * @param payer Balance which will be used to pay for the publication
-     * @return A promise which resolves when the datagram has been submitted to the chain (this does not mean it will
-     * be confirmed or included!)
-     */
-    Promise* publishDatagram(QByteArray payerBalanceId, QByteArray publisherBalanceId);
-
-    /**
      * @brief Transfer amount from sender to recipient
      * @param sender Account name of sender
      * @param recipient Account name/address of recipient
@@ -170,7 +132,6 @@ public:
     Q_INVOKABLE Promise* transfer(QString sender, QString recipient, qint64 amount, quint64 coinId);
 
 signals:
-    void hasAdaptorChanged(bool);
     void error(QString message);
 
     /// This signal will be emitted when an event occurs which causes a contest which had previously been counted
@@ -179,9 +140,13 @@ signals:
     /// forked out of the blockchain, etc.
     void contestActionRequired(QString contestId);
 
+protected:
+    capnp::RemotePromise<BlockchainWallet::GetContestByIdResults> getContestImpl(QString contestId);
+    capnp::RemotePromise<BlockchainWallet::GetBalancesBelongingToResults> getBalancesBelongingToImpl(QString owner);
+
 private:
     PromiseConverter& promiseConverter;
-    kj::Own<BlockchainAdaptorInterface> m_adaptor;
+    BlockchainWallet::Client m_chain;
 };
 
 } // namespace swv

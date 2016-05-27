@@ -25,47 +25,18 @@ namespace swv {
 
 ContestWrapper::ContestWrapper(QString id, Contest::Reader r, QObject* parent)
     : QObject(parent),
-      Contest::Reader(r),
-      m_id(id)
-{}
-
-QString ContestWrapper::id() const
-{
-    return m_id;
-}
-
-QVariantMap ContestWrapper::tags() const
-{
-    QVariantMap results;
-    auto tagList = getTags().getEntries();
-    for (auto tag : tagList)
-        results[QString::fromStdString(tag.getKey())] = QString::fromStdString(tag.getValue());
-    return results;
-}
-
-QVariantList ContestWrapper::contestants() const
-{
-    QVariantList results;
-    auto contestantList = getContestants().getEntries();
-    for (auto contestant : contestantList)
-        results.append(QVariantMap({{QStringLiteral("name"),
-                                     QString::fromStdString(contestant.getKey())},
-                                    {QStringLiteral("description"),
-                                     QString::fromStdString(contestant.getValue())}}));
-    return results;
-}
-
-QDateTime ContestWrapper::startTime() const
-{
-    return QDateTime::fromMSecsSinceEpoch(getStartTime());
-}
-
-OwningWrapper<DecisionWrapper>* ContestWrapper::currentDecision() {
-    return m_currentDecision;
-}
-
-const OwningWrapper<DecisionWrapper>* ContestWrapper::currentDecision() const {
-    return m_currentDecision;
+      m_id(id) {
+    m_name = QString::fromStdString(r.getName());
+    m_description = QString::fromStdString(r.getDescription());
+    for (auto tag : r.getTags().getEntries())
+        m_tags.insert(QString::fromStdString(tag.getKey()), QString::fromStdString(tag.getValue()));
+    for (auto contestant : r.getContestants().getEntries())
+        m_contestants.append(QVariantMap({{QStringLiteral("name"),
+                                           QString::fromStdString(contestant.getKey())},
+                                          {QStringLiteral("description"),
+                                           QString::fromStdString(contestant.getValue())}}));
+    m_coin = r.getCoin();
+    m_startTime = QDateTime::fromMSecsSinceEpoch(r.getStartTime());
 }
 
 void ContestWrapper::setCurrentDecision(OwningWrapper<DecisionWrapper>* newDecision)
