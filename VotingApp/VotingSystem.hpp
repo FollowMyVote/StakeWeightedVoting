@@ -43,8 +43,7 @@ class VotingSystemPrivate;
  * the backend server. It also manages pending decisions and provides services to the QML that require that C++ touch,
  * such as submitting decisions for broadcast.
  *
- * Before the voting system can be used, it must have a valid chain adaptor and a connection to the backend server.
- * The isReady property will be set to true iff both of these conditions are met.
+ * Before the voting system can be used, it must have a connection to the backend server.
  *
  * The voting system operates within the context of an active or current account. The system reads and writes all chain
  * state relative to this account. In particular, when casting decisions, the current account is the one which the
@@ -65,8 +64,7 @@ class VotingSystem : public QObject
     Q_PROPERTY(QString lastError READ lastError NOTIFY error)
     Q_PROPERTY(bool isReady READ isReady NOTIFY isReadyChanged)
     Q_PROPERTY(bool isBackendConnected READ backendConnected NOTIFY backendConnectedChanged)
-    Q_PROPERTY(bool isAdaptorReady READ adaptorReady NOTIFY adaptorReadyChanged)
-    Q_PROPERTY(swv::ChainAdaptorWrapper* adaptor READ adaptor CONSTANT)
+    Q_PROPERTY(swv::ChainAdaptorWrapper* chain READ chain CONSTANT)
     Q_PROPERTY(swv::BackendWrapper* backend READ backend NOTIFY backendConnectedChanged)
     QML_SORTABLE_OBJMODEL_PROPERTY(CoinWrapper, coins)
     QML_OBJMODEL_PROPERTY(swv::data::Account, myAccounts)
@@ -80,9 +78,8 @@ public:
     QString lastError() const;
     bool isReady() const;
     bool backendConnected() const;
-    bool adaptorReady() const;
 
-    ChainAdaptorWrapper* adaptor();
+    ChainAdaptorWrapper* chain();
     BackendWrapper* backend();
 
     swv::data::Account* currentAccount() const;
@@ -127,7 +124,6 @@ signals:
     void isReadyChanged();
     void ready();
     void backendConnectedChanged(bool backendConnected);
-    void adaptorReadyChanged(bool adaptorReady);
     void currentAccountChanged(swv::data::Account* currentAccount);
 
 public slots:

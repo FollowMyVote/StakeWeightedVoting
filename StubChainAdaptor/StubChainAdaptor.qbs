@@ -19,11 +19,8 @@ DynamicLibrary {
         "ContestResults.hpp",
         "FakeBlockchain.cpp",
         "FakeBlockchain.hpp",
-        "StubChainAdaptor.cpp",
-        "StubChainAdaptor.hpp",
         "Purchase.cpp",
         "Purchase.hpp",
-        "StubChainAdaptor_global.hpp",
     ]
 
     property bool install: true

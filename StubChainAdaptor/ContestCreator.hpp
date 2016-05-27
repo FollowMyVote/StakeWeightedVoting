@@ -18,15 +18,15 @@
 #ifndef CONTESTCREATOR_HPP
 #define CONTESTCREATOR_HPP
 
-#include "StubChainAdaptor.hpp"
+#include "FakeBlockchain.hpp"
 
 #include "capnp/contestcreator.capnp.h"
 
 namespace swv {
 
-class StubChainAdaptor::ContestCreator : public ::ContestCreator::Server {
+class FakeBlockchain::ContestCreator : public ::ContestCreator::Server {
 public:
-    ContestCreator(StubChainAdaptor& adaptor);
+    ContestCreator(FakeBlockchain& chain);
     virtual ~ContestCreator();
 
 protected:
@@ -36,7 +36,7 @@ protected:
     ::kj::Promise<void> purchaseContest(PurchaseContestContext context);
 
 private:
-    StubChainAdaptor& adaptor;
+    FakeBlockchain& chain;
 };
 
 }

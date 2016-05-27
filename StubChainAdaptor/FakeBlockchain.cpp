@@ -1,4 +1,5 @@
 #include "FakeBlockchain.hpp"
+#include "BackendStub.hpp"
 
 #include <kj/debug.h>
 
@@ -91,6 +92,10 @@ FakeBlockchain::FakeBlockchain() {
 
 FakeBlockchain::~FakeBlockchain() {}
 
+Backend::Client FakeBlockchain::getBackendStub() {
+    return kj::heap<BackendStub>(*this);
+}
+
 kj::Promise<void> FakeBlockchain::getCoinById(BlockchainWallet::Server::GetCoinByIdContext context) {
     auto id = context.getParams().getId();
     KJ_REQUIRE(id < coins.size(), "No such coin found", id);
@@ -143,9 +148,9 @@ kj::Promise<void> FakeBlockchain::getBalancesBelongingTo(BlockchainWallet::Serve
 }
 
 kj::Promise<void> FakeBlockchain::getContestById(BlockchainWallet::Server::GetContestByIdContext context) {
-    auto itr = contests.find(vectorize(context.getParams().getId()));
-    KJ_REQUIRE(itr != contests.end(), "Could not find the specified contest", context.getParams().getId());
-    context.initResults().setContest(itr->second.getReader());
+    auto& contest = KJ_REQUIRE_NONNULL(getContestById(context.getParams().getId()),
+                                      "Could not find the specified contest", context.getParams().getId());
+    context.initResults().setContest(contest.getReader());
     return kj::READY_NOW;
 }
 
@@ -217,6 +222,12 @@ kj::Promise<void> FakeBlockchain::transfer(BlockchainWallet::Server::TransferCon
     newBalance.setAmount(amountRemaining);
 
     return kj::READY_NOW;
+}
+
+kj::Maybe<const capnp::Orphan<Signed<Contest>>&> FakeBlockchain::getContestById(capnp::Data::Reader id) const {
+    auto itr = contests.find(vectorize(id));
+    if (itr == contests.end()) return {};
+    return itr->second;
 }
 
 kj::Maybe<capnp::Orphan<Balance>&> FakeBlockchain::getBalanceOrphan(capnp::Data::Reader id) {

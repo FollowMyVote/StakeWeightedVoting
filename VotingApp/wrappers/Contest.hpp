@@ -19,6 +19,8 @@
 #ifndef CONTEST_HPP
 #define CONTEST_HPP
 
+#include "vendor/QQmlVarPropertyHelpers.h"
+
 #include "OwningWrapper.hpp"
 #include "Decision.hpp"
 
@@ -30,45 +32,36 @@
 namespace swv {
 
 /**
- * @brief The ContestWrapper class is a read-only wrapper for the Contest type
+ * @brief The ContestWrapper class is a QML-friendly presentation of the data in a capnp UnsignedContest
  *
- * In addition to exposing the properties of ::UnsignedContest in a QML-accessible form, the Contest implements the
- * concept of the Current Decision for the contest. The current decision is the @ref swv::Decision which should be
+ * In addition to exposing the properties of ::UnsignedContest in a QML-accessible form, Contest implements the concept
+ * of the Current Decision for the contest. The current decision is the @ref swv::DecisionWrapper which should be
  * displayed in the UI as the decision on the contest.
  */
-class ContestWrapper : public QObject, public ::Contest::Reader
+class ContestWrapper : public QObject
 {
 private:
     Q_OBJECT
-    Q_PROPERTY(QString id READ id CONSTANT)
-    Q_PROPERTY(QString name READ name CONSTANT)
-    Q_PROPERTY(QString description READ description CONSTANT)
-    Q_PROPERTY(QVariantMap tags READ tags CONSTANT)
-    Q_PROPERTY(QVariantList contestants READ contestants CONSTANT)
-    Q_PROPERTY(quint64 coin READ getCoin CONSTANT)
-    Q_PROPERTY(QDateTime startTime READ startTime CONSTANT)
+    QML_READONLY_VAR_PROPERTY(QString, id)
+    QML_READONLY_VAR_PROPERTY(QString, name)
+    QML_READONLY_VAR_PROPERTY(QString, description)
+    QML_READONLY_VAR_PROPERTY(QVariantMap, tags)
+    QML_READONLY_VAR_PROPERTY(QVariantList, contestants)
+    QML_READONLY_VAR_PROPERTY(quint64, coin)
+    QML_READONLY_VAR_PROPERTY(QDateTime, startTime)
     Q_PROPERTY(swv::DecisionWrapper* currentDecision READ currentDecision WRITE setCurrentDecision NOTIFY currentDecisionChanged)
 
     OwningWrapper<DecisionWrapper>* m_currentDecision = nullptr;
-    QString m_id;
 
 public:
     ContestWrapper(QString id, ::Contest::Reader r, QObject* parent = nullptr);
 
-    // Hexadecimal string containing the ID of the contest
-    QString id() const;
-    QString name() const {
-        return QString::fromStdString(getName());
+    OwningWrapper<DecisionWrapper>* currentDecision() {
+        return m_currentDecision;
     }
-    QString description() const {
-        return QString::fromStdString(getDescription());
+    const OwningWrapper<swv::DecisionWrapper>* currentDecision() const {
+        return m_currentDecision;
     }
-    QVariantMap tags() const;
-    QVariantList contestants() const;
-    QDateTime startTime() const;
-
-    OwningWrapper<DecisionWrapper>* currentDecision();
-    const OwningWrapper<swv::DecisionWrapper>* currentDecision() const;
 
     // Set the current decision. Destroys the old current decision and takes ownership of the new one.
     void setCurrentDecision(OwningWrapper<DecisionWrapper>* newDecision);

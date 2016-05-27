@@ -17,24 +17,24 @@
  */
 #include "ContestCreator.hpp"
 #include "Purchase.hpp"
-#include "StubChainAdaptor.hpp"
 
 #include <kj/debug.h>
 #include <capnp/serialize-packed.h>
 
+#include <string>
 #include <chrono>
 #include <map>
 
 namespace swv {
 
-StubChainAdaptor::ContestCreator::ContestCreator(StubChainAdaptor& adaptor)
-    : adaptor(adaptor)
+FakeBlockchain::ContestCreator::ContestCreator(FakeBlockchain& chain)
+    : chain(chain)
 {}
 
-StubChainAdaptor::ContestCreator::~ContestCreator()
+FakeBlockchain::ContestCreator::~ContestCreator()
 {}
 
-::kj::Promise<void> StubChainAdaptor::ContestCreator::getPriceSchedule(ContestCreator::Server::GetPriceScheduleContext context) {
+::kj::Promise<void> FakeBlockchain::ContestCreator::getPriceSchedule(ContestCreator::Server::GetPriceScheduleContext context) {
     auto entries = context.getResults().getSchedule().initEntries(8);
     entries[0].getKey().setItem(::ContestCreator::LineItems::CONTEST_TYPE_ONE_OF_N);
     entries[0].getValue().setPrice(40000);
@@ -56,7 +56,7 @@ StubChainAdaptor::ContestCreator::~ContestCreator()
 
 }
 
-::kj::Promise<void> StubChainAdaptor::ContestCreator::getContestLimits(ContestCreator::Server::GetContestLimitsContext context) {
+::kj::Promise<void> FakeBlockchain::ContestCreator::getContestLimits(ContestCreator::Server::GetContestLimitsContext context) {
     auto entries = context.getResults().getLimits().initEntries(8);
     entries[0].getKey().setLimit(::ContestCreator::ContestLimits::NAME_LENGTH);
     entries[0].getValue().setValue(100);
@@ -77,7 +77,7 @@ StubChainAdaptor::ContestCreator::~ContestCreator()
     return kj::READY_NOW;
 }
 
-::kj::Promise<void> StubChainAdaptor::ContestCreator::purchaseContest(ContestCreator::Server::PurchaseContestContext context) {
+::kj::Promise<void> FakeBlockchain::ContestCreator::purchaseContest(ContestCreator::Server::PurchaseContestContext context) {
     int64_t price = 0;
     auto contestOptions = context.getParams().getRequest().getContestOptions();
     bool longText = false;
@@ -147,8 +147,8 @@ StubChainAdaptor::ContestCreator::~ContestCreator()
         contestants.insert(std::make_pair<std::string, std::string>(contestant.getKey(), contestant.getValue()));
     context.getResults().setPurchaseApi(kj::heap<Purchase>(
                                             price,
-                                            KJ_ASSERT_NONNULL(adaptor.getCoinOrphan("VOTE")).getReader().getId(),
-                                            [&adaptor = adaptor,
+                                            KJ_ASSERT_NONNULL(chain.getCoinOrphan("VOTE")).getReader().getId(),
+                                            [&chain = chain,
                                              name = std::string(contestOptions.getName()),
                                              descripton = std::string(contestOptions.getDescription()),
                                              contestants = kj::mv(contestants),
@@ -156,7 +156,7 @@ StubChainAdaptor::ContestCreator::~ContestCreator()
                                              endTime = contestOptions.getEndTime()] {
         auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
                        std::chrono::steady_clock::now().time_since_epoch()).count();
-        auto contest = adaptor.createContest().getValue();
+        auto contest = chain.createContest().getValue();
         contest.setName(name);
         contest.setDescription(descripton);
         auto finalContestants = contest.initContestants().initEntries(contestants.size());

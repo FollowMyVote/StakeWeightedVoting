@@ -46,6 +46,14 @@ private:
              capnp::Orphan<::Datagram>> datagrams;
     uint8_t nextBalanceId = 0;
 
+    // Just call the const version and cast it to non-const
+    kj::Maybe<capnp::Orphan<Signed<Contest>>&> getContestById(capnp::Data::Reader id) {
+        return const_cast<const FakeBlockchain*>(this)->getContestById(id).map([](const auto& c)
+                                                                               -> capnp::Orphan<Signed<Contest>>& {
+            return const_cast<capnp::Orphan<Signed<Contest>>&>(c);
+        });
+    }
+    kj::Maybe<const capnp::Orphan<Signed<Contest>>&> getContestById(capnp::Data::Reader id) const;
     kj::Maybe<capnp::Orphan<Balance>&> getBalanceOrphan(capnp::Data::Reader id);
     kj::Maybe<const capnp::Orphan<Balance>&> getBalanceOrphan(capnp::Data::Reader id) const;
     kj::Maybe<capnp::Orphan<Coin>&> getCoinOrphan(kj::StringPtr name);

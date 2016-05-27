@@ -182,7 +182,7 @@ Page {
 //        }
 //    }
 
-//    model: votingSystem.adaptor.coins
+//    model: votingSystem.chain.coins
 //    delegate: RowLayout {
 
 //        spacing: window.dp(16)
