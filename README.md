@@ -9,7 +9,7 @@ Linux and Mac are both fully supported. Windows support is pending.
 In this repo are 4 components:
 
 - The `shared` folder contains code shared between the other components
-- The `StubChainAdaptor` folder contains a shared library implementing a dummy blockchain, used by the application
+- The `StubChainAdaptor` folder contains a shared library implementing a dummy blockchain, backend, and wallet
 - The `StubBackend` folder contains a dummy server daemon which the application can connect to, though by default it is unused
 - The `VotingApp` folder contains the voting application itself
 
