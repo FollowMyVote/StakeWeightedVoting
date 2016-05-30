@@ -26,8 +26,8 @@
 class Promise;
 class PromiseConverter;
 namespace swv {
-class ContestGeneratorWrapper;
-class ContestCreatorWrapper;
+class ContestGeneratorApi;
+class ContestCreatorApi;
 class ContestResultsApi;
 
 /**
@@ -43,35 +43,35 @@ class ContestResultsApi;
  * disconnections or other failure conditions of the client. The PromiseWrapper passed to this class's constructor will
  * receive any errors from the backend.
  */
-class BackendWrapper : public QObject
+class BackendApi : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(swv::ContestCreatorWrapper* contestCreator READ contestCreator CONSTANT);
+    Q_PROPERTY(swv::ContestCreatorApi* contestCreator READ contestCreator CONSTANT);
 
 public:
-    BackendWrapper(Backend::Client backend, PromiseConverter& promiseConverter, QObject *parent = 0);
-    virtual ~BackendWrapper() noexcept;
+    BackendApi(Backend::Client backend, PromiseConverter& promiseConverter, QObject *parent = 0);
+    virtual ~BackendApi() noexcept;
 
     /// @brief Get the current user's contest feed
-    Q_INVOKABLE swv::ContestGeneratorWrapper* getFeedGenerator();
+    Q_INVOKABLE swv::ContestGeneratorApi* getFeedGenerator();
     /// @brief Get the contests created by a particular account
-    Q_INVOKABLE swv::ContestGeneratorWrapper* getContestsByCreator(QString creator);
+    Q_INVOKABLE swv::ContestGeneratorApi* getContestsByCreator(QString creator);
     /// @brief Get the contests weighted in a particular coin
-    Q_INVOKABLE swv::ContestGeneratorWrapper* getContestsByCoin(quint64 coinId);
+    Q_INVOKABLE swv::ContestGeneratorApi* getContestsByCoin(quint64 coinId);
     /// @brief Get the contests the current user has voted on
-    Q_INVOKABLE swv::ContestGeneratorWrapper* getVotedContests();
+    Q_INVOKABLE swv::ContestGeneratorApi* getVotedContests();
 
     /// @brief Get the results API for a specified contest
     Q_INVOKABLE swv::ContestResultsApi* getContestResults(QString contestId);
 
-    swv::ContestCreatorWrapper* contestCreator();
+    swv::ContestCreatorApi* contestCreator();
 
     Backend::Client backend() { return m_backend; }
 
 private:
     PromiseConverter& promiseConverter;
     Backend::Client m_backend;
-    kj::Own<ContestCreatorWrapper> creator;
+    kj::Own<ContestCreatorApi> creator;
 };
 
 } // namespace swv

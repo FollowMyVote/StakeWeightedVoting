@@ -1,5 +1,5 @@
-#include "PurchaseContestRequest.hpp"
-#include "PurchaseWrapper.hpp"
+#include "PurchaseContestRequestApi.hpp"
+#include "PurchaseApi.hpp"
 #include "Converters.hpp"
 
 #include <PromiseConverter.hpp>
@@ -18,10 +18,10 @@
 
 // Macro to generate getter and setter for text properties in the contestOptions
 #define TEXT_GETTER_SETTER(property, requestField) \
-    QString PurchaseContestRequestWrapper::property() const { \
+    QString PurchaseContestRequestApi::property() const { \
         return convertText(request.asReader().getRequest().getContestOptions().get ## requestField ()); \
     } \
-    void PurchaseContestRequestWrapper::set ## requestField(QString property) { \
+    void PurchaseContestRequestApi::set ## requestField(QString property) { \
         _CHECK_NOT_SAME(property) \
         request.getRequest().getContestOptions().set ## requestField(convertText(property)); \
         emit property ## Changed(property); \
@@ -36,28 +36,28 @@
 
 // Macro to generate getter and setter for properties in the contestOptions which require no special conversion steps
 #define SIMPLE_GETTER_SETTER(property, upperProperty, type, requestField) \
-    type PurchaseContestRequestWrapper::property() const { \
+    type PurchaseContestRequestApi::property() const { \
         _SIMPLE_GETTER_IMPL(ContestOptions().get ## requestField) \
     } \
-    void PurchaseContestRequestWrapper::set ## upperProperty(type property) { \
+    void PurchaseContestRequestApi::set ## upperProperty(type property) { \
         _SIMPLE_SETTER_IMPL(property, getContestOptions().set ## requestField(property)) \
     }
 
 // Macro to generate getter and setter for simple properties in the sponsorship options
 #define SPONSORSHIP_SIMPLE_GETTER_SETTER(property, upperProperty, type, requestField) \
-    type PurchaseContestRequestWrapper::property() { \
+    type PurchaseContestRequestApi::property() { \
         if (!sponsorshipEnabled()) \
             return {}; \
         _SIMPLE_GETTER_IMPL(Sponsorship().getOptions().get ## requestField) \
     } \
-    void PurchaseContestRequestWrapper::set ## upperProperty(type property) { \
+    void PurchaseContestRequestApi::set ## upperProperty(type property) { \
         if (!sponsorshipEnabled()) \
             setSponsorshipEnabled(true); \
         _SIMPLE_SETTER_IMPL(property, getSponsorship().getOptions().set ## requestField(property)) \
     }
 
 namespace swv {
-PurchaseContestRequestWrapper::PurchaseContestRequestWrapper(PurchaseRequest&& request,
+PurchaseContestRequestApi::PurchaseContestRequestApi(PurchaseRequest&& request,
                                                              kj::TaskSet& taskTracker,
                                                              QObject* parent)
     : QObject(parent),
@@ -66,20 +66,20 @@ PurchaseContestRequestWrapper::PurchaseContestRequestWrapper(PurchaseRequest&& r
       request(kj::mv(request))
 {}
 
-ContestType::Type PurchaseContestRequestWrapper::contestType() const {
+ContestType::Type PurchaseContestRequestApi::contestType() const {
     return static_cast<ContestType::Type>(request.asReader().getRequest().getContestOptions().getType());
 }
-void PurchaseContestRequestWrapper::setContestType(ContestType::Type type) {
+void PurchaseContestRequestApi::setContestType(ContestType::Type type) {
     if (type == contestType())
         return;
     request.getRequest().getContestOptions().setType(static_cast<::Contest::Type>(type));
     emit contestTypeChanged(type);
 }
 
-TallyAlgorithm::Type PurchaseContestRequestWrapper::tallyAlgorithm() const {
+TallyAlgorithm::Type PurchaseContestRequestApi::tallyAlgorithm() const {
     return static_cast<TallyAlgorithm::Type>(request.asReader().getRequest().getContestOptions().getTallyAlgorithm());
 }
-void PurchaseContestRequestWrapper::setTallyAlgorithm(TallyAlgorithm::Type algorithm) {
+void PurchaseContestRequestApi::setTallyAlgorithm(TallyAlgorithm::Type algorithm) {
     if (algorithm == tallyAlgorithm())
         return;
     request.getRequest().getContestOptions().setTallyAlgorithm(static_cast<::Contest::TallyAlgorithm>(algorithm));
@@ -91,21 +91,21 @@ TEXT_GETTER_SETTER(description, Description)
 SIMPLE_GETTER_SETTER(weightCoin, WeightCoin, quint64, Coin)
 SIMPLE_GETTER_SETTER(expiration, Expiration, qint64, EndTime)
 
-bool PurchaseContestRequestWrapper::sponsorshipEnabled() const {
+bool PurchaseContestRequestApi::sponsorshipEnabled() const {
     return request.asReader().getRequest().getSponsorship().isOptions();
 }
 
-PurchaseWrapper* PurchaseContestRequestWrapper::submit() {
+PurchaseApi* PurchaseContestRequestApi::submit() {
     updateContestants();
     KJ_LOG(DBG, "Submitting purchase request", request, request.getRequest().getContestOptions().getName());
 
     auto promise = request.send();
     auto purchase = promise.getPurchaseApi();
 
-    return new PurchaseWrapper(kj::mv(purchase), tasks, this);
+    return new PurchaseApi(kj::mv(purchase), tasks, this);
 }
 
-void PurchaseContestRequestWrapper::setSponsorshipEnabled(bool enabled) {
+void PurchaseContestRequestApi::setSponsorshipEnabled(bool enabled) {
     if (enabled == sponsorshipEnabled())
         return;
     if (enabled)
@@ -120,7 +120,7 @@ SPONSORSHIP_SIMPLE_GETTER_SETTER(sponsorMaxRevotes, SponsorMaxRevotes, qint32, M
 SPONSORSHIP_SIMPLE_GETTER_SETTER(sponsorEndDate, SponsorEndDate, qint64, EndDate)
 SPONSORSHIP_SIMPLE_GETTER_SETTER(sponsorIncentive, SponsorIncentive, qint64, Incentive)
 
-void PurchaseContestRequestWrapper::updateContestants()
+void PurchaseContestRequestApi::updateContestants()
 {
     auto target = request.getRequest().getContestOptions().initContestants().initEntries(m_contestants.count());
     for (uint i = 0; i < target.size(); ++i) {

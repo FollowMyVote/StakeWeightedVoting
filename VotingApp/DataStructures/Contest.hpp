@@ -21,24 +21,24 @@
 
 #include "vendor/QQmlVarPropertyHelpers.h"
 
-#include "OwningWrapper.hpp"
-#include "Decision.hpp"
+#include "Wrappers/OwningWrapper.hpp"
+#include "Wrappers/Decision.hpp"
 
 #include <contest.capnp.h>
 
 #include <QObject>
 #include <QDateTime>
 
-namespace swv {
+namespace swv { namespace data {
 
 /**
- * @brief The ContestWrapper class is a QML-friendly presentation of the data in a capnp UnsignedContest
+ * @brief The Contest class is a QML-friendly presentation of the data in a capnp UnsignedContest
  *
  * In addition to exposing the properties of ::UnsignedContest in a QML-accessible form, Contest implements the concept
  * of the Current Decision for the contest. The current decision is the @ref swv::DecisionWrapper which should be
  * displayed in the UI as the decision on the contest.
  */
-class ContestWrapper : public QObject
+class Contest : public QObject
 {
 private:
     Q_OBJECT
@@ -54,7 +54,7 @@ private:
     OwningWrapper<DecisionWrapper>* m_currentDecision = nullptr;
 
 public:
-    ContestWrapper(QString id, ::Contest::Reader r, QObject* parent = nullptr);
+    Contest(QString id = "00", ::Contest::Reader r = {}, QObject* parent = nullptr);
 
     OwningWrapper<DecisionWrapper>* currentDecision() {
         return m_currentDecision;
@@ -73,6 +73,6 @@ signals:
     void currentDecisionChanged();
 };
 
-} // namespace swv
+} } // namespace swv::data
 
 #endif // CONTEST_HPP

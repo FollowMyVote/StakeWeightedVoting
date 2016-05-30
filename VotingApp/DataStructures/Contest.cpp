@@ -17,13 +17,12 @@
  */
 
 #include "Contest.hpp"
-#include "Decision.hpp"
 
 #include <QDebug>
 
-namespace swv {
+namespace swv { namespace data {
 
-ContestWrapper::ContestWrapper(QString id, Contest::Reader r, QObject* parent)
+Contest::Contest(QString id, ::Contest::Reader r, QObject* parent)
     : QObject(parent),
       m_id(id) {
     m_name = QString::fromStdString(r.getName());
@@ -39,7 +38,7 @@ ContestWrapper::ContestWrapper(QString id, Contest::Reader r, QObject* parent)
     m_startTime = QDateTime::fromMSecsSinceEpoch(r.getStartTime());
 }
 
-void ContestWrapper::setCurrentDecision(OwningWrapper<DecisionWrapper>* newDecision)
+void Contest::setCurrentDecision(OwningWrapper<DecisionWrapper>* newDecision)
 {
     if (newDecision == nullptr) {
         qDebug() << "Ignoring setCurrentDecision(nullptr)";
@@ -53,7 +52,7 @@ void ContestWrapper::setCurrentDecision(OwningWrapper<DecisionWrapper>* newDecis
     emit currentDecisionChanged();
 }
 
-void ContestWrapper::setCurrentDecision(DecisionWrapper* newDecision)
+void Contest::setCurrentDecision(DecisionWrapper* newDecision)
 {
     if (newDecision == nullptr) {
         qDebug() << "Ignoring setCurrentDecision(nullptr)";
@@ -66,4 +65,4 @@ void ContestWrapper::setCurrentDecision(DecisionWrapper* newDecision)
     setCurrentDecision(decision);
 }
 
-} // namespace swv
+} } // namespace swv::data

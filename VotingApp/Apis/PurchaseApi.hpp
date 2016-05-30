@@ -14,7 +14,7 @@ namespace swv {
  * PurchaseWrapper subscribes to a push notification from the server when the purchase is complete, so the complete
  * property will be updated automatically as soon as the purchase completes.
  */
-class PurchaseWrapper : public QObject
+class PurchaseApi : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(bool complete READ complete NOTIFY completeChanged)
@@ -27,8 +27,8 @@ class PurchaseWrapper : public QObject
     void setComplete(bool complete);
 
 public:
-    PurchaseWrapper(Purchase::Client&& api, kj::TaskSet& tasks, QObject *parent = 0);
-    virtual ~PurchaseWrapper() noexcept;
+    PurchaseApi(Purchase::Client&& api, kj::TaskSet& tasks, QObject *parent = 0);
+    virtual ~PurchaseApi() noexcept;
 
     bool complete() const {
         return m_complete;

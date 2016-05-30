@@ -27,19 +27,19 @@
 #include <kj/debug.h>
 #include <kj/async-io.h>
 
-#include <DataStructures/Account.hpp>
-#include "wrappers/Coin.hpp"
-#include "wrappers/Balance.hpp"
-#include "wrappers/Contest.hpp"
-#include "wrappers/Decision.hpp"
-#include "wrappers/ContestGeneratorWrapper.hpp"
-#include "wrappers/PurchaseContestRequest.hpp"
-#include "wrappers/PurchaseWrapper.hpp"
-#include "wrappers/ContestCreator.hpp"
-#include "wrappers/BackendWrapper.hpp"
-#include "wrappers/ChainAdaptorWrapper.hpp"
+#include "DataStructures/Account.hpp"
+#include "DataStructures/Coin.hpp"
+#include "Wrappers/Balance.hpp"
+#include "DataStructures/Contest.hpp"
+#include "Wrappers/Decision.hpp"
+#include "Apis/ContestCreatorApi.hpp"
+#include "Apis/BackendApi.hpp"
+#include "Apis/BlockchainWalletApi.hpp"
+#include "Apis/ContestGeneratorApi.hpp"
+#include "Apis/PurchaseContestRequestApi.hpp"
+#include "Apis/PurchaseApi.hpp"
 #include "VotingSystem.hpp"
-#include <Promise.hpp>
+#include "Promise.hpp"
 
 #include <capnqt/QtEventPort.hpp>
 
@@ -68,6 +68,8 @@ int main(int argc, char *argv[])
 
     // Register data structures
     qmlRegisterType<swv::data::Account>("FollowMyVote.StakeWeightedVoting", 1, 0, "Account");
+    qmlRegisterType<swv::data::Coin>("FollowMyVote.StakeWeightedVoting", 1, 0, "Coin");
+    qmlRegisterType<swv::data::Contest>("FollowMyVote.StakeWeightedVoting", 1, 0, "Contest");
 
     // Register data/API wrappers
 #define REGISTER_WRAPPER(name) \
@@ -75,15 +77,17 @@ int main(int argc, char *argv[])
                                           #name " is a wrapper. It cannot be created from QML.")
     REGISTER_WRAPPER(Balance);
     REGISTER_WRAPPER(Decision);
-    REGISTER_WRAPPER(Contest);
-    REGISTER_WRAPPER(Coin);
-    REGISTER_WRAPPER(Backend);
-    REGISTER_WRAPPER(ChainAdaptor);
-    REGISTER_WRAPPER(ContestGenerator);
-    REGISTER_WRAPPER(ContestCreator);
-    REGISTER_WRAPPER(PurchaseContestRequest);
-    REGISTER_WRAPPER(Purchase);
 #undef REGISTER_WRAPPER
+#define REGISTER_API(name) \
+    qmlRegisterUncreatableType<swv::name ## Api>("FollowMyVote.StakeWeightedVoting", 1, 0, #name, \
+                                          #name " is a QML API. It cannot be created from QML.")
+    REGISTER_API(Backend);
+    REGISTER_API(BlockchainWallet);
+    REGISTER_API(ContestGenerator);
+    REGISTER_API(ContestCreator);
+    REGISTER_API(PurchaseContestRequest);
+    REGISTER_API(Purchase);
+#undef REGISTER_API
 
     // Register enum wrappers
 #define REGISTER_ENUM(name) \

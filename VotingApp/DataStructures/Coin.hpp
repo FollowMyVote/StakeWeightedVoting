@@ -27,7 +27,7 @@
 #include <QObject>
 #include <QUrl>
 
-namespace swv {
+namespace swv { namespace data {
 
 /*!
  * \qmltype Coin
@@ -35,7 +35,7 @@ namespace swv {
  *
  * The Coin type provides information about a specific type of asset on the blockchain.
  */
-class CoinWrapper : public QObject
+class Coin : public QObject
 {
     Q_OBJECT
     /*!
@@ -69,13 +69,13 @@ class CoinWrapper : public QObject
      */
     QML_READONLY_VAR_PROPERTY(QUrl, iconUrl)
 public:
-    CoinWrapper(QObject* parent = nullptr);
+    Coin(QObject* parent = nullptr);
 
     /*!
      * \brief Update the fields on the Coin
      * \param coin The new coin
      */
-    void updateFields(Coin::Reader coin);
+    void updateFields(::Coin::Reader coin);
     /*!
      * \brief Update the fields on the Coin
      * \param details The new details
@@ -83,6 +83,6 @@ public:
     void updateFields(Backend::CoinDetails::Reader details);
 };
 
-} // namespace swv
+} } // namespace swv::data
 
 #endif // COIN_HPP

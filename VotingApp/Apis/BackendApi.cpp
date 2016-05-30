@@ -16,12 +16,12 @@
  * along with SWV.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "BackendWrapper.hpp"
+#include "BackendApi.hpp"
 #include "ContestResultsApi.hpp"
 #include "PromiseConverter.hpp"
-#include "wrappers/ContestGeneratorWrapper.hpp"
-#include "wrappers/PurchaseContestRequest.hpp"
-#include "wrappers/ContestCreator.hpp"
+#include "Apis/ContestGeneratorApi.hpp"
+#include "Apis/PurchaseContestRequestApi.hpp"
+#include "Apis/ContestCreatorApi.hpp"
 #include "Converters.hpp"
 
 #include <Promise.hpp>
@@ -34,21 +34,21 @@
 
 namespace swv {
 
-BackendWrapper::BackendWrapper(Backend::Client backend, PromiseConverter& promiseConverter, QObject *parent)
+BackendApi::BackendApi(Backend::Client backend, PromiseConverter& promiseConverter, QObject *parent)
     : QObject(parent),
       promiseConverter(promiseConverter),
       m_backend(kj::mv(backend))
 {}
 
-BackendWrapper::~BackendWrapper() noexcept
+BackendApi::~BackendApi() noexcept
 {}
 
-ContestGeneratorWrapper* BackendWrapper::getFeedGenerator()
+ContestGeneratorApi* BackendApi::getFeedGenerator()
 {
-    return new ContestGeneratorWrapper(m_backend.getContestFeedRequest().send().getGenerator(), promiseConverter);
+    return new ContestGeneratorApi(m_backend.getContestFeedRequest().send().getGenerator(), promiseConverter);
 }
 
-ContestGeneratorWrapper* BackendWrapper::getContestsByCreator(QString creator)
+ContestGeneratorApi* BackendApi::getContestsByCreator(QString creator)
 {
     auto request = m_backend.searchContestsRequest();
     auto filters = request.initFilters(1);
@@ -56,10 +56,10 @@ ContestGeneratorWrapper* BackendWrapper::getContestsByCreator(QString creator)
     auto arguments = filters[0].initArguments(1);
     arguments.set(0, creator.toStdString());
 
-    return new ContestGeneratorWrapper(request.send().getGenerator(), promiseConverter);
+    return new ContestGeneratorApi(request.send().getGenerator(), promiseConverter);
 }
 
-ContestGeneratorWrapper* BackendWrapper::getContestsByCoin(quint64 coinId)
+ContestGeneratorApi* BackendApi::getContestsByCoin(quint64 coinId)
 {
     auto request = m_backend.searchContestsRequest();
     auto filters = request.initFilters(1);
@@ -67,19 +67,19 @@ ContestGeneratorWrapper* BackendWrapper::getContestsByCoin(quint64 coinId)
     auto arguments = filters[0].initArguments(1);
     arguments.set(0, std::to_string(coinId));
 
-    return new ContestGeneratorWrapper(request.send().getGenerator(), promiseConverter);
+    return new ContestGeneratorApi(request.send().getGenerator(), promiseConverter);
 }
 
-ContestGeneratorWrapper*BackendWrapper::getVotedContests()
+ContestGeneratorApi*BackendApi::getVotedContests()
 {
     auto request = m_backend.searchContestsRequest();
     auto filters = request.initFilters(1);
     filters[0].setType(Backend::Filter::Type::CONTEST_VOTER);
 
-    return new ContestGeneratorWrapper(request.send().getGenerator(), promiseConverter);
+    return new ContestGeneratorApi(request.send().getGenerator(), promiseConverter);
 }
 
-ContestResultsApi* BackendWrapper::getContestResults(QString contestId) {
+ContestResultsApi* BackendApi::getContestResults(QString contestId) {
     auto request = m_backend.getContestResultsRequest();
     auto blob = QByteArray::fromHex(contestId.toLocal8Bit());
     request.setContestId(convertBlob(blob));
@@ -87,11 +87,11 @@ ContestResultsApi* BackendWrapper::getContestResults(QString contestId) {
     return new ContestResultsApi(request.send().getResults());
 }
 
-ContestCreatorWrapper* BackendWrapper::contestCreator()
+ContestCreatorApi* BackendApi::contestCreator()
 {
     // Lazy load the creator; most runs we will probably never need it.
     if (creator.get() == nullptr)
-        creator = kj::heap<ContestCreatorWrapper>(m_backend.createContestRequest().send().getCreator());
+        creator = kj::heap<ContestCreatorApi>(m_backend.createContestRequest().send().getCreator());
     return creator.get();
 }
 

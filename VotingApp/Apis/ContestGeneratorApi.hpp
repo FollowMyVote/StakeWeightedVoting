@@ -9,15 +9,15 @@
 
 namespace swv {
 
-class ContestGeneratorWrapper : public QObject
+class ContestGeneratorApi : public QObject
 {
     Q_OBJECT
 
     ContestGenerator::Client generator;
     PromiseConverter& converter;
 public:
-    ContestGeneratorWrapper(ContestGenerator::Client generator, PromiseConverter& converter, QObject *parent = 0);
-    virtual ~ContestGeneratorWrapper() noexcept;
+    ContestGeneratorApi(ContestGenerator::Client generator, PromiseConverter& converter, QObject *parent = 0);
+    virtual ~ContestGeneratorApi() noexcept;
 
     Q_INVOKABLE Promise* getContest();
     Q_INVOKABLE Promise* getContests(int count);

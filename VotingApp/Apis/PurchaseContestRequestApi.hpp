@@ -11,7 +11,7 @@
 #include "vendor/QQmlVariantListModel.h"
 
 namespace swv {
-class PurchaseWrapper;
+class PurchaseApi;
 
 QML_ENUM_CLASS(ContestType,
                OneOfN = static_cast<uint16_t>(::Contest::Type::ONE_OF_N)
@@ -28,7 +28,7 @@ QML_ENUM_CLASS(TallyAlgorithm,
  * completely configured, it can be submitted by calling @ref submit, which will return a promise for a
  * PurchaseContestResponse.
  */
-class PurchaseContestRequestWrapper : public QObject
+class PurchaseContestRequestApi : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(swv::ContestType::Type contestType READ contestType WRITE setContestType NOTIFY contestTypeChanged)
@@ -60,8 +60,8 @@ public:
      * @param taskTracker The task set to add the submission promise to
      * @param parent The QObject parent must be set to an object which will not outlive taskTracker
      */
-    PurchaseContestRequestWrapper(PurchaseRequest&& request, kj::TaskSet& taskTracker, QObject* parent);
-    virtual ~PurchaseContestRequestWrapper() noexcept {}
+    PurchaseContestRequestApi(PurchaseRequest&& request, kj::TaskSet& taskTracker, QObject* parent);
+    virtual ~PurchaseContestRequestApi() noexcept {}
 
     QString name() const;
     QString description() const;
@@ -82,7 +82,7 @@ public slots:
     /// @brief Submit the request to the server. This consumes the request.
     /// @return A map with two entries: "purchaseApi" (a purchase API wrapper) and "surchargePromise" (a @ref Promise
     /// for the surcharge list, which is itself a QVariantList of objects with "description" and "charge" fields)
-    swv::PurchaseWrapper* submit();
+    swv::PurchaseApi* submit();
 
     void setName(QString name);
     void setDescription(QString description);
