@@ -29,9 +29,9 @@
 
 #include "DataStructures/Account.hpp"
 #include "DataStructures/Coin.hpp"
-#include "Wrappers/Balance.hpp"
+#include "DataStructures/Balance.hpp"
 #include "DataStructures/Contest.hpp"
-#include "Wrappers/Decision.hpp"
+#include "DataStructures/Decision.hpp"
 #include "Apis/ContestCreatorApi.hpp"
 #include "Apis/BackendApi.hpp"
 #include "Apis/BlockchainWalletApi.hpp"
@@ -70,14 +70,10 @@ int main(int argc, char *argv[])
     qmlRegisterType<swv::data::Account>("FollowMyVote.StakeWeightedVoting", 1, 0, "Account");
     qmlRegisterType<swv::data::Coin>("FollowMyVote.StakeWeightedVoting", 1, 0, "Coin");
     qmlRegisterType<swv::data::Contest>("FollowMyVote.StakeWeightedVoting", 1, 0, "Contest");
+    qmlRegisterType<swv::data::Balance>("FollowMyVote.StakeWeightedVoting", 1, 0, "Balance");
+    qmlRegisterType<swv::data::Decision>("FollowMyVote.StakeWeightedVoting", 1, 0, "Decision");
 
-    // Register data/API wrappers
-#define REGISTER_WRAPPER(name) \
-    qmlRegisterUncreatableType<swv::name ## Wrapper>("FollowMyVote.StakeWeightedVoting", 1, 0, #name, \
-                                          #name " is a wrapper. It cannot be created from QML.")
-    REGISTER_WRAPPER(Balance);
-    REGISTER_WRAPPER(Decision);
-#undef REGISTER_WRAPPER
+    // Register API wrappers
 #define REGISTER_API(name) \
     qmlRegisterUncreatableType<swv::name ## Api>("FollowMyVote.StakeWeightedVoting", 1, 0, #name, \
                                           #name " is a QML API. It cannot be created from QML.")

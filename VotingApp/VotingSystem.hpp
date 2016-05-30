@@ -35,7 +35,7 @@ class Contest;
 }
 class BlockchainWalletApi;
 class BackendApi;
-class DecisionWrapper;
+class Decision;
 
 class VotingSystemPrivate;
 /**

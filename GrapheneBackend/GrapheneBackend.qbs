@@ -31,7 +31,6 @@ CppApplication {
         "Decision.hpp",
         "FeedGenerator.hpp",
         "Types.hpp",
-        "Utilities.hpp",
         "VoteDatabase.cpp",
         "VoteDatabase.hpp",
         "compat/FcEventPort.cpp",

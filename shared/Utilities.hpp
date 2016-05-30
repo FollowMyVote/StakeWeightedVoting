@@ -3,13 +3,20 @@
 
 #include <capnp/serialize-packed.h>
 
+#ifdef HAVE_GRAPHENE
 #include <fc/io/raw_variant.hpp>
 #include <fc/crypto/digest.hpp>
+#endif
 
 #include <map.capnp.h>
 
+#include <map>
+#include <vector>
+#include <string>
+
 namespace swv {
 
+#ifdef HAVE_GRAPHENE
 template <typename T>
 inline T unpack(capnp::Data::Reader r) {
     return fc::raw::unpack<T>(std::vector<char>(r.begin(), r.end()));
@@ -17,6 +24,7 @@ inline T unpack(capnp::Data::Reader r) {
 inline fc::sha256 digest(capnp::Data::Reader r) {
     return fc::digest(std::vector<char>(r.begin(), r.end()));
 }
+#endif
 
 inline std::map<std::string, std::string> convertMap(::Map<capnp::Text, capnp::Text>::Reader map) {
     std::map<std::string, std::string> result;
@@ -51,18 +59,19 @@ public:
 };
 
 class ReaderPacker {
+    capnp::MallocMessageBuilder message;
     kj::Array<kj::byte> packedMessage;
     kj::ArrayOutputStream outs;
+
+    template<typename Reader>
+    kj::Array<kj::byte> makeSpace(Reader content) {
+        message.setRoot(content);
+        return kj::heapArray<kj::byte>(capnp::computeSerializedSizeInWords(message) * capnp::BYTES_PER_WORD);
+    }
+
 public:
     template<typename Reader>
-    ReaderPacker(Reader content) : outs(packedMessage) {
-        capnp::MallocMessageBuilder message;
-        message.setRoot(content);
-        packedMessage = kj::heapArray<kj::byte>(capnp::computeSerializedSizeInWords(message) * capnp::BYTES_PER_WORD);
-        capnp::writePackedMessage(outs, message);
-    }
-    ReaderPacker(capnp::MessageBuilder& message) : outs(packedMessage) {
-        packedMessage = kj::heapArray<kj::byte>(capnp::computeSerializedSizeInWords(message) * capnp::BYTES_PER_WORD);
+    ReaderPacker(Reader content) : packedMessage(makeSpace(content)), outs(packedMessage) {
         capnp::writePackedMessage(outs, message);
     }
 

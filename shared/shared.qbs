@@ -27,6 +27,7 @@ StaticLibrary {
     files: [
         "TwoPartyServer.cpp",
         "TwoPartyServer.hpp",
+        "Utilities.hpp",
         "capnp/*.capnp",
     ]
 
