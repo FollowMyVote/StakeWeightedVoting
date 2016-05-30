@@ -40,8 +40,9 @@ class Promise;
 class PromiseConverter;
 
 namespace swv {
-
-class BalanceWrapper;
+namespace data {
+class Balance;
+}
 
 /**
  * @brief The ChainAdaptorWrapper class wraps a BlockchainAdaptorInterface in a more QML-friendly interface
@@ -119,7 +120,7 @@ public:
      */
     Q_INVOKABLE Promise* getDecision(QString owner, QString contestId);
     /// @brief Identical to getDecision, but returns a kj::Promise instead of a Promise*. For C++ use.
-    kj::Promise<OwningWrapper<DecisionWrapper>*> _getDecision(QString owner, QString contestId);
+    kj::Promise<data::Decision*> _getDecision(QString owner, QString contestId);
 
     /**
      * @brief Transfer amount from sender to recipient

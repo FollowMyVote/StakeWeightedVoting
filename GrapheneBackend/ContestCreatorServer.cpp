@@ -275,7 +275,7 @@ graphene::chain::custom_operation PurchaseServer::buildPublishOperation() {
     op.payer = publisher;
 
     // Why do I have to explicitly cast MallocMessageBuilder to MessageBuilder&? Are you drunk, compiler?
-    ReaderPacker packer((capnp::MessageBuilder&)message);
+    ReaderPacker packer(message.getRoot<Datagram>().asReader());
     op.data.resize(packer.array().size());
     memcpy(op.data.data(), packer.array().begin(), op.data.size());
     op.fee = op.calculate_fee(vdb.db().current_fee_schedule().get<gch::custom_operation>());

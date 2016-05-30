@@ -18,11 +18,12 @@
 
 #include "BlockchainWalletApi.hpp"
 #include "DataStructures/Coin.hpp"
-#include "Wrappers/Balance.hpp"
-#include "Wrappers/OwningWrapper.hpp"
+#include "DataStructures/Balance.hpp"
 #include "Converters.hpp"
 #include "Promise.hpp"
 #include "PromiseConverter.hpp"
+
+#include <Utilities.hpp>
 
 #include <kj/debug.h>
 
@@ -45,12 +46,12 @@ void BlockchainWalletApi::setChain(BlockchainWallet::Client chain) {
 
 Promise* BlockchainWalletApi::getDecision(QString owner, QString contestId) {
     auto promise = _getDecision(kj::mv(owner), kj::mv(contestId));
-    return promiseConverter.convert(kj::mv(promise), [](OwningWrapper<swv::DecisionWrapper>* d) -> QVariantList {
+    return promiseConverter.convert(kj::mv(promise), [](swv::data::Decision* d) -> QVariantList {
         return {QVariant::fromValue<QObject*>(d)};
     });
 }
 
-kj::Promise<OwningWrapper<DecisionWrapper>*> BlockchainWalletApi::_getDecision(QString owner, QString contestId) {
+kj::Promise<data::Decision*> BlockchainWalletApi::_getDecision(QString owner, QString contestId) {
     using Reader = ::Balance::Reader;
     using DatagramResponse = capnp::Response<BlockchainWallet::GetDatagramByBalanceResults>;
 
@@ -63,7 +64,8 @@ kj::Promise<OwningWrapper<DecisionWrapper>*> BlockchainWalletApi::_getDecision(Q
     }).then([=](auto contestAndBalances) {
         ::Signed<Contest>::Reader contest = std::get<0>(contestAndBalances).getContest();
         auto tmpBalances = std::get<1>(contestAndBalances).getBalances();
-        kj::Array<Balance::Reader> balances = kj::heapArray<Balance::Reader>(tmpBalances.begin(), tmpBalances.end());
+        kj::Array<::Balance::Reader> balances = kj::heapArray<::Balance::Reader>(tmpBalances.begin(),
+                                                                                 tmpBalances.end());
 
         // Filter out all balances which are not in the coin this contest is weighted in; only balances in the coin the
         // contest is weighted in can have valid decisions on that contest
@@ -72,7 +74,7 @@ kj::Promise<OwningWrapper<DecisionWrapper>*> BlockchainWalletApi::_getDecision(Q
                  return balance.getType() != contest.getValue().getCoin();
             });
             KJ_REQUIRE(newEnd != balances.begin(), "No balances found in the contest's coin, so no decision exists.");
-            balances = kj::heapArray<Balance::Reader>(balances.begin(), newEnd);
+            balances = kj::heapArray<::Balance::Reader>(balances.begin(), newEnd);
         }
         KJ_DBG("Looking for decisions on balances", balances);
 
@@ -122,11 +124,14 @@ kj::Promise<OwningWrapper<DecisionWrapper>*> BlockchainWalletApi::_getDecision(Q
 
         return kj::joinPromises(accumulator.datagramPromises.finish());
     }).then([=](kj::Array<kj::Maybe<DatagramResponse>> datagrams) {
-        std::unique_ptr<OwningWrapper<swv::DecisionWrapper>> decision;
+        std::unique_ptr<swv::data::Decision> decision;
         for (auto& datagramMaybe : datagrams) {
             KJ_IF_MAYBE(datagram, datagramMaybe) {
-                auto content = datagram->getDatagram().getContent();
-                decision.reset(OwningWrapper<DecisionWrapper>::deserialize(convertBlob(content)));
+                BlobMessageReader reader(datagram->getDatagram().getContent());
+                if (decision)
+                    decision->updateFields(reader->getRoot<::Decision>());
+                else
+                    decision.reset(new data::Decision(reader->getRoot<::Decision>()));
                 break;
             }
         }
@@ -138,10 +143,9 @@ kj::Promise<OwningWrapper<DecisionWrapper>*> BlockchainWalletApi::_getDecision(Q
         // Search for non-matching or missing decisions, which would mean the decision is stale.
         for (auto& maybeReader : datagrams) {
             KJ_IF_MAYBE(reader, maybeReader) {
-                auto content = reader->getDatagram().getContent();
-                std::unique_ptr<OwningWrapper<swv::DecisionWrapper>> otherDecision(
-                            OwningWrapper<swv::DecisionWrapper>::deserialize(convertBlob(content)));
-                if (*otherDecision != *decision) {
+                BlobMessageReader message(reader->getDatagram().getContent());
+                data::Decision otherDecision(message->getRoot<::Decision>());
+                if (otherDecision != *decision) {
                     emit contestActionRequired(contestId);
                     break;
                 }
@@ -150,6 +154,8 @@ kj::Promise<OwningWrapper<DecisionWrapper>*> BlockchainWalletApi::_getDecision(Q
                 break;
             }
         }
+
+        QQmlEngine::setObjectOwnership(decision.get(), QQmlEngine::JavaScriptOwnership);
         return decision.release();
     });
 
@@ -160,16 +166,16 @@ Promise* BlockchainWalletApi::getBalance(QByteArray id) {
     auto request = m_chain.getBalanceRequest();
     request.setId(convertBlob(id));
     return promiseConverter.convert(request.send(), [](auto response) -> QVariantList {
-        return {QVariant::fromValue<QObject*>(new BalanceWrapper(response.getBalance()))};
+        return {QVariant::fromValue<QObject*>(new data::Balance(response.getBalance()))};
     });
 }
 
 Promise* BlockchainWalletApi::getBalancesBelongingTo(QString owner) {
     return promiseConverter.convert(getBalancesBelongingToImpl(owner), [](auto response) -> QVariantList {
         auto balances = response.getBalances();
-        QList<BalanceWrapper*> results;
+        QList<data::Balance*> results;
         std::transform(balances.begin(), balances.end(), std::back_inserter(results),
-                       [](::Balance::Reader r) { return new BalanceWrapper(r); });
+                       [](::Balance::Reader r) { return new data::Balance(r); });
         return {QVariant::fromValue(results)};
     });
 }
@@ -179,7 +185,8 @@ Promise* BlockchainWalletApi::getContest(QString contestId) {
         //TODO: Check signature
         auto contest = new data::Contest(contestId, results.getContest().getValue());
         QQmlEngine::setObjectOwnership(contest, QQmlEngine::JavaScriptOwnership);
-        auto decision = new OwningWrapper<DecisionWrapper>(contest);
+        auto decision = new data::Decision({}, contest);
+        decision->update_contestId(contestId);
 
         // Defer persistence concerns until later; the contest doesn't know about the QML engine yet so we can't
         // manipulate the QJSValue properties
@@ -189,7 +196,8 @@ Promise* BlockchainWalletApi::getContest(QString contestId) {
             if (settings.contains(key)) {
                 try {
                     auto bytes = settings.value(key, QByteArray()).toByteArray();
-                    decision = OwningWrapper<DecisionWrapper>::deserialize(bytes, contest);
+                    BlobMessageReader reader(convertBlob(bytes));
+                    decision->updateFields(reader->getRoot<::Decision>());
                     contest->setCurrentDecision(decision);
                 } catch (kj::Exception e) {
                     emit error(tr("Error when recovering decision: %1")
@@ -198,11 +206,15 @@ Promise* BlockchainWalletApi::getContest(QString contestId) {
             }
             auto persist = [key, decision] {
                 QSettings settings;
-                auto bytes = decision->serialize();
-                settings.setValue(key, bytes);
+                capnp::MallocMessageBuilder message;
+                auto builder = message.initRoot<::Decision>();
+
+                decision->serialize(builder);
+                ReaderPacker packer(builder.asReader());
+                settings.setValue(key, convertBlob(packer.array()));
             };
-            connect(decision, &OwningWrapper<DecisionWrapper>::opinionsChanged, persist);
-            connect(decision, &OwningWrapper<DecisionWrapper>::writeInsChanged, persist);
+            connect(decision, &data::Decision::opinionsChanged, persist);
+            connect(decision, &data::Decision::writeInsChanged, persist);
         });
         contest->setCurrentDecision(decision);
         return contest;

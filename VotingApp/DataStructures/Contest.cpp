@@ -38,31 +38,18 @@ Contest::Contest(QString id, ::Contest::Reader r, QObject* parent)
     m_startTime = QDateTime::fromMSecsSinceEpoch(r.getStartTime());
 }
 
-void Contest::setCurrentDecision(OwningWrapper<DecisionWrapper>* newDecision)
+void Contest::setCurrentDecision(Decision* newDecision)
 {
     if (newDecision == nullptr) {
         qDebug() << "Ignoring setCurrentDecision(nullptr)";
         return;
     }
 
-    if (m_currentDecision)
+    if (m_currentDecision && newDecision != m_currentDecision)
         m_currentDecision->deleteLater();
     newDecision->setParent(this);
     m_currentDecision = newDecision;
     emit currentDecisionChanged();
-}
-
-void Contest::setCurrentDecision(DecisionWrapper* newDecision)
-{
-    if (newDecision == nullptr) {
-        qDebug() << "Ignoring setCurrentDecision(nullptr)";
-        return;
-    }
-
-    OwningWrapper<DecisionWrapper>* decision = dynamic_cast<OwningWrapper<DecisionWrapper>*>(newDecision);
-    if (decision == nullptr)
-        decision = new OwningWrapper<DecisionWrapper>(newDecision->reader(), this);
-    setCurrentDecision(decision);
 }
 
 } } // namespace swv::data

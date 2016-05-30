@@ -21,8 +21,7 @@
 
 #include "vendor/QQmlVarPropertyHelpers.h"
 
-#include "Wrappers/OwningWrapper.hpp"
-#include "Wrappers/Decision.hpp"
+#include "Decision.hpp"
 
 #include <contest.capnp.h>
 
@@ -35,7 +34,7 @@ namespace swv { namespace data {
  * @brief The Contest class is a QML-friendly presentation of the data in a capnp UnsignedContest
  *
  * In addition to exposing the properties of ::UnsignedContest in a QML-accessible form, Contest implements the concept
- * of the Current Decision for the contest. The current decision is the @ref swv::DecisionWrapper which should be
+ * of the Current Decision for the contest. The current decision is the @ref swv::data::DecisionWrapper which should be
  * displayed in the UI as the decision on the contest.
  */
 class Contest : public QObject
@@ -49,25 +48,22 @@ private:
     QML_READONLY_VAR_PROPERTY(QVariantList, contestants)
     QML_READONLY_VAR_PROPERTY(quint64, coin)
     QML_READONLY_VAR_PROPERTY(QDateTime, startTime)
-    Q_PROPERTY(swv::DecisionWrapper* currentDecision READ currentDecision WRITE setCurrentDecision NOTIFY currentDecisionChanged)
+    Q_PROPERTY(swv::data::Decision* currentDecision READ currentDecision WRITE setCurrentDecision NOTIFY currentDecisionChanged)
 
-    OwningWrapper<DecisionWrapper>* m_currentDecision = nullptr;
+    Decision* m_currentDecision = nullptr;
 
 public:
     Contest(QString id = "00", ::Contest::Reader r = {}, QObject* parent = nullptr);
 
-    OwningWrapper<DecisionWrapper>* currentDecision() {
+    Decision* currentDecision() {
         return m_currentDecision;
     }
-    const OwningWrapper<swv::DecisionWrapper>* currentDecision() const {
+    const swv::data::Decision* currentDecision() const {
         return m_currentDecision;
     }
 
     // Set the current decision. Destroys the old current decision and takes ownership of the new one.
-    void setCurrentDecision(OwningWrapper<DecisionWrapper>* newDecision);
-    // Overload of setCurrentDecision. If argument is an OwningWrapper, it casts and calls the other overload.
-    // Otherwise, it copies newDecision into a new OwningWrapper<Decision> and calls the other overload.
-    void setCurrentDecision(DecisionWrapper* newDecision);
+    void setCurrentDecision(Decision* newDecision);
 
 signals:
     void currentDecisionChanged();

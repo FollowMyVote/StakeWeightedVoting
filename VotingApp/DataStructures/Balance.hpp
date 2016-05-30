@@ -16,19 +16,33 @@
  * along with SWV.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "Balance.hpp"
+#ifndef BALANCE_HPP
+#define BALANCE_HPP
 
-namespace swv {
+#include "vendor/QQmlVarPropertyHelpers.h"
 
-BalanceWrapper::BalanceWrapper(BalanceWrapper::Reader r, QObject* parent)
-    : QObject(parent),
-      ::Balance::Reader(r)
-{}
+#include "balance.capnp.h"
 
-QString BalanceWrapper::id() const
+#include <QObject>
+
+namespace swv { namespace data {
+
+/**
+ * @brief The BalanceWrapper class is a read-only wrapper for the Balance type
+ */
+class Balance : public QObject
 {
-    auto reader = getId();
-    return QByteArray::fromRawData((char*)reader.begin(), reader.size()).toHex();
-}
+    Q_OBJECT
+    QML_READONLY_VAR_PROPERTY(QString, id)
+    QML_READONLY_VAR_PROPERTY(qint64, amount)
+    QML_READONLY_VAR_PROPERTY(quint64, type)
+public:
+    Balance(::Balance::Reader r = {}, QObject* parent = nullptr);
+    virtual ~Balance();
 
-} // namespace swv
+    void updateFields(::Balance::Reader r);
+};
+
+} } // namespace swv::data
+
+#endif // BALANCE_HPP

@@ -21,13 +21,13 @@
 
 #include <QDebug>
 #include <QQmlEngine>
+#include <Utilities.hpp>
 
 #include "VotingSystem.hpp"
 #include "DataStructures/Coin.hpp"
-#include "Wrappers/Balance.hpp"
+#include "DataStructures/Balance.hpp"
 #include "DataStructures/Contest.hpp"
-#include "Wrappers/Decision.hpp"
-#include "Wrappers/OwningWrapper.hpp"
+#include "DataStructures/Decision.hpp"
 #include "Apis/BlockchainWalletApi.hpp"
 #include "Apis/BackendApi.hpp"
 #include "Converters.hpp"
@@ -349,7 +349,11 @@ Promise* VotingSystem::castCurrentDecision(swv::data::Contest* contest) {
         }
         balances = kj::heapArray<::Balance::Reader>(balances.begin(), newEnd);
 
-        auto serialDecision = decision->serialize();
+        capnp::MallocMessageBuilder message;
+        auto builder = message.initRoot<::Decision>();
+        decision->serialize(builder);
+        ReaderPacker packer(builder.asReader());
+
         auto promises = kj::heapArrayBuilder<kj::Promise<void>>(balances.size());
         for (auto balance : balances) {
             auto request = chain->chain().publishDatagramRequest();
@@ -359,7 +363,7 @@ Promise* VotingSystem::castCurrentDecision(swv::data::Contest* contest) {
             auto dgram = request.initDatagram();
             dgram.initIndex().setType(Datagram::DatagramType::DECISION);
             dgram.getIndex().setKey(balance.getId());
-            dgram.setContent(convertBlob(serialDecision));
+            dgram.setContent(packer.array());
 
             promises.add(request.send().then([](auto){}));
         }
@@ -402,15 +406,17 @@ void VotingSystem::cancelCurrentDecision(data::Contest* contest) {
     if (d->currentAccount == nullptr) {
         // If this ever happens, it's probably a bug. Log it, and just reset the decisions.
         KJ_LOG(ERROR, "Current account was unset while canceling a decision. This probably shouldn't be possible.");
-        contest->currentDecision()->setOpinions({});
+        contest->currentDecision()->set_opinions({});
+        contest->currentDecision()->set_writeIns({});
         return;
     }
 
     auto promise = d->chain->_getDecision(currentAccount()->get_name(), contest->get_id());
-    d->tasks.add(promise.then([contest](swv::DecisionWrapper* decision) {
+    d->tasks.add(promise.then([contest](swv::data::Decision* decision) {
         contest->setCurrentDecision(decision);
     }, [contest](kj::Exception) {
-        contest->currentDecision()->setOpinions({});
+        contest->currentDecision()->set_opinions({});
+        contest->currentDecision()->set_writeIns({});
     }));
 }
 

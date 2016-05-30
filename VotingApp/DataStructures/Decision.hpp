@@ -19,6 +19,8 @@
 #ifndef DECISION_HPP
 #define DECISION_HPP
 
+#include "vendor/QQmlVarPropertyHelpers.h"
+
 #include <decision.capnp.h>
 
 #include <capnp/message.h>
@@ -26,65 +28,50 @@
 #include <QObject>
 #include <QVariantMap>
 
-namespace swv {
+namespace swv { namespace data {
 
 /**
  * @brief The DecisionWrapper class is a read-write wrapper for the Decision type.
  */
-class DecisionWrapper : public QObject
+class Decision : public QObject
 {
     Q_OBJECT
+    QML_READONLY_VAR_PROPERTY(QString, id)
+    QML_READONLY_VAR_PROPERTY(QString, contestId)
+    QML_WRITABLE_VAR_PROPERTY(QVariantMap, opinions)
+    QML_WRITABLE_VAR_PROPERTY(QVariantList, writeIns)
 
 public:
-    using WrappedType = ::Decision;
+    Decision(::Decision::Reader r = {}, QObject* parent = nullptr);
+    ~Decision() noexcept;
 
-    Q_PROPERTY(QString id READ id CONSTANT)
-    Q_PROPERTY(QString contestId READ contestId CONSTANT)
-    Q_PROPERTY(QVariantMap opinions READ opinions WRITE setOpinions NOTIFY opinionsChanged)
-    Q_PROPERTY(QVariantList writeIns READ writeIns WRITE setWriteIns NOTIFY writeInsChanged)
-
-    DecisionWrapper(WrappedType::Builder b, QObject* parent = nullptr);
-    ~DecisionWrapper() noexcept;
-
-    QString id() const;
-    QString contestId() const;
-    QVariantMap opinions() const;
-    QVariantList writeIns() const;
-
-    ::Decision::Reader reader() const {
-        return m_decision.asReader();
-    }
-    ::Decision::Builder builder() {
-        return m_decision;
-    }
+    void updateFields(::Decision::Reader r);
+    void serialize(::Decision::Builder b);
 
     /// @brief Compare two decisions. Decisions are equal if they apply to the same contest and have the same opinions
     /// and write-ins. The IDs are not relevant to equality.
-    bool operator== (const DecisionWrapper& other) {
-        return contestId() == other.contestId() &&
-                opinions() == other.opinions() &&
-                writeIns() == other.writeIns();
+    bool operator== (const Decision& other) {
+        return get_contestId() == other.get_contestId() &&
+                get_opinions() == other.get_opinions() &&
+                get_writeIns() == other.get_writeIns();
     }
-    bool operator!= (const DecisionWrapper& other) {
+    bool operator!= (const Decision& other) {
         return !(*this == other);
     }
-
-public slots:
-    void setOpinions(QVariantMap newOpinions);
-    void setWriteIns(QVariantList newWriteIns);
-
-signals:
-    void balanceIdChanged();
-    void opinionsChanged();
-    void writeInsChanged();
 
 private:
     /// Remove all opinions of zero
     QVariantMap canonicalizeOpinions(QVariantMap opinions);
-
-    ::Decision::Builder m_decision;
+    /// Update opinions from reader
+    void updateOpinions(capnp::List<::Decision::Opinion>::Reader opinions);
+    /// Update write-ins from reader
+    void updateWriteIns(::Map<capnp::Text, capnp::Text>::Reader writeIns);
+    /// Serialize opinions to builder
+    void serializeOpinions(::Decision::Builder b);
+    /// Serialize write-ins to builder
+    void serializeWriteIns(::Decision::Builder b);
 };
 
-} // namespace swv
+} } // namespace swv::data
 
 #endif // DECISION_HPP
