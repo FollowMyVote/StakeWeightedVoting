@@ -23,8 +23,8 @@
 #include "capnp/datagram.capnp.h"
 #include "capnp/blockchainwallet.capnp.h"
 
-#include "Coin.hpp"
-#include "Contest.hpp"
+#include "DataStructures/Coin.hpp"
+#include "DataStructures/Contest.hpp"
 
 #include "vendor/QQmlObjectListModel.h"
 
@@ -52,13 +52,13 @@ class BalanceWrapper;
  *
  * The ChainAdaptorWrapper is also responsible for managing decisions on contests, including their persistence.
  */
-class ChainAdaptorWrapper : public QObject
+class BlockchainWalletApi : public QObject
 {
     Q_OBJECT
 
 public:
-    ChainAdaptorWrapper(PromiseConverter& promiseConverter, QObject *parent = 0);
-    ~ChainAdaptorWrapper() noexcept;
+    BlockchainWalletApi(PromiseConverter& promiseConverter, QObject *parent = 0);
+    ~BlockchainWalletApi() noexcept;
 
     /**
      * @brief Set the blockchain client

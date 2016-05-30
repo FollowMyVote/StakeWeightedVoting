@@ -19,20 +19,20 @@
 #include "Coin.hpp"
 #include "Converters.hpp"
 
-namespace swv {
+namespace swv { namespace data {
 
-CoinWrapper::CoinWrapper(QObject* parent)
+Coin::Coin(QObject* parent)
     : QObject(parent)
 {}
 
-void CoinWrapper::updateFields(Coin::Reader coin) {
+void Coin::updateFields(::Coin::Reader coin) {
     update_coinId(coin.getId());
     update_creator(convertText(coin.getCreator()));
     update_name(convertText(coin.getName()));
     update_precision(coin.getPrecision());
 }
 
-void CoinWrapper::updateFields(Backend::CoinDetails::Reader details) {
+void Coin::updateFields(Backend::CoinDetails::Reader details) {
     update_iconUrl(convertText(details.getIconUrl()));
     update_contestCount(details.getActiveContestCount());
 
@@ -42,4 +42,4 @@ void CoinWrapper::updateFields(Backend::CoinDetails::Reader details) {
     }
 }
 
-} // namespace swv
+} } // namespace swv::data

@@ -1,4 +1,4 @@
-#include "ContestGeneratorWrapper.hpp"
+#include "ContestGeneratorApi.hpp"
 
 #include "Converters.hpp"
 
@@ -6,7 +6,7 @@
 
 namespace swv {
 
-ContestGeneratorWrapper::ContestGeneratorWrapper(ContestGenerator::Client generator,
+ContestGeneratorApi::ContestGeneratorApi(ContestGenerator::Client generator,
                                                  PromiseConverter& converter,
                                                  QObject *parent)
     : QObject(parent),
@@ -14,10 +14,10 @@ ContestGeneratorWrapper::ContestGeneratorWrapper(ContestGenerator::Client genera
       converter(converter)
 {}
 
-ContestGeneratorWrapper::~ContestGeneratorWrapper() noexcept
+ContestGeneratorApi::~ContestGeneratorApi() noexcept
 {}
 
-Promise* ContestGeneratorWrapper::getContest()
+Promise* ContestGeneratorApi::getContest()
 {
     return converter.convert(generator.getContestRequest().send(),
                               [](capnp::Response<ContestGenerator::GetContestResults> response) -> QVariantList {
@@ -25,7 +25,7 @@ Promise* ContestGeneratorWrapper::getContest()
     });
 }
 
-Promise* ContestGeneratorWrapper::getContests(int count)
+Promise* ContestGeneratorApi::getContests(int count)
 {
     KJ_LOG(DBG, "Requesting contests", count);
     auto request = generator.getContestsRequest();

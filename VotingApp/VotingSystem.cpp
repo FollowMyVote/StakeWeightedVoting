@@ -23,14 +23,14 @@
 #include <QQmlEngine>
 
 #include "VotingSystem.hpp"
-#include "wrappers/Coin.hpp"
-#include "wrappers/Balance.hpp"
-#include "wrappers/Contest.hpp"
-#include "wrappers/Decision.hpp"
-#include "wrappers/BackendWrapper.hpp"
-#include "wrappers/OwningWrapper.hpp"
-#include "wrappers/Converters.hpp"
-#include "wrappers/ChainAdaptorWrapper.hpp"
+#include "DataStructures/Coin.hpp"
+#include "Wrappers/Balance.hpp"
+#include "DataStructures/Contest.hpp"
+#include "Wrappers/Decision.hpp"
+#include "Wrappers/OwningWrapper.hpp"
+#include "Apis/BlockchainWalletApi.hpp"
+#include "Apis/BackendApi.hpp"
+#include "Converters.hpp"
 #include "Promise.hpp"
 #include "PromiseConverter.hpp"
 #include "TwoPartyClient.hpp"
@@ -58,7 +58,7 @@ public:
         : q_ptr(q_ptr),
           tasks(*this),
           promiseConverter(kj::heap<PromiseConverter>(tasks)),
-          chain(kj::heap<ChainAdaptorWrapper>(*promiseConverter)),
+          chain(kj::heap<BlockchainWalletApi>(*promiseConverter)),
           socket(kj::heap<QTcpSocket>())
     {
         // Funky syntax is because QAbstractSocket::error is overloaded.
@@ -74,9 +74,9 @@ public:
     QString lastError;
     kj::TaskSet tasks;
     kj::Own<PromiseConverter> promiseConverter;
-    kj::Own<ChainAdaptorWrapper> chain;
+    kj::Own<BlockchainWalletApi> chain;
     kj::Own<TwoPartyClient> client;
-    kj::Own<BackendWrapper> backend;
+    kj::Own<BackendApi> backend;
     kj::Own<QTcpSocket> socket;
     kj::Own<QSocketWrapper> socketWrapper;
     swv::data::Account* currentAccount = nullptr;
@@ -86,7 +86,7 @@ public:
 
         socketWrapper = kj::heap<QSocketWrapper>(*socket);
         client = kj::heap<TwoPartyClient>(*socketWrapper);
-        backend = kj::heap<BackendWrapper>(client->bootstrap().castAs<Backend>(), *promiseConverter);
+        backend = kj::heap<BackendApi>(client->bootstrap().castAs<Backend>(), *promiseConverter);
         emit q->backendConnectedChanged(true);
         connectionPromise->resolve({});
         QQmlEngine::setObjectOwnership(connectionPromise, QQmlEngine::JavaScriptOwnership);
@@ -141,7 +141,7 @@ VotingSystem::VotingSystem(QObject *parent)
     });
 
     connect(this, &VotingSystem::backendConnectedChanged, this, &VotingSystem::isReadyChanged);
-    connect(d->chain, &ChainAdaptorWrapper::error, this, [this](QString error) {
+    connect(d->chain, &BlockchainWalletApi::error, this, [this](QString error) {
         setLastError(error);
     });
     connect(this, &VotingSystem::isReadyChanged, this, [this, d] {
@@ -157,7 +157,7 @@ VotingSystem::VotingSystem(QObject *parent)
 
                 // For each coin, fetch the statistics and return a promise for the coin and statistics
                 return kj::joinPromises(KJ_MAP(coin, response.getCoins()) {
-                                            auto wrapper = new CoinWrapper(this);
+                                            auto wrapper = new data::Coin(this);
                                             wrapper->updateFields(coin);
 
                                             auto request = d->backend->backend().getCoinDetailsRequest();
@@ -168,7 +168,7 @@ VotingSystem::VotingSystem(QObject *parent)
                                                 return std::make_tuple(wrapper, kj::mv(r));
                                             });
                                         });
-            }).then([this, d](kj::Array<std::tuple<CoinWrapper*, capnp::Response<Backend::GetCoinDetailsResults>>> r) {
+            }).then([this, d](kj::Array<std::tuple<data::Coin*, capnp::Response<Backend::GetCoinDetailsResults>>> r) {
                 // Create wrappers for the coins with statistics set
                 for (const auto& tuple : r) {
                     auto wrapper = std::get<0>(tuple);
@@ -246,11 +246,11 @@ bool VotingSystem::backendConnected() const {
     return bool(d->backend);
 }
 
-ChainAdaptorWrapper* VotingSystem::chain() { Q_D(VotingSystem);
+BlockchainWalletApi* VotingSystem::chain() { Q_D(VotingSystem);
     return d->chain;
 }
 
-BackendWrapper* VotingSystem::backend() { Q_D(VotingSystem);
+BackendApi* VotingSystem::backend() { Q_D(VotingSystem);
     return d->backend;
 }
 
@@ -288,12 +288,12 @@ void VotingSystem::configureChainAdaptor(bool useTestingBackend) {
     auto backendStub = chain->getBackendStub();
     d->chain->setChain(kj::mv(chain));
     if (useTestingBackend) {
-        d->backend = kj::heap<BackendWrapper>(backendStub, *d->promiseConverter);
+        d->backend = kj::heap<BackendApi>(backendStub, *d->promiseConverter);
         emit backendConnectedChanged(true);
     }
 }
 
-Promise* VotingSystem::castCurrentDecision(swv::ContestWrapper* contest) {
+Promise* VotingSystem::castCurrentDecision(swv::data::Contest* contest) {
     Q_D(VotingSystem);
 
     if (!isReady()) {
@@ -370,28 +370,28 @@ Promise* VotingSystem::castCurrentDecision(swv::ContestWrapper* contest) {
     return d->promiseConverter->convert(kj::mv(finishPromise));
 }
 
-CoinWrapper* VotingSystem::getCoin(quint64 id) {
-    for (CoinWrapper* coin : m_coins->toList())
+data::Coin* VotingSystem::getCoin(quint64 id) {
+    for (data::Coin* coin : m_coins->toList())
         if (coin->get_coinId() == id)
             return coin;
     return nullptr;
 }
 
-CoinWrapper* VotingSystem::getCoin(QString name) {
-    for (CoinWrapper* coin : m_coins->toList())
+data::Coin* VotingSystem::getCoin(QString name) {
+    for (data::Coin* coin : m_coins->toList())
         if (coin->get_name() == name)
             return coin;
     return nullptr;
 }
 
-data::Account*VotingSystem::getAccount(QString name) {
+data::Account* VotingSystem::getAccount(QString name) {
     for (auto account : m_myAccounts->toList())
         if (account->get_name() == name)
             return account;
     return nullptr;
 }
 
-void VotingSystem::cancelCurrentDecision(ContestWrapper* contest) {
+void VotingSystem::cancelCurrentDecision(data::Contest* contest) {
     Q_D(VotingSystem);
 
     if (!isReady()) {

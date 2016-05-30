@@ -1,32 +1,32 @@
-#include "PurchaseWrapper.hpp"
+#include "PurchaseApi.hpp"
 #include "Converters.hpp"
 
 #include <QDebug>
 
 namespace swv {
 
-void PurchaseWrapper::setComplete(bool complete)
+void PurchaseApi::setComplete(bool complete)
 {
     if (complete == m_complete) return;
     m_complete = complete;
     emit completeChanged(complete);
 }
 
-PurchaseWrapper::PurchaseWrapper(Purchase::Client&& api, kj::TaskSet& tasks, QObject *parent)
+PurchaseApi::PurchaseApi(Purchase::Client&& api, kj::TaskSet& tasks, QObject *parent)
     : QObject(parent),
       api(kj::mv(api)),
       tasks(tasks),
       converter(tasks)
 {
     class CompleteNotifier : public Notifier<capnp::Text>::Server {
-        PurchaseWrapper& wrapper;
+        PurchaseApi& wrapper;
         virtual ::kj::Promise<void> notify(NotifyContext context) {
             wrapper.setComplete(context.getParams().getNotification() == "true");
             return kj::READY_NOW;
         }
 
     public:
-        CompleteNotifier(PurchaseWrapper& wrapper) : wrapper(wrapper) {}
+        CompleteNotifier(PurchaseApi& wrapper) : wrapper(wrapper) {}
     };
 
     auto request = this->api.subscribeRequest();
@@ -37,10 +37,10 @@ PurchaseWrapper::PurchaseWrapper(Purchase::Client&& api, kj::TaskSet& tasks, QOb
               }));
 }
 
-PurchaseWrapper::~PurchaseWrapper() noexcept
+PurchaseApi::~PurchaseApi() noexcept
 {}
 
-Promise* PurchaseWrapper::prices(QStringList promoCodes)
+Promise* PurchaseApi::prices(QStringList promoCodes)
 {
     auto request = api.pricesRequest();
     auto codes = request.initPromoCodes(promoCodes.size());
@@ -62,7 +62,7 @@ Promise* PurchaseWrapper::prices(QStringList promoCodes)
     });
 }
 
-void PurchaseWrapper::paymentSent(qint16 selectedPrice)
+void PurchaseApi::paymentSent(qint16 selectedPrice)
 {
     auto request = api.paymentSentRequest();
     request.setSelectedPrice(selectedPrice);

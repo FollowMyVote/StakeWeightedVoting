@@ -6,10 +6,7 @@
 #include "vendor/QQmlVarPropertyHelpers.h"
 #include "vendor/QQmlVariantListModel.h"
 
-namespace swv {
-class CoinWrapper;
-
-namespace data {
+namespace swv { namespace data {
 
 /*!
  * \qmltype AccountBalance

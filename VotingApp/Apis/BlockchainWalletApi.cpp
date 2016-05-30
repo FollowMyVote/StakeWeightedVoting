@@ -16,11 +16,11 @@
  * along with SWV.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ChainAdaptorWrapper.hpp"
-#include "wrappers/Coin.hpp"
-#include "wrappers/Balance.hpp"
-#include "wrappers/OwningWrapper.hpp"
-#include "wrappers/Converters.hpp"
+#include "BlockchainWalletApi.hpp"
+#include "DataStructures/Coin.hpp"
+#include "Wrappers/Balance.hpp"
+#include "Wrappers/OwningWrapper.hpp"
+#include "Converters.hpp"
 #include "Promise.hpp"
 #include "PromiseConverter.hpp"
 
@@ -30,27 +30,27 @@ namespace swv {
 
 const static QString PERSISTENT_DECISION_KEY = QStringLiteral("persistedDecisions/%1");
 
-ChainAdaptorWrapper::ChainAdaptorWrapper(PromiseConverter& promiseConverter, QObject *parent)
+BlockchainWalletApi::BlockchainWalletApi(PromiseConverter& promiseConverter, QObject *parent)
     : QObject(parent),
       promiseConverter(promiseConverter),
       m_chain(KJ_EXCEPTION(FAILED, "Blockchain client has not been set yet!"))
 {}
 
-ChainAdaptorWrapper::~ChainAdaptorWrapper() noexcept
+BlockchainWalletApi::~BlockchainWalletApi() noexcept
 {}
 
-void ChainAdaptorWrapper::setChain(BlockchainWallet::Client chain) {
+void BlockchainWalletApi::setChain(BlockchainWallet::Client chain) {
     this->m_chain = chain;
 }
 
-Promise* ChainAdaptorWrapper::getDecision(QString owner, QString contestId) {
+Promise* BlockchainWalletApi::getDecision(QString owner, QString contestId) {
     auto promise = _getDecision(kj::mv(owner), kj::mv(contestId));
     return promiseConverter.convert(kj::mv(promise), [](OwningWrapper<swv::DecisionWrapper>* d) -> QVariantList {
         return {QVariant::fromValue<QObject*>(d)};
     });
 }
 
-kj::Promise<OwningWrapper<DecisionWrapper>*> ChainAdaptorWrapper::_getDecision(QString owner, QString contestId) {
+kj::Promise<OwningWrapper<DecisionWrapper>*> BlockchainWalletApi::_getDecision(QString owner, QString contestId) {
     using Reader = ::Balance::Reader;
     using DatagramResponse = capnp::Response<BlockchainWallet::GetDatagramByBalanceResults>;
 
@@ -81,7 +81,7 @@ kj::Promise<OwningWrapper<DecisionWrapper>*> ChainAdaptorWrapper::_getDecision(Q
         // is in the front (I don't care about preserving order) so that the newest decision will be returned.
         struct {
             // Capture this
-            ChainAdaptorWrapper* wrapper;
+            BlockchainWalletApi* wrapper;
             // Capture contestId
             QString contestId;
             // For each balance, look up the datagram containing the relevant decision. Store the promises in this array
@@ -156,7 +156,7 @@ kj::Promise<OwningWrapper<DecisionWrapper>*> ChainAdaptorWrapper::_getDecision(Q
     return kj::mv(promise);
 }
 
-Promise* ChainAdaptorWrapper::getBalance(QByteArray id) {
+Promise* BlockchainWalletApi::getBalance(QByteArray id) {
     auto request = m_chain.getBalanceRequest();
     request.setId(convertBlob(id));
     return promiseConverter.convert(request.send(), [](auto response) -> QVariantList {
@@ -164,7 +164,7 @@ Promise* ChainAdaptorWrapper::getBalance(QByteArray id) {
     });
 }
 
-Promise* ChainAdaptorWrapper::getBalancesBelongingTo(QString owner) {
+Promise* BlockchainWalletApi::getBalancesBelongingTo(QString owner) {
     return promiseConverter.convert(getBalancesBelongingToImpl(owner), [](auto response) -> QVariantList {
         auto balances = response.getBalances();
         QList<BalanceWrapper*> results;
@@ -174,10 +174,10 @@ Promise* ChainAdaptorWrapper::getBalancesBelongingTo(QString owner) {
     });
 }
 
-Promise* ChainAdaptorWrapper::getContest(QString contestId) {
+Promise* BlockchainWalletApi::getContest(QString contestId) {
     auto promise = getContestImpl(contestId).then([this, contestId](auto results) {
         //TODO: Check signature
-        auto contest = new ContestWrapper(contestId, results.getContest().getValue());
+        auto contest = new data::Contest(contestId, results.getContest().getValue());
         QQmlEngine::setObjectOwnership(contest, QQmlEngine::JavaScriptOwnership);
         auto decision = new OwningWrapper<DecisionWrapper>(contest);
 
@@ -207,12 +207,12 @@ Promise* ChainAdaptorWrapper::getContest(QString contestId) {
         contest->setCurrentDecision(decision);
         return contest;
     });
-    return promiseConverter.convert(kj::mv(promise), [](ContestWrapper* contest) -> QVariantList {
+    return promiseConverter.convert(kj::mv(promise), [](data::Contest* contest) -> QVariantList {
         return {QVariant::fromValue<QObject*>(contest)};
     });
 }
 
-Promise* ChainAdaptorWrapper::transfer(QString sender, QString recipient, qint64 amount, quint64 coinId) {
+Promise* BlockchainWalletApi::transfer(QString sender, QString recipient, qint64 amount, quint64 coinId) {
     auto request = m_chain.transferRequest();
     request.setSendingAccount(sender.toStdString());
     request.setReceivingAccount(recipient.toStdString());
@@ -223,14 +223,14 @@ Promise* ChainAdaptorWrapper::transfer(QString sender, QString recipient, qint64
     });
 }
 
-capnp::RemotePromise<BlockchainWallet::GetContestByIdResults> ChainAdaptorWrapper::getContestImpl(QString contestId) {
+capnp::RemotePromise<BlockchainWallet::GetContestByIdResults> BlockchainWalletApi::getContestImpl(QString contestId) {
     auto request = m_chain.getContestByIdRequest();
     auto id = QByteArray::fromHex(contestId.toLocal8Bit());
     request.setId(convertBlob(id));
     return request.send();
 }
 
-capnp::RemotePromise<BlockchainWallet::GetBalancesBelongingToResults> ChainAdaptorWrapper::getBalancesBelongingToImpl(QString owner) {
+capnp::RemotePromise<BlockchainWallet::GetBalancesBelongingToResults> BlockchainWalletApi::getBalancesBelongingToImpl(QString owner) {
     auto request = m_chain.getBalancesBelongingToRequest();
     request.setOwner(owner.toStdString());
     return request.send();

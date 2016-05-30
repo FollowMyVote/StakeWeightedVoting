@@ -20,7 +20,7 @@
 #define VOTINGSYSTEM_HPP
 
 #include "DataStructures/Account.hpp"
-#include "wrappers/Coin.hpp"
+#include "DataStructures/Coin.hpp"
 
 #include "vendor/QQmlObjectListModel.h"
 
@@ -30,10 +30,12 @@
 
 class Promise;
 namespace swv {
-class ChainAdaptorWrapper;
-class BackendWrapper;
+namespace data {
+class Contest;
+}
+class BlockchainWalletApi;
+class BackendApi;
 class DecisionWrapper;
-class ContestWrapper;
 
 class VotingSystemPrivate;
 /**
@@ -64,9 +66,9 @@ class VotingSystem : public QObject
     Q_PROPERTY(QString lastError READ lastError NOTIFY error)
     Q_PROPERTY(bool isReady READ isReady NOTIFY isReadyChanged)
     Q_PROPERTY(bool isBackendConnected READ backendConnected NOTIFY backendConnectedChanged)
-    Q_PROPERTY(swv::ChainAdaptorWrapper* chain READ chain CONSTANT)
-    Q_PROPERTY(swv::BackendWrapper* backend READ backend NOTIFY backendConnectedChanged)
-    QML_SORTABLE_OBJMODEL_PROPERTY(CoinWrapper, coins)
+    Q_PROPERTY(swv::BlockchainWalletApi* chain READ chain CONSTANT)
+    Q_PROPERTY(swv::BackendApi* backend READ backend NOTIFY backendConnectedChanged)
+    QML_SORTABLE_OBJMODEL_PROPERTY(data::Coin, coins)
     QML_OBJMODEL_PROPERTY(swv::data::Account, myAccounts)
 
     Q_DECLARE_PRIVATE(VotingSystem)
@@ -79,8 +81,8 @@ public:
     bool isReady() const;
     bool backendConnected() const;
 
-    ChainAdaptorWrapper* chain();
-    BackendWrapper* backend();
+    BlockchainWalletApi* chain();
+    BackendApi* backend();
 
     swv::data::Account* currentAccount() const;
 
@@ -104,10 +106,10 @@ public:
      *
      * See also @ref cancelCurrentDecision
      */
-    Q_INVOKABLE Promise* castCurrentDecision(swv::ContestWrapper* contest);
+    Q_INVOKABLE Promise* castCurrentDecision(swv::data::Contest* contest);
 
-    Q_INVOKABLE swv::CoinWrapper* getCoin(quint64 id);
-    Q_INVOKABLE swv::CoinWrapper* getCoin(QString name);
+    Q_INVOKABLE swv::data::Coin* getCoin(quint64 id);
+    Q_INVOKABLE swv::data::Coin* getCoin(QString name);
 
     Q_INVOKABLE swv::data::Account* getAccount(QString name);
 
@@ -136,7 +138,7 @@ public slots:
      * This method will set the currentDeicison on the provided contest to the decision currently on chain for that
      * contest for the current user.
      */
-    void cancelCurrentDecision(swv::ContestWrapper* contest);
+    void cancelCurrentDecision(swv::data::Contest* contest);
 
     void setCurrentAccount(swv::data::Account* currentAccount);
 
