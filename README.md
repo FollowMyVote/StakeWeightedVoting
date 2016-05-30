@@ -5,6 +5,8 @@ This is the official repository for Follow My Vote's Stake-Weighted Voting appli
 
 Linux and Mac are both fully supported. Windows support is pending.
 
+More developers are always welcome! [Get involved](https://followmyvote.com/code-contributors/)
+
 ## What's in the box
 In this repo are 4 components:
 
