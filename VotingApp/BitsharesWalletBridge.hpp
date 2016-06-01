@@ -8,10 +8,10 @@
 namespace swv { namespace bts {
 
 /**
- * @brief The BitsharesWalletAdaptor class accepts connections from a Bitshares wallet and creates a BlockchainWallet
+ * @brief The BitsharesWalletBridge class accepts connections from a Bitshares wallet and creates a BlockchainWallet
  * client out of the connections established
  */
-class BitsharesWalletAdaptor : public QWebSocketServer {
+class BitsharesWalletBridge : public QWebSocketServer {
     Q_OBJECT
 
     /// This private class implements the BlockchainWallet::Server that @ref nextWalletClient uses to create its
@@ -19,8 +19,8 @@ class BitsharesWalletAdaptor : public QWebSocketServer {
     class BlockchainWalletServer;
 
 public:
-    BitsharesWalletAdaptor(const QString& serverName);
-    virtual ~BitsharesWalletAdaptor();
+    BitsharesWalletBridge(const QString& serverName);
+    virtual ~BitsharesWalletBridge();
 
     /**
      * @brief Get the nextPendingConnection as a BlockchainWallet::Client

@@ -34,8 +34,10 @@
 #include "Promise.hpp"
 #include "PromiseConverter.hpp"
 #include "TwoPartyClient.hpp"
+#include "BitsharesWalletBridge.hpp"
 
 #include <FakeBlockchain.hpp>
+#include <QDesktopServices>
 
 #include "capnqt/QSocketWrapper.hpp"
 
@@ -79,6 +81,7 @@ public:
     kj::Own<BackendApi> backend;
     kj::Own<QTcpSocket> socket;
     kj::Own<QSocketWrapper> socketWrapper;
+    kj::Own<bts::BitsharesWalletBridge> bitsharesBridge;
     swv::data::Account* currentAccount = nullptr;
 
     void completeConnection(Promise* connectionPromise) {
@@ -284,12 +287,22 @@ void VotingSystem::configureChainAdaptor(bool useTestingBackend) {
     Q_D(VotingSystem);
 
     //TODO: make a real implementation of this
-    auto chain = kj::heap<FakeBlockchain>();
-    auto backendStub = chain->getBackendStub();
-    d->chain->setChain(kj::mv(chain));
     if (useTestingBackend) {
+        auto chain = kj::heap<FakeBlockchain>();
+        auto backendStub = chain->getBackendStub();
+        d->chain->setChain(kj::mv(chain));
         d->backend = kj::heap<BackendApi>(backendStub, *d->promiseConverter);
         emit backendConnectedChanged(true);
+    } else {
+        if (!d->bitsharesBridge)
+            d->bitsharesBridge = kj::heap<bts::BitsharesWalletBridge>(qApp->applicationName());
+        if (!d->bitsharesBridge->isListening() && !d->bitsharesBridge->listen(QHostAddress::LocalHost)) {
+            setLastError(tr("Unable to listen for Bitshares wallet: %1").arg(d->bitsharesBridge->errorString()));
+            return;
+        }
+        QDesktopServices::openUrl(QStringLiteral("web+bts:connect/%1:%2")
+                                  .arg(d->bitsharesBridge->serverAddress().toString())
+                                  .arg(d->bitsharesBridge->serverPort()));
     }
 }
 
