@@ -17,6 +17,8 @@ QtGuiApplication {
     cpp.staticLibraries: VPlay.staticLibrary
 
     files: [
+        "BitsharesWalletAdaptor.cpp",
+        "BitsharesWalletAdaptor.hpp",
         "PromiseConverter.cpp",
         "PromiseConverter.hpp",
         "TwoPartyClient.cpp",
