@@ -3,6 +3,8 @@
 
 #include <kj/debug.h>
 
+#include <algorithm>
+
 namespace swv {
 std::vector<kj::byte> vectorize(capnp::Data::Reader r) {
     return {r.begin(), r.end()};

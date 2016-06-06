@@ -34,8 +34,10 @@
 #include "Promise.hpp"
 #include "PromiseConverter.hpp"
 #include "TwoPartyClient.hpp"
+#include "BitsharesWalletBridge.hpp"
 
 #include <FakeBlockchain.hpp>
+#include <QDesktopServices>
 
 #include "capnqt/QSocketWrapper.hpp"
 
@@ -79,6 +81,7 @@ public:
     kj::Own<BackendApi> backend;
     kj::Own<QTcpSocket> socket;
     kj::Own<QSocketWrapper> socketWrapper;
+    kj::Own<bts::BitsharesWalletBridge> bitsharesBridge;
     swv::data::Account* currentAccount = nullptr;
 
     void completeConnection(Promise* connectionPromise) {
@@ -284,12 +287,22 @@ void VotingSystem::configureChainAdaptor(bool useTestingBackend) {
     Q_D(VotingSystem);
 
     //TODO: make a real implementation of this
-    auto chain = kj::heap<FakeBlockchain>();
-    auto backendStub = chain->getBackendStub();
-    d->chain->setChain(kj::mv(chain));
     if (useTestingBackend) {
+        auto chain = kj::heap<FakeBlockchain>();
+        auto backendStub = chain->getBackendStub();
+        d->chain->setChain(kj::mv(chain));
         d->backend = kj::heap<BackendApi>(backendStub, *d->promiseConverter);
         emit backendConnectedChanged(true);
+    } else {
+        if (!d->bitsharesBridge)
+            d->bitsharesBridge = kj::heap<bts::BitsharesWalletBridge>(qApp->applicationName());
+        if (!d->bitsharesBridge->isListening() && !d->bitsharesBridge->listen(QHostAddress::LocalHost)) {
+            setLastError(tr("Unable to listen for Bitshares wallet: %1").arg(d->bitsharesBridge->errorString()));
+            return;
+        }
+        QDesktopServices::openUrl(QStringLiteral("web+bts:connect/%1:%2")
+                                  .arg(d->bitsharesBridge->serverAddress().toString())
+                                  .arg(d->bitsharesBridge->serverPort()));
     }
 }
 
@@ -337,14 +350,14 @@ Promise* VotingSystem::castCurrentDecision(swv::data::Contest* contest) {
                        });
 
         if (newEnd == balances.begin()) {
-            auto coin = getCoin(contest->get_coin());
+            auto coin = this->getCoin(contest->get_coin());
             if (coin == nullptr) {
-                setLastError(tr("Unable to cast vote because the coin for the contest was not found."));
+                this->setLastError(tr("Unable to cast vote because the coin for the contest was not found."));
                 KJ_FAIL_REQUIRE("Couldn't cast vote because the contest weight coin was not found.");
             }
 
-            setLastError(tr("Unable to cast vote because the current account, %1, has no %2.")
-                         .arg(d->currentAccount->get_name()).arg(coin->get_name()));
+            this->setLastError(tr("Unable to cast vote because the current account, %1, has no %2.")
+                               .arg(d->currentAccount->get_name()).arg(coin->get_name()));
             KJ_FAIL_REQUIRE("Couldn't cast vote because voting account has no balances in the coin");
         }
         balances = kj::heapArray<::Balance::Reader>(balances.begin(), newEnd);
