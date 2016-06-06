@@ -35,6 +35,8 @@
 #include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/uuid_io.hpp>
 
+#include <chrono>
+
 namespace swv {
 
 class PurchaseServer : public ::Purchase::Server {

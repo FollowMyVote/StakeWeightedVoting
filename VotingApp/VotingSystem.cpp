@@ -350,14 +350,14 @@ Promise* VotingSystem::castCurrentDecision(swv::data::Contest* contest) {
                        });
 
         if (newEnd == balances.begin()) {
-            auto coin = getCoin(contest->get_coin());
+            auto coin = this->getCoin(contest->get_coin());
             if (coin == nullptr) {
-                setLastError(tr("Unable to cast vote because the coin for the contest was not found."));
+                this->setLastError(tr("Unable to cast vote because the coin for the contest was not found."));
                 KJ_FAIL_REQUIRE("Couldn't cast vote because the contest weight coin was not found.");
             }
 
-            setLastError(tr("Unable to cast vote because the current account, %1, has no %2.")
-                         .arg(d->currentAccount->get_name()).arg(coin->get_name()));
+            this->setLastError(tr("Unable to cast vote because the current account, %1, has no %2.")
+                               .arg(d->currentAccount->get_name()).arg(coin->get_name()));
             KJ_FAIL_REQUIRE("Couldn't cast vote because voting account has no balances in the coin");
         }
         balances = kj::heapArray<::Balance::Reader>(balances.begin(), newEnd);

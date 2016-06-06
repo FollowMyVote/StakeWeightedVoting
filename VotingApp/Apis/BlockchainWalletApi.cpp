@@ -200,8 +200,8 @@ Promise* BlockchainWalletApi::getContest(QString contestId) {
                     decision->updateFields(reader->getRoot<::Decision>());
                     contest->setCurrentDecision(decision);
                 } catch (kj::Exception e) {
-                    emit error(tr("Error when recovering decision: %1")
-                               .arg(QString::fromStdString(e.getDescription())));
+                    emit this->error(tr("Error when recovering decision: %1")
+                                     .arg(QString::fromStdString(e.getDescription())));
                 }
             }
             auto persist = [key, decision] {

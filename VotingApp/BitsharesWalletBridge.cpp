@@ -2,6 +2,8 @@
 
 #include <kj/debug.h>
 
+#include <memory>
+
 namespace swv { namespace bts {
 
 BitsharesWalletBridge::BitsharesWalletBridge(const QString& serverName)
@@ -97,7 +99,7 @@ kj::Promise<QJsonValue> BWB::BlockchainWalletServer::beginCall(QString method, Q
         {"jsonrpc", "2.0"},
         {"method",  method},
         {"params",  params},
-        {"id",      nextQueryId}
+        {"id",      qint64(nextQueryId)}
     };
     connection->sendTextMessage(QJsonDocument(call).toJson(QJsonDocument::JsonFormat::Compact));
 
