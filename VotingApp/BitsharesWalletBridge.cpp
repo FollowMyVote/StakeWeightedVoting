@@ -150,9 +150,27 @@ kj::Promise<void> BWB::BlockchainWalletServer::transfer(TransferContext context)
 }
 ////////////////////////////// END BlockchainWalletServer implementation
 
-BlockchainWallet::Client BitsharesWalletBridge::nextWalletClient() {
-    KJ_REQUIRE(hasPendingConnections(), "Cannot get next wallet client without any pending connections");
-    return kj::heap<BlockchainWalletServer>(std::unique_ptr<QWebSocket>(nextPendingConnection()));
+kj::Promise<BlockchainWallet::Client> BitsharesWalletBridge::nextWalletClient() {
+    if (hasPendingConnections()) {
+        auto server = kj::heap<BlockchainWalletServer>(std::unique_ptr<QWebSocket>(nextPendingConnection()));
+        return BlockchainWallet::Client(kj::mv(server));
+    }
+
+    auto paf = kj::newPromiseAndFulfiller<BlockchainWallet::Client>();
+    // Use shared_ptr's to avoid making a noncopyable lambda
+    auto connection = std::make_shared<QMetaObject::Connection>();
+    auto fulfiller = std::make_shared<decltype(paf.fulfiller)>(kj::mv(paf.fulfiller));
+    *connection = connect(this, &QWebSocketServer::newConnection, [this, connection, fulfiller]() mutable {
+        disconnect(*connection);
+        connection.reset();
+        KJ_LOG(DBG, "Fulfilling promise for a BlockchainWallet client");
+        std::unique_ptr<QWebSocket> peer(nextPendingConnection());
+        qDebug() << "Connection from" << peer->peerName() << "at" << peer->peerAddress() << ":" << peer->peerPort();
+        (*fulfiller)->fulfill(kj::heap<BlockchainWalletServer>(kj::mv(peer)));
+        fulfiller.reset();
+    });
+    KJ_LOG(DBG, "Promising a BlockchainWallet client");
+    return kj::mv(paf.promise);
 }
 
 } } // namespace swv::bts

@@ -59,7 +59,9 @@ App {
        signal connected
 
        Component.onCompleted: {
-           configureChainAdaptor(true)
+           configureChainAdaptor(false).then(function() {
+               connectToBackend("127.0.0.1", 17073)
+           })
        }
        onError: {
            console.log("Error from Voting System: %1".arg(message))

@@ -129,7 +129,7 @@ signals:
     void currentAccountChanged(swv::data::Account* currentAccount);
 
 public slots:
-    void configureChainAdaptor(bool useTestingBackend = false);
+    Promise* configureChainAdaptor(bool useTestingBackend = false);
 
     /**
      * @brief Cancel changes to the decision on the given contest
