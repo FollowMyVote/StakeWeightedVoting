@@ -95,6 +95,7 @@ void BWB::BlockchainWalletServer::finishCall(QString message) {
 kj::Promise<QJsonValue> BWB::BlockchainWalletServer::beginCall(QString method, QJsonArray params) {
     checkConnection();
 
+
     QJsonObject call {
         {"jsonrpc", "2.0"},
         {"method",  method},
@@ -109,43 +110,73 @@ kj::Promise<QJsonValue> BWB::BlockchainWalletServer::beginCall(QString method, Q
     return kj::mv(paf.promise);
 }
 
+void populateCoin(::Coin::Builder builder, QJsonObject coin) {
+    builder.setId(coin["id"].toString().replace("1.3.", QString::null).toULongLong());
+    builder.setCreator(coin["issuer"].toString().toStdString());
+    builder.setName(coin["symbol"].toString().toStdString());
+    builder.setPrecision(coin["precision"].toInt());
+}
+
 kj::Promise<void> BWB::BlockchainWalletServer::getCoinById(GetCoinByIdContext context) {
-    return beginCall({}, {}).then([](auto){});
+    KJ_LOG(DBG, __FUNCTION__);
+    auto id = QStringLiteral("1.3.%1").arg(context.getParams().getId());
+    return beginCall("blockchain.getObjectById", QJsonArray() << id).then([context](QJsonValue response) mutable {
+        populateCoin(context.initResults().initCoin(), response.toObject());
+    });
 }
 
 kj::Promise<void> BWB::BlockchainWalletServer::getCoinBySymbol(GetCoinBySymbolContext context) {
-    return beginCall({}, {}).then([](auto){});
+    KJ_LOG(DBG, __FUNCTION__);
+    auto symbol = QString::fromStdString(context.getParams().getSymbol());
+    return beginCall("blockchain.getAssetBySymbol",
+                     QJsonArray() << symbol).then([context](QJsonValue response) mutable {
+        populateCoin(context.initResults().initCoin(), response.toObject());
+    });
 }
 
 kj::Promise<void> BWB::BlockchainWalletServer::getAllCoins(GetAllCoinsContext context) {
+    KJ_LOG(DBG, __FUNCTION__);
     return beginCall({}, {}).then([](auto){});
 }
 
 kj::Promise<void> BWB::BlockchainWalletServer::listMyAccounts(ListMyAccountsContext context) {
-    return beginCall({}, {}).then([](auto){});
+    KJ_LOG(DBG, __FUNCTION__);
+    return beginCall("wallet.getMyAccounts", {}).then([context](QJsonValue response) mutable {
+        auto accounts = response.toArray();
+        auto results = context.initResults().initAccountNames(accounts.size());
+        auto index = 0u;
+        for (const auto& account : accounts)
+            results.set(index++, account.toString().toStdString());
+    });
 }
 
 kj::Promise<void> BWB::BlockchainWalletServer::getBalance(GetBalanceContext context) {
+    KJ_LOG(DBG, __FUNCTION__);
     return beginCall({}, {}).then([](auto){});
 }
 
 kj::Promise<void> BWB::BlockchainWalletServer::getBalancesBelongingTo(GetBalancesBelongingToContext context) {
+    KJ_LOG(DBG, __FUNCTION__);
     return beginCall({}, {}).then([](auto){});
 }
 
 kj::Promise<void> BWB::BlockchainWalletServer::getContestById(GetContestByIdContext context) {
+    KJ_LOG(DBG, __FUNCTION__);
     return beginCall({}, {}).then([](auto){});
 }
 
 kj::Promise<void> BWB::BlockchainWalletServer::getDatagramByBalance(GetDatagramByBalanceContext context) {
+    KJ_LOG(DBG, __FUNCTION__);
     return beginCall({}, {}).then([](auto){});
 }
 
 kj::Promise<void> BWB::BlockchainWalletServer::publishDatagram(PublishDatagramContext context) {
+    KJ_LOG(DBG, __FUNCTION__);
     return beginCall({}, {}).then([](auto){});
 }
 
 kj::Promise<void> BWB::BlockchainWalletServer::transfer(TransferContext context) {
+    KJ_LOG(DBG, __FUNCTION__);
     return beginCall({}, {}).then([](auto){});
 }
 ////////////////////////////// END BlockchainWalletServer implementation
