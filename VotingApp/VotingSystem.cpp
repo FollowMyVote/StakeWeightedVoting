@@ -283,8 +283,10 @@ Promise* VotingSystem::connectToBackend(QString hostname, quint16 port) {
     return connectPromise;
 }
 
-void VotingSystem::configureChainAdaptor(bool useTestingBackend) {
+Promise* VotingSystem::configureChainAdaptor(bool useTestingBackend) {
     Q_D(VotingSystem);
+
+    Promise* configuredPromise = new Promise(this);
 
     //TODO: make a real implementation of this
     if (useTestingBackend) {
@@ -293,17 +295,28 @@ void VotingSystem::configureChainAdaptor(bool useTestingBackend) {
         d->chain->setChain(kj::mv(chain));
         d->backend = kj::heap<BackendApi>(backendStub, *d->promiseConverter);
         emit backendConnectedChanged(true);
+        configuredPromise->resolve({});
     } else {
         if (!d->bitsharesBridge)
             d->bitsharesBridge = kj::heap<bts::BitsharesWalletBridge>(qApp->applicationName());
         if (!d->bitsharesBridge->isListening() && !d->bitsharesBridge->listen(QHostAddress::LocalHost)) {
             setLastError(tr("Unable to listen for Bitshares wallet: %1").arg(d->bitsharesBridge->errorString()));
-            return;
+            return nullptr;
         }
-        QDesktopServices::openUrl(QStringLiteral("web+bts:connect/%1:%2")
+        KJ_LOG(DBG, "Listening for Bitshares wallet",
+               d->bitsharesBridge->serverAddress().toString().toStdString(),
+               d->bitsharesBridge->serverPort());
+        d->tasks.add(d->bitsharesBridge->nextWalletClient().then([d, configuredPromise](BlockchainWallet::Client c) {
+                         KJ_LOG(DBG, "Setting blockchain");
+                         d->chain->setChain(c);
+                         configuredPromise->resolve({});
+                     }));
+        QDesktopServices::openUrl(QStringLiteral("web+bts:%1:%2")
                                   .arg(d->bitsharesBridge->serverAddress().toString())
                                   .arg(d->bitsharesBridge->serverPort()));
     }
+
+    return configuredPromise;
 }
 
 Promise* VotingSystem::castCurrentDecision(swv::data::Contest* contest) {

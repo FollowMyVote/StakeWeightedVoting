@@ -26,7 +26,7 @@ public:
      * @brief Get the nextPendingConnection as a BlockchainWallet::Client
      * @return A BlockchainWallet::Client which wraps the next pending connection
      */
-    BlockchainWallet::Client nextWalletClient();
+    kj::Promise<BlockchainWallet::Client> nextWalletClient();
 };
 
 } } // namespace swv::bts

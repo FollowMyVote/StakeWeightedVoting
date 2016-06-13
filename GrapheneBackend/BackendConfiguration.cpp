@@ -5,6 +5,8 @@
 
 #include <kj/debug.h>
 
+#include <fstream>
+
 #include <fcntl.h>
 #include <errno.h>
 
@@ -19,6 +21,7 @@ void BackendConfiguration::open(kj::StringPtr configFilePath, bool createIfMissi
         KJ_REQUIRE(fd >= 0, "Failed to open file for reading", configFilePath, strerror(errno));
     else if (fd < 0) {
         KJ_LOG(WARNING, "Creating new configuration", configFilePath);
+        (void)std::ofstream(configFilePath);
         filePath = kj::heapString(configFilePath);
         save();
         config = message.getRoot<Config>();
