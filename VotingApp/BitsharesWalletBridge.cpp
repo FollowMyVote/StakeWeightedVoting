@@ -136,7 +136,13 @@ kj::Promise<void> BWB::BlockchainWalletServer::getCoinBySymbol(GetCoinBySymbolCo
 
 kj::Promise<void> BWB::BlockchainWalletServer::getAllCoins(GetAllCoinsContext context) {
     KJ_LOG(DBG, __FUNCTION__);
-    return beginCall({}, {}).then([](auto){});
+    return beginCall("blockchain.getAllAssets", {}).then([context](QJsonValue response) mutable {
+        auto assets = response.toArray();
+        auto coins = context.initResults().initCoins(assets.size());
+        auto index = 0u;
+        for (const auto& asset : assets)
+            populateCoin(coins[index++], asset.toObject());
+    });
 }
 
 kj::Promise<void> BWB::BlockchainWalletServer::listMyAccounts(ListMyAccountsContext context) {
