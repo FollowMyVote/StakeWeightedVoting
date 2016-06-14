@@ -1,4 +1,5 @@
 #include "BitsharesWalletBridge.hpp"
+#include <Utilities.hpp>
 
 #include <kj/debug.h>
 
@@ -147,23 +148,55 @@ kj::Promise<void> BWB::BlockchainWalletServer::getAllCoins(GetAllCoinsContext co
 
 kj::Promise<void> BWB::BlockchainWalletServer::listMyAccounts(ListMyAccountsContext context) {
     KJ_LOG(DBG, __FUNCTION__);
-    return beginCall("wallet.getMyAccounts", {}).then([context](QJsonValue response) mutable {
+    return beginCall("wallet.getMyAccounts", {}).then([this, context](QJsonValue response) mutable {
         auto accounts = response.toArray();
         auto results = context.initResults().initAccountNames(accounts.size());
         auto index = 0u;
-        for (const auto& account : accounts)
+        for (const auto& account : accounts) {
             results.set(index++, account.toString().toStdString());
+        }
     });
 }
 
 kj::Promise<void> BWB::BlockchainWalletServer::getBalance(GetBalanceContext context) {
     KJ_LOG(DBG, __FUNCTION__);
-    return beginCall({}, {}).then([](auto){});
+    BlobMessageReader reader(context.getParams().getId());
+    auto balanceId = reader->getRoot<::BalanceId>();
+    auto accountId = QStringLiteral("1.2.%1").arg(balanceId.getAccountInstance());
+    auto coinId = QStringLiteral("1.3.%1").arg(balanceId.getCoinInstance());
+    return beginCall("blockchain.getObjectById",
+                     QJsonArray() << accountId).then([this](QJsonValue response) {
+        return beginCall("blockchain.getAccountBalances", QJsonArray() << response.toObject()["name"].toString());
+    }).then([context, coinId, balanceId](QJsonValue response) mutable {
+        auto balances = response.toArray();
+        auto balanceItr = std::find_if(balances.begin(), balances.end(), [coinId](const QJsonValue& balance ) {
+            return balance.toObject()["type"].toString() == coinId;
+        });
+        KJ_REQUIRE(balanceItr != balances.end(), "No such balance");
+        auto result = context.initResults().initBalance();
+        result.setId(context.getParams().getId());
+        result.setAmount(balanceItr->toObject()["amount"].toVariant().toLongLong());
+        result.setType(balanceItr->toObject()["type"].toString().replace("1.3.", "").toULongLong());
+        result.setCreationOrder(balanceId.getAccountInstance());
+    });
 }
 
 kj::Promise<void> BWB::BlockchainWalletServer::getBalancesBelongingTo(GetBalancesBelongingToContext context) {
     KJ_LOG(DBG, __FUNCTION__);
-    return beginCall({}, {}).then([](auto){});
+    auto owner = QString::fromStdString(context.getParams().getOwner());
+    return beginCall("blockchain.getAccountBalances",
+                     QJsonArray() << owner).then([context](QJsonValue response) mutable {
+        auto balances = response.toArray();
+        auto results = context.initResults().initBalances(balances.size());
+        auto index = 0u;
+        for (const auto& balance : balances) {
+            auto balanceObject = balance.toObject();
+            auto result = results[index++];
+            //TODO: set creation order and ID
+            result.setAmount(balanceObject["amount"].toVariant().toULongLong());
+            result.setType(balanceObject["type"].toString().replace("1.3.", "").toULongLong());
+        }
+    });
 }
 
 kj::Promise<void> BWB::BlockchainWalletServer::getContestById(GetContestByIdContext context) {

@@ -16,6 +16,8 @@
 
 @0x8ed11a20887e5444;
 
+using BalanceId = import "balance.capnp".BalanceId;
+
 const voteMagic :Data = 0x"BA1107";
 # Magic number that goes at the beginning of all vote-related datagrams, to identify them as vote-related datagrams
 
@@ -25,11 +27,14 @@ struct Datagram {
 
     enum DatagramType {
         decision @0;
-        # Marks a datagram as containing a decision. Key will be the publishing balance ID (FC-serialized
-        # account_balance_id_type), content will be a Decision struct
+        # Marks a datagram as containing a decision. Key will be a DecisionKey, content will be a Decision struct
         contest @1;
         # Marks a datagram as containing a contest to be created. Key will be a ContestKey; content will be a Contest
         # struct
+    }
+    struct DecisionKey {
+    # The schema for the Key field of a decision datagram
+        balanceId @0 :BalanceId;
     }
     struct ContestKey {
     # The schema for the Key field of a contest datagram

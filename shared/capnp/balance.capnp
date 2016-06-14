@@ -28,3 +28,11 @@ struct Balance {
     # regardless of owner. The origin of this number is blockchain-specific. For example, on Bitcoin, it could be the
     # block height at which the underlying UTXO was created.
 }
+
+struct BalanceId {
+# The content of the id field on a balance
+    accountInstance @0 :UInt64;
+    # The instance of the ID of the account which owns the balance
+    coinInstance @1 :UInt64;
+    # The instance of the ID of the asset the balance is in
+}
