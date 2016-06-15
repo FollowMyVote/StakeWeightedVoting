@@ -184,18 +184,28 @@ kj::Promise<void> BWB::BlockchainWalletServer::getBalance(GetBalanceContext cont
 kj::Promise<void> BWB::BlockchainWalletServer::getBalancesBelongingTo(GetBalancesBelongingToContext context) {
     KJ_LOG(DBG, __FUNCTION__);
     auto owner = QString::fromStdString(context.getParams().getOwner());
-    return beginCall("blockchain.getAccountBalances",
-                     QJsonArray() << owner).then([context](QJsonValue response) mutable {
-        auto balances = response.toArray();
-        auto results = context.initResults().initBalances(balances.size());
-        auto index = 0u;
-        for (const auto& balance : balances) {
-            auto balanceObject = balance.toObject();
-            auto result = results[index++];
-            //TODO: set creation order and ID
-            result.setAmount(balanceObject["amount"].toVariant().toULongLong());
-            result.setType(balanceObject["type"].toString().replace("1.3.", "").toULongLong());
-        }
+    auto accountPromise = beginCall("blockchain.getAccountByName", QJsonArray() << owner);
+    return beginCall("blockchain.getAccountBalances", QJsonArray() << owner)
+            .then([context, accountPromise = kj::mv(accountPromise)](QJsonValue response) mutable {
+        return accountPromise.then([context, response](QJsonValue accountValue) mutable {
+            auto accountId = accountValue.toObject()["id"].toString();
+            auto balances = response.toArray();
+            auto results = context.initResults().initBalances(balances.size());
+            auto index = 0u;
+            capnp::MallocMessageBuilder idMessage;
+            auto id = idMessage.initRoot<::BalanceId>();
+            for (const auto& balance : balances) {
+                auto balanceObject = balance.toObject();
+                auto result = results[index++];
+                id.setAccountInstance(accountId.replace("1.2.", "").toULongLong());
+                id.setCoinInstance(balanceObject["type"].toString().replace("1.3.", "").toULongLong());
+                ReaderPacker idPacker(id.asReader());
+                result.setId(idPacker.array());
+                result.setAmount(balanceObject["amount"].toVariant().toULongLong());
+                result.setType(id.getCoinInstance());
+                result.setCreationOrder(id.getAccountInstance());
+            }
+        });
     });
 }
 
