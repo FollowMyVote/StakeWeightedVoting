@@ -243,7 +243,7 @@ ContestGenerator::Client FilteredGenerator(capnp::List<Backend::Filter>::Reader 
 }
 
 ::kj::Promise<void> BackendServer::getContestResults(Backend::Server::GetContestResultsContext context) {
-    auto contestId = unpack<gch::operation_history_id_type>(context.getParams().getContestId());
+    auto contestId = gch::operation_history_id_type(context.getParams().getContestId().getOperationId());
     context.initResults().setResults(kj::heap<ContestResultsServer>(vdb, contestId));
     return kj::READY_NOW;
 }

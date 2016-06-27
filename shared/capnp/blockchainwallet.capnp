@@ -17,6 +17,9 @@
 @0x9b313a7bbe328386;
 
 using Coin = import "coin.capnp".Coin;
+using DecisionId = import "ids.capnp".DecisionId;
+using BalanceId = import "ids.capnp".BalanceId;
+using ContestId = import "ids.capnp".ContestId;
 using Balance = import "balance.capnp".Balance;
 using Contest = import "contest.capnp".Contest;
 using Datagram = import "datagram.capnp".Datagram;
@@ -35,18 +38,18 @@ interface BlockchainWallet {
     listMyAccounts @3 () -> (accountNames :List(Text));
     # Get a list of accounts owned by this wallet
 
-    getBalance @4 (id :Data) -> (balance :Balance);
+    getBalance @4 (id :BalanceId) -> (balance :Balance);
     # Get a balance by ID
     getBalancesBelongingTo @5 (owner :Text) -> (balances :List(Balance));
     # Get all balances belonging to the specified owner
 
-    getContestById @6 (id :Data) -> (contest :Signed(Contest));
+    getContestById @6 (id :ContestId) -> (contest :Signed(Contest));
     # Get a contest by ID
 
-    getDatagramByBalance @7 (balanceId :Data, type :Datagram.DatagramType, key :Data) -> (datagram :Datagram);
+    getDatagramByBalance @7 (balanceId :BalanceId, key :Datagram.DatagramKey) -> (datagram :Datagram);
     # Get the datagram belonging to the specified balance and having the specified type and key
 
-    publishDatagram @8 (datagram :Datagram, payingBalance :Data, publishingBalance :Data) -> (transactionId :Text);
+    publishDatagram @8 (datagram :Datagram, payingBalance :BalanceId, publishingBalance :BalanceId) -> (transactionId :Text);
     # Publish the specified datagram to the blockchain, paying the fee from payingBalance and publishing on behalf of
     # publishingBalance (payingBalance and publishingBalance must belong to the same account). This call will complete
     # after the publishing transaction has been broadcast, but before it is confirmed. Return value is the hex-encoded

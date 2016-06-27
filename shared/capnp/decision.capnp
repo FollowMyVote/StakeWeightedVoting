@@ -16,6 +16,8 @@
 
 @0x9d1e6685c0b5a466;
 
+using DecisionId = import "ids.capnp".DecisionId;
+using ContestId = import "ids.capnp".ContestId;
 using Contestant = import "contest.capnp".UnsignedContest.Contestant;
 using Map = import "map.capnp".Map;
 
@@ -28,9 +30,9 @@ struct Decision {
 # on the specific contest being evaluated. The tags on the associated contest should suffice to disambiguate which
 # counting algorithm is used to parse the opinions.
 
-    id @0 :Data;
+    id @0 :DecisionId;
     # ID of this decision
-    contest @1 :Data;
+    contest @1 :ContestId;
     # ID of the contest this decision pertains to
     opinions @2 :List(Opinion);
     # List of opinions within this decision

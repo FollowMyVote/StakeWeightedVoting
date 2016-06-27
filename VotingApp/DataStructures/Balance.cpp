@@ -19,6 +19,8 @@
 #include "Balance.hpp"
 #include "Converters.hpp"
 
+#include <Utilities.hpp>
+
 namespace swv { namespace data {
 
 Balance::Balance(::Balance::Reader r, QObject* parent)
@@ -29,7 +31,7 @@ Balance::Balance(::Balance::Reader r, QObject* parent)
 Balance::~Balance() {}
 
 void Balance::updateFields(::Balance::Reader r) {
-    m_id = convertBlob(r.getId()).toHex();
+    m_id = convertBlob(ReaderPacker(r).array()).toHex();
     m_amount = r.getAmount();
     m_type = r.getType();
 }

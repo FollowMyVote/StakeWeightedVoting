@@ -16,6 +16,8 @@
 
 @0xb3e6658f22b0e5d5;
 
+using ContestId = import "ids.capnp".ContestId;
+
 interface ContestGenerator {
     # An API to retrieve an 'infinite stream' of contests a few at a time. This implements a contest feed, where the
     # client can fetch a few contests to start with, and then fetch more as needed. It also supports feedback on the
@@ -38,7 +40,7 @@ interface ContestGenerator {
     }
 
     struct ListedContest {
-        contestId @0 :Data;
+        contestId @0 :ContestId;
         # Chain-specific contest ID
         votingStake @1 :Int64;
         # Total stake voting on the specified contest

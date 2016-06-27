@@ -20,6 +20,8 @@
 #include "Converters.hpp"
 #include "contest.capnp.h"
 
+#include <Utilities.hpp>
+
 #include <capnp/serialize-packed.h>
 
 #include <kj/common.h>
@@ -43,17 +45,23 @@ Decision::~Decision() noexcept
 {}
 
 void Decision::updateFields(::Decision::Reader r) {
-    update_id(convertBlob(r.getId()).toHex());
-    update_contestId(convertBlob(r.getContest()).toHex());
+    update_id(convertBlob(ReaderPacker(r.getId()).array()).toHex());
+    update_contestId(convertBlob(ReaderPacker(r.getContest()).array()).toHex());
     updateOpinions(r.getOpinions());
     updateWriteIns(r.getWriteIns());
 }
 
 void Decision::serialize(::Decision::Builder b) {
     QByteArray bin = QByteArray::fromHex(m_id.toLocal8Bit());
-    b.setId(convertBlob(bin));
+    {
+        BlobMessageReader reader(convertBlob(bin));
+        b.setId(reader->getRoot<::DecisionId>());
+    }
     bin = QByteArray::fromHex(m_contestId.toLocal8Bit());
-    b.setContest(convertBlob(bin));
+    {
+        BlobMessageReader reader(convertBlob(bin));
+        b.setContest(reader->getRoot<::ContestId>());
+    }
     serializeOpinions(b);
     serializeWriteIns(b);
 }

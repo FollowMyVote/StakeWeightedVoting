@@ -387,8 +387,7 @@ Promise* VotingSystem::castCurrentDecision(swv::data::Contest* contest) {
             request.setPublishingBalance(balance.getId());
 
             auto dgram = request.initDatagram();
-            dgram.initIndex().setType(Datagram::DatagramType::DECISION);
-            dgram.getIndex().setKey(balance.getId());
+            dgram.initKey().initKey().initDecisionKey().setBalanceId(balance.getId());
             dgram.setContent(packer.array());
 
             promises.add(request.send().then([](auto){}));

@@ -31,6 +31,7 @@
 #include <QDebug>
 #include <QtQml>
 #include <QVariant>
+#include <Utilities.hpp>
 
 namespace swv {
 
@@ -82,7 +83,8 @@ ContestGeneratorApi*BackendApi::getVotedContests()
 ContestResultsApi* BackendApi::getContestResults(QString contestId) {
     auto request = m_backend.getContestResultsRequest();
     auto blob = QByteArray::fromHex(contestId.toLocal8Bit());
-    request.setContestId(convertBlob(blob));
+    BlobMessageReader reader(convertBlob(blob));
+    request.setContestId(reader->getRoot<::ContestId>());
 
     return new ContestResultsApi(request.send().getResults());
 }

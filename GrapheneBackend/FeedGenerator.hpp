@@ -175,8 +175,7 @@ template<typename Index>
 
 template<typename Index>
 void FeedGenerator<Index>::populateContest(ContestGenerator::ListedContest::Builder nextContest) {
-    auto packedId = fc::raw::pack(currentContest->contestId);
-    nextContest.setContestId(readerOf(packedId));
+    nextContest.getContestId().setOperationId(currentContest->contestId.instance);
     nextContest.setTracksLiveResults(false);
 
     // Shorter type names

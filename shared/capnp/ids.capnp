@@ -14,19 +14,24 @@
 # You should have received a copy of the GNU General Public License
 # along with SWV.  If not, see <http://www.gnu.org/licenses/>.
 
-@0xdf8ddd99d4d9f0ae;
+@0xc8496befe955c25b;
 
-using BalanceId = import "ids.capnp".BalanceId;
+# This file defines the contents of nontrivial ID fields for various objects in the system
 
-struct Balance {
-    id @0 :BalanceId;
-    # The ID of this balance
-    type @1 :UInt64;
-    # The ID of the Coin this balance holds
-    amount @2 :Int64;
-    # The amount of asset in this balance
-    creationOrder @3 :Int64;
-    # The creation order is a number which is defined to be larger for a newer balance than for an older one,
-    # regardless of owner. The origin of this number is blockchain-specific. For example, on Bitcoin, it could be the
-    # block height at which the underlying UTXO was created.
+struct BalanceId {
+# The content of the id field on a balance
+    accountInstance @0 :UInt64;
+    # The instance of the ID of the account which owns the balance
+    coinInstance @1 :UInt64;
+    # The instance of the ID of the asset the balance is in
+}
+
+struct ContestId {
+    operationId @0 :UInt64;
+    # Instance of the operation_history_id_type for the operation that created this contest
+}
+
+struct DecisionId {
+    operationId @0 :UInt64;
+    # Instance of the operation_history_id_type for the operation that created this decision
 }

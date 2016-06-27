@@ -38,28 +38,27 @@ protected:
 private:
     capnp::MallocMessageBuilder message;
     std::vector<capnp::Orphan<Coin>> coins;
-    std::map<std::vector<kj::byte>, capnp::Orphan<Signed<Contest>>> contests;
+    std::vector<std::string> accounts;
+    std::map<uint64_t, capnp::Orphan<Signed<Contest>>> contests;
     std::map<kj::String, std::vector<capnp::Orphan<Balance>>> balances;
-    /// Map of (Publisher Balance ID, Type, Key) to Datagram
-    /// See shared/capnp/datagram.capnp for a list of datagram types and what the key is for each type
-    std::map<std::tuple<std::vector<kj::byte>, Datagram::DatagramType, std::vector<kj::byte>>,
-             capnp::Orphan<::Datagram>> datagrams;
+    /// Map of Publisher Balance ID to Datagrams owned by that balance
+    std::map<std::tuple<uint64_t, uint64_t>, std::vector<capnp::Orphan<::Datagram>>> datagrams;
     uint8_t nextBalanceId = 0;
 
     // Just call the const version and cast it to non-const
-    kj::Maybe<capnp::Orphan<Signed<Contest>>&> getContestById(capnp::Data::Reader id) {
+    kj::Maybe<capnp::Orphan<Signed<Contest>>&> getContestById(::ContestId::Reader id) {
         return const_cast<const FakeBlockchain*>(this)->getContestById(id).map([](const auto& c)
                                                                                -> capnp::Orphan<Signed<Contest>>& {
             return const_cast<capnp::Orphan<Signed<Contest>>&>(c);
         });
     }
-    kj::Maybe<const capnp::Orphan<Signed<Contest>>&> getContestById(capnp::Data::Reader id) const;
-    kj::Maybe<capnp::Orphan<Balance>&> getBalanceOrphan(capnp::Data::Reader id);
-    kj::Maybe<const capnp::Orphan<Balance>&> getBalanceOrphan(capnp::Data::Reader id) const;
+    kj::Maybe<const capnp::Orphan<Signed<Contest>>&> getContestById(::ContestId::Reader id) const;
+    kj::Maybe<capnp::Orphan<Balance>&> getBalanceOrphan(::BalanceId::Reader id);
+    kj::Maybe<const capnp::Orphan<Balance>&> getBalanceOrphan(::BalanceId::Reader id) const;
     kj::Maybe<capnp::Orphan<Coin>&> getCoinOrphan(kj::StringPtr name);
     kj::Maybe<const capnp::Orphan<Coin>&> getCoinOrphan(kj::StringPtr name) const;
     ::Signed<::Contest>::Builder createContest();
-    ::Balance::Builder createBalance(kj::StringPtr owner);
+    ::Balance::Builder createBalance(const std::__cxx11::string& owner, uint64_t type);
     ::Coin::Builder createCoin();
 };
 

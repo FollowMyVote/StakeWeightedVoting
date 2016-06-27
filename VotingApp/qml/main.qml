@@ -59,8 +59,8 @@ App {
        signal connected
 
        Component.onCompleted: {
-           configureChainAdaptor(false).then(function() {
-               connectToBackend("127.0.0.1", 17073)
+           configureChainAdaptor(true).then(function() {
+//               connectToBackend("127.0.0.1", 17073)
            })
        }
        onError: {

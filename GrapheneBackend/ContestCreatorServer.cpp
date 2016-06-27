@@ -220,12 +220,9 @@ PurchaseServer::PurchaseServer(VoteDatabase& vdb, int64_t votePrice, bool oversi
     // Copy the contest creation details from the creation request to a datagram which we can deploy with a
     // custom_operation when the purchase finishes
     auto datagram = message.initRoot<Datagram>();
-    datagram.initIndex().setType(Datagram::DatagramType::CONTEST);
+    datagram.initKey().initKey().setContestKey(request.getCreatorSignature());
 
     {
-        ReaderPacker packer(request.getCreatorSignature());
-        datagram.getIndex().setKey(packer.array());
-    } {
         ReaderPacker packer(request.getContestOptions());
         datagram.setContent(packer.array());
     }

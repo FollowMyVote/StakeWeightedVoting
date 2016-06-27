@@ -6,10 +6,6 @@
 #include <algorithm>
 
 namespace swv {
-std::vector<kj::byte> vectorize(capnp::Data::Reader r) {
-    return {r.begin(), r.end()};
-}
-
 FakeBlockchain::FakeBlockchain() {
     auto coin = createCoin();
     coin.setName("BTS");
@@ -31,41 +27,32 @@ FakeBlockchain::FakeBlockchain() {
     coin.setPrecision(4);
     coin.setCreator("follow-my-vote");
 
-    auto balance = createBalance("nathan");
+    auto balance = createBalance("nathan", 0);
     balance.setAmount(50000000);
-    balance.setType(0);
 
-    balance = createBalance("nathan");
+    balance = createBalance("nathan", 1);
     balance.setAmount(10);
-    balance.setType(1);
 
-    balance = createBalance("nathan");
+    balance = createBalance("nathan", 2);
     balance.setAmount(5000);
-    balance.setType(2);
 
-    balance = createBalance("nathan");
+    balance = createBalance("nathan", 3);
     balance.setAmount(10000000);
-    balance.setType(3);
 
-    balance = createBalance("dev.nathanhourt.com");
+    balance = createBalance("dev.nathanhourt.com", 0);
     balance.setAmount(10000000);
-    balance.setType(0);
 
-    balance = createBalance("dev.nathanhourt.com");
+    balance = createBalance("dev.nathanhourt.com", 3);
     balance.setAmount(10000000);
-    balance.setType(3);
 
-    balance = createBalance("adam");
+    balance = createBalance("adam", 1);
     balance.setAmount(88);
-    balance.setType(1);
 
-    balance = createBalance("adam");
+    balance = createBalance("adam", 3);
     balance.setAmount(10000000);
-    balance.setType(3);
 
-    balance = createBalance("follow-my-vote");
+    balance = createBalance("follow-my-vote", 0);
     balance.setAmount(1000000000);
-    balance.setType(0);
 
     auto contest = createContest().getValue();
     contest.setCoin(1);
@@ -156,15 +143,37 @@ kj::Promise<void> FakeBlockchain::getContestById(BlockchainWallet::Server::GetCo
     return kj::READY_NOW;
 }
 
+bool operator== (const ::Datagram::DatagramKey::Reader& a, const ::Datagram::DatagramKey::Reader& b) {
+    if (a.getKey().which() != b.getKey().which())
+        return false;
+    if (a.getKey().isContestKey()) {
+        auto ac = a.getKey().getContestKey().getCreator();
+        auto bc = b.getKey().getContestKey().getCreator();
+        if (ac.which() != bc.which())
+            return false;
+        if (ac.isAnonymous())
+            return bc.isAnonymous();
+        return ac.getSignature().getId() == bc.getSignature().getId() &&
+                ac.getSignature().getSignature() == bc.getSignature().getSignature();
+    }
+    auto ad = a.getKey().getDecisionKey().getBalanceId();
+    auto bd = b.getKey().getDecisionKey().getBalanceId();
+    return ad.getAccountInstance() == bd.getAccountInstance() && ad.getCoinInstance() == bd.getCoinInstance();
+}
+bool operator!= (const ::Datagram::DatagramKey::Reader& a, const ::Datagram::DatagramKey::Reader& b) {
+    return !(a==b);
+}
+
 kj::Promise<void> FakeBlockchain::getDatagramByBalance(BlockchainWallet::Server::GetDatagramByBalanceContext context) {
     auto key = context.getParams().getKey();
-    auto type = context.getParams().getType();
     auto balanceId = context.getParams().getBalanceId();
-    auto itr = datagrams.find(std::make_tuple(vectorize(balanceId), type, vectorize(key)));
-    KJ_REQUIRE(itr != datagrams.end(), "No datagram belonging to the specified balance "
-                                       "with the specified type and key found.", balanceId, (uint16_t)type, key);
+    auto& datagramList = datagrams[std::make_tuple(balanceId.getAccountInstance(), balanceId.getCoinInstance())];
+    auto itr = std::find_if(datagramList.begin(), datagramList.end(), [key](const capnp::Orphan<::Datagram>& datagram) {
+        return datagram.getReader().getKey() == key;
+    });
+    KJ_REQUIRE(itr != datagramList.end(), "No matching datagrams found.", balanceId, key);
 
-    context.initResults().setDatagram(itr->second.getReader());
+    context.initResults().setDatagram(itr->getReader());
     return kj::READY_NOW;
 }
 
@@ -180,11 +189,19 @@ kj::Promise<void> FakeBlockchain::publishDatagram(BlockchainWallet::Server::Publ
     builder.setAmount(builder.getAmount() - 10);
 
     auto datagram = context.getParams().getDatagram();
-    auto index = datagram.getIndex();
-    KJ_LOG(DBG, "Storing datagram in stub chain", context.getParams().getPublishingBalance(),
-           (uint16_t)index.getType(), index.getKey());
-    auto key = std::make_tuple(vectorize(publishingBalance), index.getType(), vectorize(index.getKey()));
-    datagrams[kj::mv(key)] = message.getOrphanage().newOrphanCopy(datagram);
+    auto key = std::make_tuple(publishingBalance.getAccountInstance(), publishingBalance.getCoinInstance());
+    auto& datagramList = datagrams[key];
+    auto itr = std::find_if(datagramList.begin(), datagramList.end(),
+                            [datagram](const capnp::Orphan<::Datagram>& datagramOrphan) {
+        return datagram.getKey() == datagramOrphan.getReader().getKey();
+    });
+    if (itr == datagramList.end()) {
+        KJ_LOG(DBG, "Storing datagram in stub chain", context.getParams().getPublishingBalance());
+        datagramList.emplace_back(message.getOrphanage().newOrphanCopy(datagram));
+    } else {
+        KJ_LOG(DBG, "Updating datagram in stub chain", context.getParams().getPublishingBalance());
+        *itr = message.getOrphanage().newOrphanCopy(datagram);
+    }
     return kj::READY_NOW;
 }
 
@@ -219,23 +236,29 @@ kj::Promise<void> FakeBlockchain::transfer(BlockchainWallet::Server::TransferCon
             }
         }
 
-    auto newBalance = createBalance(recipient);
-    newBalance.setType(coinId);
+    auto newBalance = createBalance(recipient, coinId);
     newBalance.setAmount(amountRemaining);
 
     return kj::READY_NOW;
 }
 
-kj::Maybe<const capnp::Orphan<Signed<Contest>>&> FakeBlockchain::getContestById(capnp::Data::Reader id) const {
-    auto itr = contests.find(vectorize(id));
+inline bool operator==(const ContestId::Reader& a, const ContestId::Reader& b) {
+    return a.getOperationId() == b.getOperationId();
+}
+inline bool operator==(const BalanceId::Reader& a, const BalanceId::Reader& b) {
+    return a.getAccountInstance() == b.getAccountInstance() && a.getCoinInstance() == b.getCoinInstance();
+}
+
+kj::Maybe<const capnp::Orphan<Signed<Contest>>&> FakeBlockchain::getContestById(::ContestId::Reader id) const {
+    auto itr = contests.find(id.getOperationId());
     if (itr == contests.end()) return {};
     return itr->second;
 }
 
-kj::Maybe<capnp::Orphan<Balance>&> FakeBlockchain::getBalanceOrphan(capnp::Data::Reader id) {
+kj::Maybe<capnp::Orphan<Balance>&> FakeBlockchain::getBalanceOrphan(::BalanceId::Reader id) {
     for (auto& bals : balances) {
         auto itr = std::find_if(bals.second.begin(), bals.second.end(), [id](const capnp::Orphan<Balance>& balance) {
-            return balance.getReader().getId().asBytes() == id;
+            return balance.getReader().getId() == id;
         });
         if (itr != bals.second.end())
             return *itr;
@@ -243,10 +266,10 @@ kj::Maybe<capnp::Orphan<Balance>&> FakeBlockchain::getBalanceOrphan(capnp::Data:
     return {};
 }
 
-kj::Maybe<const capnp::Orphan<Balance>&> FakeBlockchain::getBalanceOrphan(capnp::Data::Reader id) const {
+kj::Maybe<const capnp::Orphan<Balance>&> FakeBlockchain::getBalanceOrphan(::BalanceId::Reader id) const {
     for (const auto& bals : balances) {
         auto itr = std::find_if(bals.second.begin(), bals.second.end(), [id](const capnp::Orphan<Balance>& balance) {
-            return balance.getReader().getId().asBytes() == id;
+            return balance.getReader().getId() == id;
         });
         if (itr != bals.second.end())
             return *itr;
@@ -273,16 +296,24 @@ kj::Maybe<const capnp::Orphan<Coin>&> FakeBlockchain::getCoinOrphan(kj::StringPt
 }
 
 Signed<Contest>::Builder FakeBlockchain::createContest() {
-    auto id = std::vector<kj::byte>(1, contests.size() - 1);
-    auto pair = contests.insert(std::make_pair(id, message.getOrphanage().newOrphan<Signed<Contest>>()));
+    auto pair = contests.insert(std::make_pair(contests.size(), message.getOrphanage().newOrphan<Signed<Contest>>()));
     return pair.first->second.get();
 }
 
-Balance::Builder FakeBlockchain::createBalance(kj::StringPtr owner) {
+Balance::Builder FakeBlockchain::createBalance(const std::string& owner, uint64_t type) {
+    auto accountId = accounts.size();
+    auto itr = std::find(accounts.begin(), accounts.end(), owner);
+    if (itr != accounts.end())
+        accountId = itr - accounts.begin();
+    else
+        accounts.emplace_back(owner);
+
     balances[kj::heapString(owner)].emplace_back(message.getOrphanage().newOrphan<::Balance>());
-    auto& newBalance = balances[kj::heapString(owner)].back();
-    newBalance.get().initId(1)[0] = nextBalanceId++;
-    return newBalance.get();
+    auto newBalance = balances[kj::heapString(owner)].back().get();
+    newBalance.getId().setAccountInstance(accountId);
+    newBalance.getId().setCoinInstance(type);
+    newBalance.setType(type);
+    return newBalance;
 }
 
 Coin::Builder FakeBlockchain::createCoin() {

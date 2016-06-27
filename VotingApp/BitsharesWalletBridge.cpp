@@ -160,8 +160,7 @@ kj::Promise<void> BWB::BlockchainWalletServer::listMyAccounts(ListMyAccountsCont
 
 kj::Promise<void> BWB::BlockchainWalletServer::getBalance(GetBalanceContext context) {
     KJ_LOG(DBG, __FUNCTION__);
-    BlobMessageReader reader(context.getParams().getId());
-    auto balanceId = reader->getRoot<::BalanceId>();
+    auto balanceId = context.getParams().getId();
     auto accountId = QStringLiteral("1.2.%1").arg(balanceId.getAccountInstance());
     auto coinId = QStringLiteral("1.3.%1").arg(balanceId.getCoinInstance());
     return beginCall("blockchain.getObjectById",
@@ -192,18 +191,14 @@ kj::Promise<void> BWB::BlockchainWalletServer::getBalancesBelongingTo(GetBalance
             auto balances = response.toArray();
             auto results = context.initResults().initBalances(balances.size());
             auto index = 0u;
-            capnp::MallocMessageBuilder idMessage;
-            auto id = idMessage.initRoot<::BalanceId>();
             for (const auto& balance : balances) {
                 auto balanceObject = balance.toObject();
                 auto result = results[index++];
-                id.setAccountInstance(accountId.replace("1.2.", "").toULongLong());
-                id.setCoinInstance(balanceObject["type"].toString().replace("1.3.", "").toULongLong());
-                ReaderPacker idPacker(id.asReader());
-                result.setId(idPacker.array());
+                result.getId().setAccountInstance(accountId.replace("1.2.", "").toULongLong());
+                result.getId().setCoinInstance(balanceObject["type"].toString().replace("1.3.", "").toULongLong());
                 result.setAmount(balanceObject["amount"].toVariant().toULongLong());
-                result.setType(id.getCoinInstance());
-                result.setCreationOrder(id.getAccountInstance());
+                result.setType(result.getId().getCoinInstance());
+                result.setCreationOrder(result.getId().getAccountInstance());
             }
         });
     });

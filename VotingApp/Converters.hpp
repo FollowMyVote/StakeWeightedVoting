@@ -18,10 +18,14 @@
 
 #pragma once
 
+#include <Utilities.hpp>
+
 #include <QByteArray>
 #include <QVariantMap>
 
 #include <backend.capnp.h>
+
+namespace swv {
 
 inline QByteArray convertBlob(capnp::Data::Reader data) {
     return QByteArray(reinterpret_cast<const char*>(data.begin()), static_cast<signed>(data.size()));
@@ -33,7 +37,7 @@ inline capnp::Data::Builder convertBlob(QByteArray& data) {
     return capnp::Data::Builder(reinterpret_cast<kj::byte*>(data.data()), data.size());
 }
 inline QVariantMap convertListedContest(ContestGenerator::ListedContest::Reader contest) {
-    return {{"contestId", QString(convertBlob(contest.getContestId()).toHex())},
+    return {{"contestId", QString(convertBlob(ReaderPacker(contest.getContestId()).array()).toHex())},
             {"votingStake", qint64(contest.getVotingStake())},
             {"tracksLiveResults", contest.getTracksLiveResults()}};
 }
@@ -50,3 +54,5 @@ inline QList<T> convertList(kj::Array<T>&& kjList) {
         result.append(kj::mv(elem));
     return result;
 }
+
+} // namespace swv

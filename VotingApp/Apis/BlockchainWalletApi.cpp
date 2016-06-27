@@ -99,8 +99,7 @@ kj::Promise<data::Decision*> BlockchainWalletApi::_getDecision(QString owner, QS
                 // Start a lookup for the datagram and store the promise.
                 auto request = wrapper->m_chain.getDatagramByBalanceRequest();
                 request.setBalanceId(balance.getId());
-                request.setType(Datagram::DatagramType::DECISION);
-                request.setKey(balance.getId());
+                request.initKey().initKey().initDecisionKey().setBalanceId(balance.getId());
                 datagramPromises.add(request.send().then([](auto response) -> kj::Maybe<DatagramResponse> {
                         return kj::mv(response);
                     }, [](kj::Exception e) -> kj::Maybe<DatagramResponse> {
@@ -164,7 +163,8 @@ kj::Promise<data::Decision*> BlockchainWalletApi::_getDecision(QString owner, QS
 
 Promise* BlockchainWalletApi::getBalance(QByteArray id) {
     auto request = m_chain.getBalanceRequest();
-    request.setId(convertBlob(id));
+    BlobMessageReader reader(convertBlob(id));
+    request.setId(reader->getRoot<::BalanceId>());
     return promiseConverter.convert(request.send(), [](auto response) -> QVariantList {
         return {QVariant::fromValue<QObject*>(new data::Balance(response.getBalance()))};
     });
@@ -238,7 +238,8 @@ Promise* BlockchainWalletApi::transfer(QString sender, QString recipient, qint64
 capnp::RemotePromise<BlockchainWallet::GetContestByIdResults> BlockchainWalletApi::getContestImpl(QString contestId) {
     auto request = m_chain.getContestByIdRequest();
     auto id = QByteArray::fromHex(contestId.toLocal8Bit());
-    request.setId(convertBlob(id));
+    BlobMessageReader reader(convertBlob(id));
+    request.setId(reader->getRoot<::ContestId>());
     return request.send();
 }
 

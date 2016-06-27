@@ -44,7 +44,7 @@ void processDecision(gch::database& db, const gch::account_balance_object& balan
     KJ_REQUIRE(decision.getOpinions().size() <= 1, "Only single-candidate votes are supported", decision);
     // Recall that contests are ID'd by their operation history ID, not the object ID
     auto& contestIndex = db.get_index_type<ContestIndex>().indices().get<ById>();
-    auto itr = contestIndex.find(unpack<gch::operation_history_id_type>(decision.getContest()));
+    auto itr = contestIndex.find(gch::operation_history_id_type(decision.getContest().getOperationId()));
     KJ_REQUIRE(itr != contestIndex.end(), "Decision references unknown contest");
     auto& contest = *itr;
     FC_ASSERT(contest.coin == balance.asset_type, "Publishing balance is in a different coin than the contest",
@@ -132,7 +132,7 @@ void processDecision(gch::database& db, const gch::account_balance_object& balan
     }
 }
 
-void processContest(gch::database& db, ::Datagram::ContestKey::Key::Reader key,
+void processContest(gch::database& db, ::Datagram::ContestKey::Creator::Reader key,
                     fc::sha256 contestDigest, ::Contest::Reader contest) {
     // All relevant data consistency checks should have been done before FMV published the contest to the chain. We
     // should be able to skip them here, relying on the FMV signature to be sure this is a legitimate contest creation
@@ -171,11 +171,10 @@ graphene::chain::void_result CustomEvaluator::do_apply(const CustomEvaluator::op
         BlobMessageReader message(data.slice(VOTE_MAGIC->size(), data.size()));
         auto datagram = message->getRoot<Datagram>();
         BlobMessageReader datagramMessage(datagram.getContent());
-        BlobMessageReader keyReader(datagram.getIndex().getKey());
 
-        switch (datagram.getIndex().getType()) {
-        case Datagram::DatagramType::DECISION: {
-            auto key = keyReader->getRoot<::Datagram::DecisionKey>();
+        switch (datagram.getKey().getKey().which()) {
+        case Datagram::DatagramKey::Key::DECISION_KEY: {
+            auto key = datagram.getKey().getKey().getDecisionKey();
             auto publisherId = gch::account_id_type(key.getBalanceId().getAccountInstance());
             auto assetId = gch::asset_id_type(key.getBalanceId().getCoinInstance());
             KJ_REQUIRE(publisherId == op.fee_payer(),
@@ -187,12 +186,12 @@ graphene::chain::void_result CustomEvaluator::do_apply(const CustomEvaluator::op
             processDecision(db(), *itr, datagramMessage->getRoot<::Decision>());
             break;
         }
-        case Datagram::DatagramType::CONTEST: {
+        case Datagram::DatagramKey::Key::CONTEST_KEY: {
             KJ_REQUIRE(kj::StringPtr(op.fee_payer()(db()).name) == CONTEST_PUBLISHING_ACCOUNT,
                        "Unauthorized account attempted to publish contest",
                        op.fee_payer()(db()).name, *CONTEST_PUBLISHING_ACCOUNT);
-            processContest(db(), keyReader->getRoot<::Datagram::ContestKey>().getKey(), digest(datagram.getContent()),
-                           datagramMessage->getRoot<::Contest>());
+            processContest(db(), datagram.getKey().getKey().getContestKey().getCreator(),
+                           digest(datagram.getContent()), datagramMessage->getRoot<::Contest>());
             break;
         }
         }
