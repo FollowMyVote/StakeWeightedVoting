@@ -9,7 +9,7 @@ Module {
   property string includePath: qtIncPath+"/VPlay"
   property string staticLibrary: "VPlay"
                        + (qbs.targetOS.contains("ios-simulator") ? "_iphonesimulator" : "")
-                       + (qbs.buildVariant === "debug" ? "_debug" : "")
+//                       + (qbs.buildVariant === "debug" ? "_debug" : "")
 
   // add required Qt dependencies
   Depends {
