@@ -1,4 +1,6 @@
 #include "BitsharesWalletBridge.hpp"
+#include "Converters.hpp"
+
 #include <Utilities.hpp>
 
 #include <kj/debug.h>
@@ -18,6 +20,9 @@ class BWB::BlockchainWalletServer : public BlockchainWallet::Server {
     std::unique_ptr<QWebSocket> connection;
     int64_t nextQueryId = 0;
     std::map<int64_t, kj::Own<kj::PromiseFulfiller<QJsonValue>>> pendingRequests;
+    // Promise is not default constructible; set a failed promise now; we'll overwrite it in our constructor
+    kj::Promise<uint64_t> contestPublisherIdPromise = KJ_EXCEPTION(FAILED, "If you see this, it's a bug.");
+    uint64_t contestPublisherId = 0;
 
 public:
     BlockchainWalletServer(std::unique_ptr<QWebSocket> connection);
@@ -58,6 +63,16 @@ BWB::BlockchainWalletServer::BlockchainWalletServer(std::unique_ptr<QWebSocket> 
                 pendingRequests.erase(pendingRequests.begin());
             }
         }
+    });
+
+    // Look up the contest publishing account; we'll need to know its ID to authenticate contests
+    auto contestPublisherName = QString::fromStdString(*::CONTEST_PUBLISHING_ACCOUNT);
+    contestPublisherIdPromise = beginCall("blockchain.getAccountByName",
+                                          QJsonArray() << contestPublisherName).then(
+                                    [this](QJsonValue response) -> uint64_t {
+         auto account = response.toObject();
+         contestPublisherId = account["id"].toString().replace("1.2.", QString::null).toULongLong();
+         return contestPublisherId;
     });
 
     // Someday we can implment encrypted communication with the BTS wallet, which would be negotiated here.
@@ -206,7 +221,49 @@ kj::Promise<void> BWB::BlockchainWalletServer::getBalancesBelongingTo(GetBalance
 
 kj::Promise<void> BWB::BlockchainWalletServer::getContestById(GetContestByIdContext context) {
     KJ_LOG(DBG, __FUNCTION__);
-    return beginCall({}, {}).then([](auto){});
+    auto operationInstance = context.getParams().getId().getOperationId();
+    auto operationId = QStringLiteral("1.11.%1").arg(operationInstance);
+
+    // First of all, make sure we've resolved the contest publisher (most likely this promise is already resolved)
+    return contestPublisherIdPromise.then([this, operationId](uint64_t) {
+        // Look up the operation which published the contest
+        return beginCall("blockchain.getObjectById", QJsonArray() << operationId);
+    }).then([this, context, operationInstance](QJsonValue response) mutable {
+        // We've now got what should be a custom operation with a datagram containing the contest. Parse out the
+        // contest and fulfill the request, doing all necessary validity checks and authentications along the way.
+        auto customOp = response.toObject()["op"].toArray();
+        // A graphene custom_operation has opcode 35. Check that this operation has that opcode.
+        auto opCode = customOp[0].toInt();
+        KJ_REQUIRE(opCode == 35, "Invalid contest ID references an operation with wrong opcode",
+                   opCode, operationInstance);
+
+        // Custom op must have been published by Follow My Vote
+        auto decodedOp = customOp[1].toObject();
+        KJ_REQUIRE(decodedOp["payer"].toString().replace("1.2.", QString::null).toULongLong() == contestPublisherId,
+                   "Could not authenticate contest referenced by contest ID");
+
+        // Custom op should contain a serialized datagram in base64 encoding. See buildPublishOperation() in
+        // GrapheneBackend/ContestCreatorServer.cpp to see how this operation was created.
+        auto operationData = QByteArray::fromBase64(decodedOp["data"].toString().toLocal8Bit());
+        auto operationDataReader = convertBlob(operationData);
+        KJ_REQUIRE(capnp::Data::Reader(operationDataReader.slice(0, ::VOTE_MAGIC->size())) == *::VOTE_MAGIC,
+                   "Invalid contest ID references an operation which was not published by Follow My Vote software",
+                   operationInstance);
+        BlobMessageReader datagramMessage(operationDataReader.slice(::VOTE_MAGIC->size(), operationDataReader.size()));
+        auto datagramReader = datagramMessage->getRoot<::Datagram>();
+        auto key = datagramReader.getKey().getKey();
+        KJ_REQUIRE(key.isContestKey(), "Invalid contest ID references a datagram which does not contain a contest",
+                   key.which(), operationInstance);
+        auto result = context.initResults().initContest();
+
+        // Set creator's signature, if present
+        if (key.getContestKey().getCreator().isSignature())
+            result.setSignature(key.getContestKey().getCreator().getSignature().getSignature());
+
+        // Deserialize the contest from the datagram and set it in the results
+        BlobMessageReader contestMessage(datagramReader.getContent());
+        result.setValue(contestMessage->getRoot<::Contest>());
+    });
 }
 
 kj::Promise<void> BWB::BlockchainWalletServer::getDatagramByBalance(GetDatagramByBalanceContext context) {

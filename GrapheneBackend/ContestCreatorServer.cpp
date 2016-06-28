@@ -34,6 +34,8 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/uuid_io.hpp>
+#include <boost/archive/iterators/base64_from_binary.hpp>
+#include <boost/archive/iterators/transform_width.hpp>
 
 #include <chrono>
 
@@ -273,10 +275,23 @@ graphene::chain::custom_operation PurchaseServer::buildPublishOperation() {
     gch::custom_operation op;
     op.payer = publisher;
 
-    // Why do I have to explicitly cast MallocMessageBuilder to MessageBuilder&? Are you drunk, compiler?
     ReaderPacker packer(message.getRoot<Datagram>().asReader());
-    op.data.resize(packer.array().size());
-    memcpy(op.data.data(), packer.array().begin(), op.data.size());
+    auto magic = *::VOTE_MAGIC;
+
+    // Serialize the datagram into a buffer
+    std::vector<unsigned char> buffer(magic.size() + packer.array().size());
+    memcpy(buffer.data(), magic.begin(), magic.size());
+    memcpy(buffer.data() + magic.size(), packer.array().begin(), buffer.size() - magic.size());
+
+    // Base64 encode buffer into the op's data field, and shrink to fit
+    op.data.resize(buffer.size());
+    using namespace boost::archive::iterators;
+    using base64 = base64_from_binary<transform_width<const char *, 6, 8>>;
+    op.data.erase(std::copy(base64(buffer.data()),
+                            base64(buffer.data() + buffer.size()),
+                            op.data.begin()),
+                  op.data.end());
+
     op.fee = op.calculate_fee(vdb.db().current_fee_schedule().get<gch::custom_operation>());
 
     return op;
