@@ -4,6 +4,7 @@
 #include <Utilities.hpp>
 
 #include <kj/debug.h>
+#include <kj/vector.h>
 
 #include <memory>
 
@@ -278,7 +279,50 @@ kj::Promise<void> BWB::BlockchainWalletServer::publishDatagram(PublishDatagramCo
 
 kj::Promise<void> BWB::BlockchainWalletServer::transfer(TransferContext context) {
     KJ_LOG(DBG, __FUNCTION__, context.getParams());
-    return beginCall({}, {}).then([](auto){});
+
+    auto senderNameOrId = QString::fromStdString(context.getParams().getSendingAccount());
+    auto recipientNameOrId = QString::fromStdString(context.getParams().getReceivingAccount());
+
+    auto transferOp = kj::heap<QJsonObject>({
+        // The opcode for a transfer is 0
+        {"code", 0},
+        {"op", QJsonObject{
+             {"from", senderNameOrId},
+             {"to", recipientNameOrId},
+             {"amount", QJsonObject {
+                  {"amount", qint64(context.getParams().getAmount())},
+                  {"asset_id", QStringLiteral("1.3.%1").arg(context.getParams().getCoinId())}
+              }}
+         }}
+    });
+
+    // We may need to look up some things. If so, store the promises in this vector
+    auto lookup = [this, &transferOp] (QString name, QString toOrFrom) {
+        return beginCall("blockchain.getAccountByName",
+                               QJsonArray() << name).then(
+                         [op = transferOp.get(), name, toOrFrom](QJsonValue result) {
+            // Changing a nested QJsonObject is trickier than it sounds, but this works:
+            // Make a copy of the nested object, change it, and overwrite it in the outer object
+            auto copy = op->value("op").toObject();
+            copy[toOrFrom] = result.toObject()["id"].toString();
+            op->insert("op", copy);
+        });
+    };
+    kj::Vector<kj::Promise<void>> promises;
+    if (senderNameOrId[0].isLetter())
+        // Sender is a name, not an ID. Look up the ID and store it in the op
+        promises.add(lookup(senderNameOrId, "from"));
+    if (recipientNameOrId[0].isLetter())
+        // Same as with sender: look up ID
+        promises.add(lookup(recipientNameOrId, "to"));
+
+    // Wait for all promises in the vector to resolve; at that point, transferOp will be ready.
+    return kj::joinPromises(promises.releaseAsArray()).then([this, op = kj::mv(transferOp)] {
+        return beginCall("blockchain.getTransactionFees", QJsonArray() << (QJsonArray() << *op));
+    }).then([this](QJsonValue response) {
+        KJ_LOG(DBG, "Broadcasting transfer", QJsonDocument(response.toObject()).toJson().data());
+        return beginCall("wallet.broadcastTransaction", QJsonArray() << response.toArray());
+    }).then([](QJsonValue){});
 }
 ////////////////////////////// END BlockchainWalletServer implementation
 
