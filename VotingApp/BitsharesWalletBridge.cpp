@@ -272,12 +272,12 @@ kj::Promise<void> BWB::BlockchainWalletServer::getDatagramByBalance(GetDatagramB
 }
 
 kj::Promise<void> BWB::BlockchainWalletServer::publishDatagram(PublishDatagramContext context) {
-    KJ_LOG(DBG, __FUNCTION__);
+    KJ_LOG(DBG, __FUNCTION__, context.getParams());
     return beginCall({}, {}).then([](auto){});
 }
 
 kj::Promise<void> BWB::BlockchainWalletServer::transfer(TransferContext context) {
-    KJ_LOG(DBG, __FUNCTION__);
+    KJ_LOG(DBG, __FUNCTION__, context.getParams());
     return beginCall({}, {}).then([](auto){});
 }
 ////////////////////////////// END BlockchainWalletServer implementation

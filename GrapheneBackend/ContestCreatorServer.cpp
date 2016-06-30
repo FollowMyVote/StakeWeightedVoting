@@ -90,9 +90,11 @@ ContestCreatorServer::ContestCreatorServer(VoteDatabase& vdb)
 ContestCreatorServer::~ContestCreatorServer() {}
 
 ::kj::Promise<void> ContestCreatorServer::getPriceSchedule(ContestCreator::Server::GetPriceScheduleContext context) {
-    auto schedule = context.initResults().initSchedule().initEntries(7);
+    KJ_LOG(DBG, __FUNCTION__, context.getParams());
+    auto prices = vdb.configuration().reader().getPriceSchedule();
+    auto schedule = context.initResults().initSchedule().initEntries(prices.size());
     auto index = 0u;
-    for (auto item : vdb.configuration().reader().getPriceSchedule()) {
+    for (auto item : prices) {
         auto entry = schedule[index++];
         entry.getKey().setItem(item.getLineItem());
         entry.getValue().setPrice(item.getPrice());
@@ -101,9 +103,11 @@ ContestCreatorServer::~ContestCreatorServer() {}
 }
 
 ::kj::Promise<void> ContestCreatorServer::getContestLimits(ContestCreator::Server::GetContestLimitsContext context) {
-    auto schedule = context.initResults().initLimits().initEntries(7);
+    KJ_LOG(DBG, __FUNCTION__, context.getParams());
+    auto limits = vdb.configuration().reader().getContestLimits();
+    auto schedule = context.initResults().initLimits().initEntries(limits.size());
     auto index = 0u;
-    for (auto item : vdb.configuration().reader().getContestLimits()) {
+    for (auto item : limits) {
         auto entry = schedule[index++];
         entry.getKey().setLimit(item.getName());
         entry.getValue().setValue(item.getLimit());
@@ -112,6 +116,7 @@ ContestCreatorServer::~ContestCreatorServer() {}
 }
 
 ::kj::Promise<void> ContestCreatorServer::purchaseContest(ContestCreator::Server::PurchaseContestContext context) {
+    KJ_LOG(DBG, __FUNCTION__, context.getParams());
     // TODO: Logging of all steps in a purchase. Useful for analytics as well as troubleshooting if something fails
     int64_t price = 0;
     auto contestOptions = context.getParams().getRequest().getContestOptions();
@@ -293,11 +298,13 @@ graphene::chain::custom_operation PurchaseServer::buildPublishOperation() {
 }
 
 ::kj::Promise<void> PurchaseServer::complete(Purchase::Server::CompleteContext context) {
+    KJ_LOG(DBG, __FUNCTION__, context.getParams());
     context.initResults().setResult(purchaseCompleted);
     return kj::READY_NOW;
 }
 
 ::kj::Promise<void> PurchaseServer::prices(Purchase::Server::PricesContext context) {
+    KJ_LOG(DBG, __FUNCTION__, context.getParams());
     const auto& db = vdb.db();
     gch::custom_operation op = buildPublishOperation();
     wdump((op));
@@ -332,6 +339,7 @@ graphene::chain::custom_operation PurchaseServer::buildPublishOperation() {
 }
 
 ::kj::Promise<void> PurchaseServer::subscribe(Purchase::Server::SubscribeContext context) {
+    KJ_LOG(DBG, __FUNCTION__, context.getParams());
     if (purchaseCompleted) {
         auto notification = context.getParams().getNotifier().notifyRequest();
         notification.setNotification("true");
