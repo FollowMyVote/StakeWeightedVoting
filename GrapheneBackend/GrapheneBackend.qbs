@@ -10,6 +10,8 @@ CppApplication {
     Depends { name: "capnp" }
     capnp.importPaths: ["../shared/capnp"]
 
+    cpp.cxxFlags: "-fno-limit-debug-info"
+
     files: [
         "BackendConfiguration.cpp",
         "BackendConfiguration.hpp",

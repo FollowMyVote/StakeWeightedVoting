@@ -18,6 +18,7 @@
 #include "ContestCreatorServer.hpp"
 #include "VoteDatabase.hpp"
 #include "Utilities.hpp"
+#include "vendor/base64/base64.h"
 
 #include <graphene/chain/protocol/transaction.hpp>
 #include <graphene/utilities/key_conversion.hpp>
@@ -34,8 +35,6 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/uuid_io.hpp>
-#include <boost/archive/iterators/base64_from_binary.hpp>
-#include <boost/archive/iterators/transform_width.hpp>
 
 #include <chrono>
 
@@ -134,21 +133,21 @@ ContestCreatorServer::~ContestCreatorServer() {}
     // Check limits
     KJ_REQUIRE(contestOptions.getName().size() > 0, "Contest must have a name", contestOptions);
     KJ_REQUIRE(contestOptions.getName().size() <= LIMIT(NAME_LENGTH),
-            "Contest name is too long", contestOptions);
+            "Contest name is too long", contestOptions, LIMIT(NAME_LENGTH));
     KJ_REQUIRE(contestOptions.getDescription().size() <= LIMIT(DESCRIPTION_HARD_LENGTH),
-               "Contest description is too long", contestOptions);
+               "Contest description is too long", contestOptions, LIMIT(DESCRIPTION_HARD_LENGTH));
     if (contestOptions.getDescription().size() > LIMIT(DESCRIPTION_SOFT_LENGTH))
         longText = true;
     KJ_REQUIRE(contestOptions.getContestants().getEntries().size() > 0, "Contest must have at least one contestant",
                contestOptions);
     KJ_REQUIRE(contestOptions.getContestants().getEntries().size() <= LIMIT(CONTESTANT_COUNT),
-               "Contest has too many contestants", contestOptions);
+               "Contest has too many contestants", contestOptions, LIMIT(CONTESTANT_COUNT));
     for (auto contestant : contestOptions.getContestants().getEntries()) {
         KJ_REQUIRE(contestant.getKey().size() > 0, "Contestant must have a name", contestant);
         KJ_REQUIRE(contestant.getKey().size() <= LIMIT(CONTESTANT_NAME_LENGTH),
-                   "Contestant name is too long", contestant);
+                   "Contestant name is too long", contestant, LIMIT(CONTESTANT_NAME_LENGTH));
         KJ_REQUIRE(contestant.getValue().size() <= LIMIT(CONTESTANT_DESCRIPTION_HARD_LENGTH),
-                   "Contestant description is too long", contestant);
+                   "Contestant description is too long", contestant, LIMIT(CONTESTANT_DESCRIPTION_HARD_LENGTH));
         if (contestant.getValue().size() > LIMIT(CONTESTANT_DESCRIPTION_SOFT_LENGTH))
             longText = true;
     }
@@ -279,21 +278,17 @@ graphene::chain::custom_operation PurchaseServer::buildPublishOperation() {
     auto magic = *::VOTE_MAGIC;
 
     // Serialize the datagram into a buffer
-    std::vector<unsigned char> buffer(magic.size() + packer.array().size());
+    std::vector<char> buffer(magic.size() + packer.array().size());
     memcpy(buffer.data(), magic.begin(), magic.size());
     memcpy(buffer.data() + magic.size(), packer.array().begin(), buffer.size() - magic.size());
 
     // Base64 encode buffer into the op's data field, and shrink to fit
-    op.data.resize(buffer.size());
-    using namespace boost::archive::iterators;
-    using base64 = base64_from_binary<transform_width<const char *, 6, 8>>;
-    op.data.erase(std::copy(base64(buffer.data()),
-                            base64(buffer.data() + buffer.size()),
-                            op.data.begin()),
-                  op.data.end());
+    op.data.resize(Base64::EncodedLength(buffer.size()));
+    Base64::Encode(buffer.data(), buffer.size(), op.data.data(), op.data.size());
 
     op.fee = op.calculate_fee(vdb.db().current_fee_schedule().get<gch::custom_operation>());
 
+    wdump((op));
     return op;
 }
 
@@ -305,6 +300,7 @@ graphene::chain::custom_operation PurchaseServer::buildPublishOperation() {
 ::kj::Promise<void> PurchaseServer::prices(Purchase::Server::PricesContext context) {
     const auto& db = vdb.db();
     gch::custom_operation op = buildPublishOperation();
+    wdump((op));
 
     // Calculate surcharges
     std::map<std::string, int64_t> adjustments;
@@ -318,7 +314,7 @@ graphene::chain::custom_operation PurchaseServer::buildPublishOperation() {
     // TODO: handle sponsorships
     // TODO: handle promo codes
 
-    auto price = context.initResults().initPrices(1)[0];
+    auto price = context.getResults().initPrices(1)[0];
     price.setCoinId(vote.instance);
     price.setAmount(votePrice);
     price.setPayAddress(publisher(db).name);
