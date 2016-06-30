@@ -17,6 +17,7 @@ Page {
     property var contestCreator
 
     function showError(message) {
+        var errorString = message
         // Ignore errors that come within 1 second of the last error
         if (new Date().getTime() - internal.lastErrorTime < 1000)
             return

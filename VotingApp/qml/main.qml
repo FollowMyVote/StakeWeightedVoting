@@ -111,8 +111,8 @@ App {
                     title: qsTr("My Polls")
                     votingSystem: _votingSystem
                     getContestGeneratorFunction: function() {
-                        if (votingSystem.isReady)
-                            return votingSystem.backend.getContestsByCreator(votingSystem.currentAccount)
+                        if (votingSystem.isReady && votingSystem.currentAccount)
+                            return votingSystem.backend.getContestsByCreator(votingSystem.currentAccount.name)
                     }
                     listView.headerPositioning: ListView.PullBackHeader
                     listView.header: CreateContestPlaceholder {

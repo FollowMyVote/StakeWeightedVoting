@@ -44,13 +44,12 @@ BackendApi::BackendApi(Backend::Client backend, PromiseConverter& promiseConvert
 BackendApi::~BackendApi() noexcept
 {}
 
-ContestGeneratorApi* BackendApi::getFeedGenerator()
-{
+ContestGeneratorApi* BackendApi::getFeedGenerator() {
     return new ContestGeneratorApi(m_backend.getContestFeedRequest().send().getGenerator(), promiseConverter);
 }
 
-ContestGeneratorApi* BackendApi::getContestsByCreator(QString creator)
-{
+ContestGeneratorApi* BackendApi::getContestsByCreator(QString creator) {
+    KJ_LOG(DBG, "Getting contests by creator", creator.toStdString());
     auto request = m_backend.searchContestsRequest();
     auto filters = request.initFilters(1);
     filters[0].setType(Backend::Filter::Type::CONTEST_CREATOR);
@@ -60,8 +59,8 @@ ContestGeneratorApi* BackendApi::getContestsByCreator(QString creator)
     return new ContestGeneratorApi(request.send().getGenerator(), promiseConverter);
 }
 
-ContestGeneratorApi* BackendApi::getContestsByCoin(quint64 coinId)
-{
+ContestGeneratorApi* BackendApi::getContestsByCoin(quint64 coinId) {
+    KJ_LOG(DBG, "Getting contests by coin", coinId);
     auto request = m_backend.searchContestsRequest();
     auto filters = request.initFilters(1);
     filters[0].setType(Backend::Filter::Type::CONTEST_COIN);
@@ -71,8 +70,8 @@ ContestGeneratorApi* BackendApi::getContestsByCoin(quint64 coinId)
     return new ContestGeneratorApi(request.send().getGenerator(), promiseConverter);
 }
 
-ContestGeneratorApi*BackendApi::getVotedContests()
-{
+ContestGeneratorApi*BackendApi::getVotedContests() {
+    KJ_LOG(DBG, "Getting contests by voter");
     auto request = m_backend.searchContestsRequest();
     auto filters = request.initFilters(1);
     filters[0].setType(Backend::Filter::Type::CONTEST_VOTER);
@@ -89,8 +88,7 @@ ContestResultsApi* BackendApi::getContestResults(QString contestId) {
     return new ContestResultsApi(request.send().getResults());
 }
 
-ContestCreatorApi* BackendApi::contestCreator()
-{
+ContestCreatorApi* BackendApi::contestCreator() {
     // Lazy load the creator; most runs we will probably never need it.
     if (creator.get() == nullptr)
         creator = kj::heap<ContestCreatorApi>(m_backend.createContestRequest().send().getCreator());

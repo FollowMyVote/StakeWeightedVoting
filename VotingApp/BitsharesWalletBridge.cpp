@@ -253,7 +253,7 @@ kj::Promise<void> BWB::BlockchainWalletServer::getContestById(GetContestByIdCont
         auto datagramReader = datagramMessage->getRoot<::Datagram>();
         auto key = datagramReader.getKey().getKey();
         KJ_REQUIRE(key.isContestKey(), "Invalid contest ID references a datagram which does not contain a contest",
-                   key.which(), operationInstance);
+                   operationInstance);
         auto result = context.initResults().initContest();
 
         // Set creator's signature, if present

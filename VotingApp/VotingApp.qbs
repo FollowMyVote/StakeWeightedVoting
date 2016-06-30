@@ -9,9 +9,11 @@ QtGuiApplication {
     Depends { name: "Qt"; submodules: ["network", "qml", "charts"] }
     Depends { name: "libqtqmltricks-qtquickuielements" }
     Depends { name: "VPlay" }
-    VPlay.sdkPath: Qt.core.incPath + "/.."
+    // 'original' is a keyword: https://doc.qt.io/qbs/module-item.html#special-property-values
+    VPlay.sdkPath: original? original : Qt.core.incPath + "/.."
 
     qmlImportPaths: [VPlay.sdkPath + "/qml"]
+    cpp.cxxLanguageVersion: "c++14"
     cpp.includePaths: [".", "qml-promise/src", VPlay.includePath]
     cpp.libraryPaths: VPlay.sdkPath + "/lib"
     cpp.staticLibraries: VPlay.staticLibrary

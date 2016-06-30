@@ -299,7 +299,7 @@ Promise* VotingSystem::configureChainAdaptor(bool useTestingBackend) {
     } else {
         if (!d->bitsharesBridge)
             d->bitsharesBridge = kj::heap<bts::BitsharesWalletBridge>(qApp->applicationName());
-        if (!d->bitsharesBridge->isListening() && !d->bitsharesBridge->listen(QHostAddress::LocalHost)) {
+        if (!d->bitsharesBridge->isListening() && !d->bitsharesBridge->listen(QHostAddress::LocalHost, 27073)) {
             setLastError(tr("Unable to listen for Bitshares wallet: %1").arg(d->bitsharesBridge->errorString()));
             return nullptr;
         }
