@@ -52,8 +52,9 @@ Promise* PurchaseApi::prices(QStringList promoCodes)
         QVariantList totals;
         for (auto price : r.getPrices())
             totals.append(QVariantMap{{"coinId", QVariant::fromValue(qreal(price.getCoinId()))},
-                                       {"amount", QVariant::fromValue(qreal(price.getAmount()))},
-                                       {"payAddress", QVariant::fromValue(convertText(price.getPayAddress()))}});
+                                      {"amount", QVariant::fromValue(qreal(price.getAmount()))},
+                                      {"payAddress", QVariant::fromValue(convertText(price.getPayAddress()))},
+                                      {"memo", QVariant::fromValue(convertText(price.getPaymentMemo()))}});
         QVariantList adjustments;
         for (auto adjustment : r.getAdjustments().getEntries())
             adjustments.append(QVariantMap{{"reason", QVariant::fromValue(convertText(adjustment.getKey()))},

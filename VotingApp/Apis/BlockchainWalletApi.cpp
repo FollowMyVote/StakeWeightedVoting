@@ -224,12 +224,13 @@ Promise* BlockchainWalletApi::getContest(QString contestId) {
     });
 }
 
-Promise* BlockchainWalletApi::transfer(QString sender, QString recipient, qint64 amount, quint64 coinId) {
+Promise* BlockchainWalletApi::transfer(QString sender, QString recipient, qint64 amount, quint64 coinId, QString memo) {
     auto request = m_chain.transferRequest();
     request.setSendingAccount(sender.toStdString());
     request.setReceivingAccount(recipient.toStdString());
     request.setAmount(amount);
     request.setCoinId(coinId);
+    request.setMemo(memo.toStdString());
     return promiseConverter.convert(request.send(), [](capnp::Response<BlockchainWallet::TransferResults> results) {
         return QVariantList() << QString::fromStdString(results.getTransactionId());
     });

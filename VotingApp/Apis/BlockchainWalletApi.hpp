@@ -128,9 +128,10 @@ public:
      * @param recipient Account name/address of recipient
      * @param amount Amount to send
      * @param coinId Type of coin to send
+     * @param memo Memo for transaction. This string will be placed on the chain *unencrypted!*
      * @return A promise which resolves when the transaction has been broadcast, or breaks if transfer fails
      */
-    Q_INVOKABLE Promise* transfer(QString sender, QString recipient, qint64 amount, quint64 coinId);
+    Q_INVOKABLE Promise* transfer(QString sender, QString recipient, qint64 amount, quint64 coinId, QString memo);
 
 signals:
     void error(QString message);

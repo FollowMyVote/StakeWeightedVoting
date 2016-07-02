@@ -49,13 +49,15 @@ interface BlockchainWallet {
     getDatagramByBalance @7 (balanceId :BalanceId, key :Datagram.DatagramKey) -> (datagram :Datagram);
     # Get the datagram belonging to the specified balance and having the specified type and key
 
-    publishDatagram @8 (datagram :Datagram, payingBalance :BalanceId, publishingBalance :BalanceId) -> (transactionId :Text);
+    publishDatagram @8 (datagram :Datagram, payingBalance :BalanceId,
+                        publishingBalance :BalanceId) -> (transactionId :Text);
     # Publish the specified datagram to the blockchain, paying the fee from payingBalance and publishing on behalf of
     # publishingBalance (payingBalance and publishingBalance must belong to the same account). This call will complete
     # after the publishing transaction has been broadcast, but before it is confirmed. Return value is the hex-encoded
     # ID of the publishing transaction
-    transfer @9 (sendingAccount :Text, receivingAccount :Text, amount :Int64, coinId :UInt64) -> (transactionId :Text);
-    # Transfer specified amount from sendingAccount to receivingAccount. This call will complete after the transfer
-    # transaction has been broadcast, but before it is confirmed. Return value is the hex-encoded ID of the transfer
-    # transaction.
+    transfer @9 (sendingAccount :Text, receivingAccount :Text,
+                 amount :Int64, coinId :UInt64, memo :Text) -> (transactionId :Text);
+    # Transfer specified amount from sendingAccount to receivingAccount with memo. Memo will not be encrypted. This
+    # call will complete after the transfer transaction has been broadcast, but before it is confirmed. Return value is
+    # the hex-encoded ID of the transfer transaction.
 }

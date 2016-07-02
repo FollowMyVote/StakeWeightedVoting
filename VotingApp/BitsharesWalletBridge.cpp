@@ -292,6 +292,14 @@ kj::Promise<void> BWB::BlockchainWalletServer::transfer(TransferContext context)
              {"amount", QJsonObject {
                   {"amount", qint64(context.getParams().getAmount())},
                   {"asset_id", QStringLiteral("1.3.%1").arg(context.getParams().getCoinId())}
+              }},
+             // The memo is just a nonce; it has no real meaning, so there's no value in encrypting it. Leave the keys
+             // null.
+             {"memo", QJsonObject {
+                  {"message", QString::fromStdString(context.getParams().getMemo())},
+                  {"from", "GPH1111111111111111111111111111111114T1Anm"},
+                  {"to", "GPH1111111111111111111111111111111114T1Anm"},
+                  {"nonce", 0}
               }}
          }}
     });
@@ -322,7 +330,9 @@ kj::Promise<void> BWB::BlockchainWalletServer::transfer(TransferContext context)
     }).then([this](QJsonValue response) {
         KJ_LOG(DBG, "Broadcasting transfer", QJsonDocument(response.toObject()).toJson().data());
         return beginCall("wallet.broadcastTransaction", QJsonArray() << response.toArray());
-    }).then([](QJsonValue){});
+    }).then([](QJsonValue response) {
+        qDebug() << response;
+    });
 }
 ////////////////////////////// END BlockchainWalletServer implementation
 

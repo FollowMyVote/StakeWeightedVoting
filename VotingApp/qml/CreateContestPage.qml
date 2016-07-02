@@ -79,7 +79,8 @@ Page {
                         var transferPromise = votingSystem.chain.transfer(votingSystem.currentAccount.name,
                                                                           dialog.selectedPrice.payAddress,
                                                                           dialog.selectedPrice.amount,
-                                                                          dialog.selectedPrice.coinId);
+                                                                          dialog.selectedPrice.coinId,
+                                                                          dialog.selectedPrice.memo);
                         transferPromise.then(function() {
                             dialog.purchaseApi.paymentSent(dialog.selectedPriceIndex)
                             dialog.close()

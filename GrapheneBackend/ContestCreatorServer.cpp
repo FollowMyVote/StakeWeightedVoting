@@ -41,12 +41,18 @@
 namespace swv {
 
 class PurchaseServer : public ::Purchase::Server {
+    static std::string generateUuid() {
+        std::string uuid = boost::uuids::to_string(boost::uuids::random_generator()());
+        uuid.erase(std::remove_if(uuid.begin(), uuid.end(), [](char c) { return c == '-'; }), uuid.end());
+        return uuid;
+    }
+
     VoteDatabase& vdb;
     int64_t votePrice;
     bool oversized = false;
     bool purchaseCompleted = false;
     capnp::MallocMessageBuilder message;
-    std::string purchaseUuid = boost::uuids::to_string(boost::uuids::random_generator()());
+    std::string purchaseUuid = generateUuid();
     fc::scoped_connection newBlockSubscription;
     std::vector<Notifier<capnp::Text>::Client> completedListeners;
 
@@ -206,14 +212,15 @@ struct PurchaseServer::PaymentTransferVisitor {
     using result_type = bool;
 
     bool operator()(const gch::transfer_operation& transfer) const {
+        auto uuid = fc::json::from_string(purchase.purchaseUuid).as<std::vector<char>>();
         // If it's a transfer to the publishing account, and the memo matches our UUID...
-        if (purchase.publisher == transfer.to && transfer.memo &&
-                std::string(transfer.memo->message.begin(), transfer.memo->message.end())
-                == purchase.purchaseUuid) {
+        if (purchase.publisher == transfer.to && transfer.memo && transfer.memo->message == uuid) {
             // ...schedule it for payment (but don't do it now; this signal handler needs to be fast
+            KJ_LOG(DBG, "Found a relevant transfer");
             fc::async([this, transfer] { purchase.processPayment(transfer); });
             return true;
         }
+        KJ_LOG(DBG, "Ignoring unrelated transfer");
         return false;
     }
     template<typename Op>
@@ -234,20 +241,25 @@ PurchaseServer::PurchaseServer(VoteDatabase& vdb, int64_t votePrice, bool oversi
     }
 
     // Go ahead and subscribe to new blocks, so we see the payment when it comes in
+    KJ_LOG(DBG, "Payment is now expected. Watching new blocks for it...");
     newBlockSubscription = vdb.db().applied_block.connect([this](const gch::signed_block& newBlock) {
-
+        KJ_LOG(DBG, "Searching new block for payment...");
         for (const auto& trx : newBlock.transactions)
             trx.visit(PaymentTransferVisitor{*this});
     });
 }
 
 void PurchaseServer::processPayment(const graphene::chain::transfer_operation& paymentTransfer) {
+    auto price = vote(vdb.db()).amount(votePrice);
+    wdump(("Processing payment")(paymentTransfer)(price));
     // TODO: Handle all the possible weird payment cases (payment in wrong asset, payment in wrong amount, payment in
     // multiple transfers) in some sane way, at least logging that it happened
-    if (paymentTransfer.amount >= vote(vdb.db()).amount(votePrice)) {
+    if (paymentTransfer.amount >= price) {
         try {
             auto config = vdb.configuration().reader();
             auto publisherKey = graphene::utilities::wif_to_key(config.getContestPublishingAccountWif());
+            // TODO: This is WAAAYYYYYYY too late to be checking this. We should have checked this well before allowing
+            // the user to pay us money.
             KJ_REQUIRE(publisherKey.valid(),
                        "Server misconfiguration: Publisher key is invalid or missing. Cannot publish contest!");
             gch::signed_transaction trx;
@@ -265,13 +277,15 @@ void PurchaseServer::processPayment(const graphene::chain::transfer_operation& p
                 notification.send();
             }
         } catch (fc::exception& e) {
-            KJ_LOG(ERROR, "Caught exception while publishing a contest!", e.to_detail_string());
+            KJ_LOG(ERROR, "Caught exception while fulfilling contest order", e.to_detail_string());
             for (auto listener : completedListeners) {
                 auto notification = listener.notifyRequest();
                 notification.setNotification("false");
                 notification.send();
             }
         }
+    } else {
+        KJ_LOG(ERROR, "Transfer was not correct; not fulfilling order!");
     }
 }
 
