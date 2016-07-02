@@ -3,6 +3,8 @@ import qbs.FileInfo
 
 QtGuiApplication {
     name: "VotingApp"
+    // Only g++ can build against V-Play, some weird issue with the std libs
+    enabled: cpp.compilerName === "g++"
 
     Depends { name: "shared" }
     Depends { name: "StubChainAdaptor" }
