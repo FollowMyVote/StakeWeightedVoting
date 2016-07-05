@@ -34,7 +34,7 @@ swv::ContestGenerator::~ContestGenerator()
 {
     KJ_REQUIRE(generated < contestCount, "No more contests available.");
     auto contest = context.initResults().initNextContest();
-    contest.initContestId(1)[0] = contestCount - generated++;
+    contest.initContestId().setOperationId(contestCount - generated++);
     contest.setTracksLiveResults(false);
     contest.setVotingStake(0);
     return kj::READY_NOW;
@@ -45,7 +45,7 @@ swv::ContestGenerator::~ContestGenerator()
     auto count = std::min<int>(contestCount - generated, context.getParams().getCount());
     auto resultContests = context.initResults().initNextContests(count);
     for (auto contest : resultContests) {
-        contest.initContestId(1)[0] = contestCount - generated++;
+        contest.initContestId().setOperationId(contestCount - generated++);
         contest.setTracksLiveResults(false);
         contest.setVotingStake(0);
     }

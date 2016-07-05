@@ -16,6 +16,8 @@
 
 @0x8ed11a20887e5444;
 
+using BalanceId = import "ids.capnp".BalanceId;
+
 const voteMagic :Data = 0x"BA1107";
 # Magic number that goes at the beginning of all vote-related datagrams, to identify them as vote-related datagrams
 
@@ -23,17 +25,13 @@ struct Datagram {
 # A piece of data stored on the blockchain. Datagrams are stored as belonging to a particular Balance, and the datagram
 # index is unique per-balance.
 
-    enum DatagramType {
-        decision @0;
-        # Marks a datagram as containing a decision. Key will be the publishing balance ID (FC-serialized
-        # account_balance_id_type), content will be a Decision struct
-        contest @1;
-        # Marks a datagram as containing a contest to be created. Key will be a ContestKey; content will be a Contest
-        # struct
+    struct DecisionKey {
+    # The schema for the Key field of a decision datagram
+        balanceId @0 :BalanceId;
     }
     struct ContestKey {
     # The schema for the Key field of a contest datagram
-        key :union {
+        creator :union {
             anonymous @0 :Void;
             # No signature; creator is anonymous
             signature :group {
@@ -44,12 +42,14 @@ struct Datagram {
             }
         }
     }
-
-    index :group {
-    # The index is the key which identifies the type and content of the datagram, unique to the balance that stores it
-        type @0 :DatagramType;
-        key @1 :Data;
+    struct DatagramKey {
+        key :union {
+            decisionKey @0 :DecisionKey;
+            contestKey @1 :ContestKey;
+        }
     }
-    content @2 :Data;
+
+    key @0 :DatagramKey;
+    content @1 :Data;
     # The actual data
 }

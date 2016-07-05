@@ -3,15 +3,19 @@ import qbs.FileInfo
 
 QtGuiApplication {
     name: "VotingApp"
+    // Only g++ can build against V-Play, some weird issue with the std libs
+    enabled: cpp.compilerName === "g++"
 
     Depends { name: "shared" }
     Depends { name: "StubChainAdaptor" }
     Depends { name: "Qt"; submodules: ["network", "qml", "charts"] }
     Depends { name: "libqtqmltricks-qtquickuielements" }
     Depends { name: "VPlay" }
-    VPlay.sdkPath: Qt.core.incPath + "/.."
+    // 'original' is a keyword: https://doc.qt.io/qbs/module-item.html#special-property-values
+    VPlay.sdkPath: original? original : Qt.core.incPath + "/.."
 
     qmlImportPaths: [VPlay.sdkPath + "/qml"]
+    cpp.cxxLanguageVersion: "c++14"
     cpp.includePaths: [".", "qml-promise/src", VPlay.includePath]
     cpp.libraryPaths: VPlay.sdkPath + "/lib"
     cpp.staticLibraries: VPlay.staticLibrary

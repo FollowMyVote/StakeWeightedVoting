@@ -59,56 +59,61 @@ FakeBlockchain::BackendStub::~BackendStub()
     std::map<int32_t, int64_t> contestantTallies;
     std::map<kj::String, int64_t> writeInTallies;
 
-    for (const auto& datagramPair : chain.datagrams) {
-        auto datagram = datagramPair.second.getReader();
-        // If this is a decision on the contest we're tallying...
-        if (datagram.getIndex().getType() == Datagram::DatagramType::DECISION &&
-                datagram.getIndex().getKey() == contestId) {
-            // Read the decsision out of the datagram
-            kj::ArrayInputStream datagramStream(datagram.getContent());
-            capnp::InputStreamMessageReader message(datagramStream);
-            auto decision = message.getRoot<Decision>();
+    // For each balance which owns datagrams...
+    for (const auto& datagramsPair : chain.datagrams) {
+        // For each datagram on that balance...
+        for (const auto& datagramOrphan : datagramsPair.second) {
+            auto datagram = datagramOrphan.getReader();
+            // If this datagram contains a decision...
+            if (datagram.getKey().getKey().isDecisionKey()) {
+                // Read the decsision out of the datagram
+                kj::ArrayInputStream datagramStream(datagram.getContent());
+                capnp::InputStreamMessageReader message(datagramStream);
+                auto decision = message.getRoot<Decision>();
 
-            if (decision.getContest() != contestId) {
-                KJ_LOG(WARNING,
-                       "Datagram claiming to be relevant to one contest contains a decision for a different contest",
-                       contestId, decision.getContest());
-                continue;
-            }
-            if (decision.getOpinions().size() != 1) {
-                KJ_LOG(WARNING, "Decision does not have exactly one opinion. This is currently unsupported",
-                       decision);
-                continue;
-            }
-
-            auto contestant = decision.getOpinions()[0].getContestant();
-            if (contestant < 0 ||
-                    contestant >= contest.getContestants().getEntries().size() +
-                    decision.getWriteIns().getEntries().size()) {
-                KJ_LOG(WARNING, "Decision specifies a contestant which does not exist", decision, contest);
-                continue;
-            }
-
-            auto balanceId = std::get<0>(datagramPair.first);
-            KJ_IF_MAYBE(balancePointer, chain.getBalanceOrphan(readerize(balanceId))) {
-                auto balance = balancePointer->getReader();
-
-                if (balance.getType() != contest.getCoin()) {
-                    KJ_LOG(WARNING, "Decision is published on balance which has a different coin than contest",
-                           decision, balance);
+                // Is this a decision on the contest we're tallying?
+                if (decision.getContest().getOperationId() != contestId.getOperationId()) {
+                    // Nope. Skip it and move on to the next decision.
                     continue;
                 }
-                if (contestant < contest.getContestants().getEntries().size())
-                    contestantTallies[contestant] += balance.getAmount();
-                else {
-                    contestant -= contest.getContestants().getEntries().size();
-                    auto contestantName = kj::heapString(decision.getWriteIns().getEntries()[contestant].getKey());
-                    writeInTallies[kj::mv(contestantName)] += balance.getAmount();
+                if (decision.getOpinions().size() != 1) {
+                    KJ_LOG(WARNING, "Decision does not have exactly one opinion. This is currently unsupported",
+                           decision);
+                    continue;
                 }
-            } else {
-                KJ_LOG(WARNING, "Unable to find balance for decision",
-                       decision, readerize(balanceId));
-                continue;
+
+                // Check that the contestant voted for exists
+                auto contestant = decision.getOpinions()[0].getContestant();
+                if (contestant < 0 ||
+                        contestant >= contest.getContestants().getEntries().size() +
+                        decision.getWriteIns().getEntries().size()) {
+                    KJ_LOG(WARNING, "Decision specifies a contestant which does not exist", decision, contest);
+                    continue;
+                }
+
+                // Look up the balance owning this decision, so we can tally its stake
+                auto balanceId = datagram.getKey().getKey().getDecisionKey().getBalanceId();
+                KJ_IF_MAYBE(balancePointer, chain.getBalanceOrphan(balanceId)) {
+                    auto balance = balancePointer->getReader();
+
+                    if (balance.getType() != contest.getCoin()) {
+                        KJ_LOG(ERROR, "Decision is published on balance which has a different coin than contest",
+                               decision, balance);
+                        continue;
+                    }
+                    if (contestant < contest.getContestants().getEntries().size())
+                        // Normal contestant
+                        contestantTallies[contestant] += balance.getAmount();
+                    else {
+                        // Write-in contestant
+                        contestant -= contest.getContestants().getEntries().size();
+                        auto contestantName = kj::heapString(decision.getWriteIns().getEntries()[contestant].getKey());
+                        writeInTallies[kj::mv(contestantName)] += balance.getAmount();
+                    }
+                } else {
+                    KJ_LOG(ERROR, "Unable to find balance for decision", decision, balanceId);
+                    continue;
+                }
             }
         }
     }

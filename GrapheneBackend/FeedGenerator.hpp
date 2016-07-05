@@ -140,19 +140,20 @@ template<typename Index>
     }
 
     kj::Vector<const Contest*> contestsToReturn;
-    while (++itr != index.end() && contestsToReturn.size() < context.getParams().getCount()) {
+    while (itr != index.end() && contestsToReturn.size() < context.getParams().getCount()) {
+        auto& contest = *itr++;
         // If the contest is inactive, skip it
-        if (!itr->isActive(db))
+        if (!contest.isActive(db))
             continue;
         // If the contest is not accepted, skip it, but if it breaks a filter, kill the generator too
-        if (filter(*itr) != Accept) {
-            if (filter(*itr) == Break) {
+        if (filter(contest) != Accept) {
+            if (filter(contest) == Break) {
                 currentContest = nullptr;
                 return kj::READY_NOW;
             }
             continue;
         }
-        contestsToReturn.add(&*itr);
+        contestsToReturn.add(&contest);
     }
 
     auto results = context.initResults().initNextContests(contestsToReturn.size());
@@ -175,8 +176,7 @@ template<typename Index>
 
 template<typename Index>
 void FeedGenerator<Index>::populateContest(ContestGenerator::ListedContest::Builder nextContest) {
-    auto packedId = fc::raw::pack(currentContest->contestId);
-    nextContest.setContestId(readerOf(packedId));
+    nextContest.getContestId().setOperationId(currentContest->contestId.instance);
     nextContest.setTracksLiveResults(false);
 
     // Shorter type names

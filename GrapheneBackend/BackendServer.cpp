@@ -54,8 +54,9 @@ BackendServer::~BackendServer() {}
 
 ::kj::Promise<void> BackendServer::getContestFeed(Backend::Server::GetContestFeedContext context) {
     auto& contestIndex = vdb.contestIndex().indices();
+    KJ_LOG(DBG, __FUNCTION__, contestIndex.size());
     auto& startTimeIndex = contestIndex.get<ByStartTime>();
-    auto itr = startTimeIndex.lower_bound(vdb.db().head_block_time());
+    auto itr = startTimeIndex.begin();
     context.initResults().setGenerator(kj::heap<FeedGenerator<ByStartTime>>(itr == startTimeIndex.end()? nullptr
                                                                                                        : &*itr,
                                                                             vdb.db()));
@@ -131,8 +132,20 @@ inline const Contest* findFirstContest<ById, ById>(decltype (nullptr), const gch
     return index.empty()? nullValue : &*index.begin();
 }
 
+gch::account_id_type getAccountId(kj::StringPtr nameOrId, const gch::database& db) {
+    if (std::isdigit(nameOrId[0]))
+        return fc::json::from_string(nameOrId).as<gch::account_id_type>();
+    else {
+        auto& index = db.get_index_type<gch::account_index>().indices().get<gch::by_name>();
+        auto itr = index.find(nameOrId);
+        KJ_REQUIRE(itr != index.end(), "No such account", nameOrId);
+        return itr->get_id();
+    }
+}
+
 template<typename SearchIndex>
 ContestGenerator::Client FilteredGenerator(capnp::List<Backend::Filter>::Reader filters, const gch::database& db) {
+    KJ_LOG(DBG, __FUNCTION__);
     std::vector<typename FeedGenerator<SearchIndex>::Filter> filterFunctions;
     using Filter = Backend::Filter::Type;
     using Results = typename FeedGenerator<SearchIndex>::FilterResult;
@@ -157,7 +170,7 @@ ContestGenerator::Client FilteredGenerator(capnp::List<Backend::Filter>::Reader 
             KJ_REQUIRE(filter.getArguments().size() == 1, "Unexpected number of arguments for creator filter");
             try {
                 using Selector = ResultSelector<SearchIndex, ByCreator>;
-                auto creator = fc::json::from_string(filter.getArguments()[0]).as<gch::account_id_type>();
+                auto creator = getAccountId(filter.getArguments()[0], db);
                 firstContest = findFirstContest<SearchIndex, ByCreator>(creator, db, firstContest);
                 filterFunctions.emplace_back([creator = kj::mv(creator)] (const Contest& contest,
                                                                           const gch::database&) {
@@ -209,6 +222,7 @@ ContestGenerator::Client FilteredGenerator(capnp::List<Backend::Filter>::Reader 
 }
 
 ::kj::Promise<void> BackendServer::searchContests(Backend::Server::SearchContestsContext context) {
+    KJ_LOG(DBG, __FUNCTION__);
     auto filters = context.getParams().getFilters();
 
     // There are multiple search strategies available to us, depending on which filters are in play. Optimally, we rule
@@ -243,17 +257,20 @@ ContestGenerator::Client FilteredGenerator(capnp::List<Backend::Filter>::Reader 
 }
 
 ::kj::Promise<void> BackendServer::getContestResults(Backend::Server::GetContestResultsContext context) {
-    auto contestId = unpack<gch::operation_history_id_type>(context.getParams().getContestId());
+    KJ_LOG(DBG, __FUNCTION__);
+    auto contestId = gch::operation_history_id_type(context.getParams().getContestId().getOperationId());
     context.initResults().setResults(kj::heap<ContestResultsServer>(vdb, contestId));
     return kj::READY_NOW;
 }
 
 ::kj::Promise<void> BackendServer::createContest(Backend::Server::CreateContestContext context) {
+    KJ_LOG(DBG, __FUNCTION__);
     context.initResults().setCreator(kj::heap<ContestCreatorServer>(vdb));
     return kj::READY_NOW;
 }
 
 ::kj::Promise<void> BackendServer::getCoinDetails(Backend::Server::GetCoinDetailsContext context) {
+    KJ_LOG(DBG, __FUNCTION__);
     auto details = context.initResults().initDetails();
     auto& contestsByCoin = vdb.contestIndex().indices().get<ByCoin>();
     auto coinId = gch::asset_id_type(context.getParams().getCoinId());

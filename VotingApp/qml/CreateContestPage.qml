@@ -17,6 +17,7 @@ Page {
     property var contestCreator
 
     function showError(message) {
+        var errorString = message
         // Ignore errors that come within 1 second of the last error
         if (new Date().getTime() - internal.lastErrorTime < 1000)
             return
@@ -78,7 +79,8 @@ Page {
                         var transferPromise = votingSystem.chain.transfer(votingSystem.currentAccount.name,
                                                                           dialog.selectedPrice.payAddress,
                                                                           dialog.selectedPrice.amount,
-                                                                          dialog.selectedPrice.coinId);
+                                                                          dialog.selectedPrice.coinId,
+                                                                          dialog.selectedPrice.memo);
                         transferPromise.then(function() {
                             dialog.purchaseApi.paymentSent(dialog.selectedPriceIndex)
                             dialog.close()

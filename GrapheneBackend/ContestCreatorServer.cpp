@@ -30,6 +30,7 @@
 
 #include <fc/smart_ref_impl.hpp>
 #include <fc/signals.hpp>
+#include <fc/crypto/hex.hpp>
 
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/random_generator.hpp>
@@ -40,12 +41,18 @@
 namespace swv {
 
 class PurchaseServer : public ::Purchase::Server {
+    static std::string generateUuid() {
+        std::string uuid = boost::uuids::to_string(boost::uuids::random_generator()());
+        uuid.erase(std::remove_if(uuid.begin(), uuid.end(), [](char c) { return c == '-'; }), uuid.end());
+        return uuid;
+    }
+
     VoteDatabase& vdb;
     int64_t votePrice;
     bool oversized = false;
     bool purchaseCompleted = false;
     capnp::MallocMessageBuilder message;
-    std::string purchaseUuid = boost::uuids::to_string(boost::uuids::random_generator()());
+    std::string purchaseUuid = generateUuid();
     fc::scoped_connection newBlockSubscription;
     std::vector<Notifier<capnp::Text>::Client> completedListeners;
 
@@ -62,8 +69,8 @@ class PurchaseServer : public ::Purchase::Server {
         return *voteItr;
     }
 
-    gch::account_id_type publisher = lookupPublisher().id;
-    gch::asset_id_type vote = lookupVote().id;
+    gch::account_id_type publisher;
+    gch::asset_id_type vote;
 
     struct PaymentTransferVisitor;
 
@@ -89,9 +96,11 @@ ContestCreatorServer::ContestCreatorServer(VoteDatabase& vdb)
 ContestCreatorServer::~ContestCreatorServer() {}
 
 ::kj::Promise<void> ContestCreatorServer::getPriceSchedule(ContestCreator::Server::GetPriceScheduleContext context) {
-    auto schedule = context.initResults().initSchedule().initEntries(7);
+    KJ_LOG(DBG, __FUNCTION__, context.getParams());
+    auto prices = vdb.configuration().reader().getPriceSchedule();
+    auto schedule = context.initResults().initSchedule().initEntries(prices.size());
     auto index = 0u;
-    for (auto item : vdb.configuration().reader().getPriceSchedule()) {
+    for (auto item : prices) {
         auto entry = schedule[index++];
         entry.getKey().setItem(item.getLineItem());
         entry.getValue().setPrice(item.getPrice());
@@ -100,9 +109,11 @@ ContestCreatorServer::~ContestCreatorServer() {}
 }
 
 ::kj::Promise<void> ContestCreatorServer::getContestLimits(ContestCreator::Server::GetContestLimitsContext context) {
-    auto schedule = context.initResults().initLimits().initEntries(7);
+    KJ_LOG(DBG, __FUNCTION__, context.getParams());
+    auto limits = vdb.configuration().reader().getContestLimits();
+    auto schedule = context.initResults().initLimits().initEntries(limits.size());
     auto index = 0u;
-    for (auto item : vdb.configuration().reader().getContestLimits()) {
+    for (auto item : limits) {
         auto entry = schedule[index++];
         entry.getKey().setLimit(item.getName());
         entry.getValue().setValue(item.getLimit());
@@ -111,6 +122,7 @@ ContestCreatorServer::~ContestCreatorServer() {}
 }
 
 ::kj::Promise<void> ContestCreatorServer::purchaseContest(ContestCreator::Server::PurchaseContestContext context) {
+    KJ_LOG(DBG, __FUNCTION__, context.getParams());
     // TODO: Logging of all steps in a purchase. Useful for analytics as well as troubleshooting if something fails
     int64_t price = 0;
     auto contestOptions = context.getParams().getRequest().getContestOptions();
@@ -132,21 +144,21 @@ ContestCreatorServer::~ContestCreatorServer() {}
     // Check limits
     KJ_REQUIRE(contestOptions.getName().size() > 0, "Contest must have a name", contestOptions);
     KJ_REQUIRE(contestOptions.getName().size() <= LIMIT(NAME_LENGTH),
-            "Contest name is too long", contestOptions);
+            "Contest name is too long", contestOptions, LIMIT(NAME_LENGTH));
     KJ_REQUIRE(contestOptions.getDescription().size() <= LIMIT(DESCRIPTION_HARD_LENGTH),
-               "Contest description is too long", contestOptions);
+               "Contest description is too long", contestOptions, LIMIT(DESCRIPTION_HARD_LENGTH));
     if (contestOptions.getDescription().size() > LIMIT(DESCRIPTION_SOFT_LENGTH))
         longText = true;
     KJ_REQUIRE(contestOptions.getContestants().getEntries().size() > 0, "Contest must have at least one contestant",
                contestOptions);
     KJ_REQUIRE(contestOptions.getContestants().getEntries().size() <= LIMIT(CONTESTANT_COUNT),
-               "Contest has too many contestants", contestOptions);
+               "Contest has too many contestants", contestOptions, LIMIT(CONTESTANT_COUNT));
     for (auto contestant : contestOptions.getContestants().getEntries()) {
         KJ_REQUIRE(contestant.getKey().size() > 0, "Contestant must have a name", contestant);
         KJ_REQUIRE(contestant.getKey().size() <= LIMIT(CONTESTANT_NAME_LENGTH),
-                   "Contestant name is too long", contestant);
+                   "Contestant name is too long", contestant, LIMIT(CONTESTANT_NAME_LENGTH));
         KJ_REQUIRE(contestant.getValue().size() <= LIMIT(CONTESTANT_DESCRIPTION_HARD_LENGTH),
-                   "Contestant description is too long", contestant);
+                   "Contestant description is too long", contestant, LIMIT(CONTESTANT_DESCRIPTION_HARD_LENGTH));
         if (contestant.getValue().size() > LIMIT(CONTESTANT_DESCRIPTION_SOFT_LENGTH))
             longText = true;
     }
@@ -200,14 +212,20 @@ struct PurchaseServer::PaymentTransferVisitor {
     using result_type = bool;
 
     bool operator()(const gch::transfer_operation& transfer) const {
+        std::vector<char> uuid(purchase.purchaseUuid.size() / 2);
+        fc::from_hex(purchase.purchaseUuid, uuid.data(), uuid.size());
         // If it's a transfer to the publishing account, and the memo matches our UUID...
-        if (purchase.publisher == transfer.to && transfer.memo &&
-                std::string(transfer.memo->message.begin(), transfer.memo->message.end())
-                == purchase.purchaseUuid) {
-            // ...schedule it for payment (but don't do it now; this signal handler needs to be fast
-            fc::async([this, transfer] { purchase.processPayment(transfer); });
+        if (purchase.publisher == transfer.to && transfer.memo && transfer.memo->message == uuid) {
+            // ...schedule it for payment (but don't do it now; this signal handler needs to be fast)
+            KJ_LOG(DBG, "Found a relevant transfer");
+            fc::async([&purchase=purchase, transfer] {
+                try {
+                    purchase.processPayment(transfer);
+                } FC_CAPTURE_AND_LOG((transfer)(purchase.purchaseUuid))
+            });
             return true;
         }
+        KJ_LOG(DBG, "Ignoring unrelated transfer");
         return false;
     }
     template<typename Op>
@@ -216,43 +234,51 @@ struct PurchaseServer::PaymentTransferVisitor {
 
 PurchaseServer::PurchaseServer(VoteDatabase& vdb, int64_t votePrice, bool oversized,
                                ContestCreator::ContestCreationRequest::Reader request)
-    : vdb(vdb), votePrice(votePrice), oversized(oversized) {
+    : vdb(vdb), votePrice(votePrice), oversized(oversized),
+      vote(lookupVote().id), publisher(lookupPublisher().id) {
     // Copy the contest creation details from the creation request to a datagram which we can deploy with a
     // custom_operation when the purchase finishes
     auto datagram = message.initRoot<Datagram>();
-    datagram.initIndex().setType(Datagram::DatagramType::CONTEST);
+    datagram.initKey().initKey().setContestKey(request.getCreatorSignature());
 
     {
-        ReaderPacker packer(request.getCreatorSignature());
-        datagram.getIndex().setKey(packer.array());
-    } {
         ReaderPacker packer(request.getContestOptions());
         datagram.setContent(packer.array());
     }
 
     // Go ahead and subscribe to new blocks, so we see the payment when it comes in
+    KJ_LOG(DBG, "Payment is now expected. Watching new blocks for it...");
     newBlockSubscription = vdb.db().applied_block.connect([this](const gch::signed_block& newBlock) {
-
-        for (const auto& trx : newBlock.transactions)
-            trx.visit(PaymentTransferVisitor{*this});
+        try {
+            KJ_LOG(DBG, "Searching new block for payment...");
+            for (const auto& trx : newBlock.transactions)
+                trx.visit(PaymentTransferVisitor{*this});
+        } FC_CAPTURE_AND_LOG((newBlock)) // Don't let exceptions leak; they'll break chain evaluation!
     });
 }
 
 void PurchaseServer::processPayment(const graphene::chain::transfer_operation& paymentTransfer) {
+    auto price = vote(vdb.db()).amount(votePrice);
+    wdump(("Processing payment")(paymentTransfer)(price));
     // TODO: Handle all the possible weird payment cases (payment in wrong asset, payment in wrong amount, payment in
     // multiple transfers) in some sane way, at least logging that it happened
-    if (paymentTransfer.amount >= vote(vdb.db()).amount(votePrice)) {
+    if (paymentTransfer.amount >= price) {
         try {
             auto config = vdb.configuration().reader();
             auto publisherKey = graphene::utilities::wif_to_key(config.getContestPublishingAccountWif());
+            // TODO: This is WAAAYYYYYYY too late to be checking this. We should have checked this well before allowing
+            // the user to pay us money.
             KJ_REQUIRE(publisherKey.valid(),
                        "Server misconfiguration: Publisher key is invalid or missing. Cannot publish contest!");
             gch::signed_transaction trx;
             trx.operations.emplace_back(buildPublishOperation());
             // Set expiration to 30 secs in the future. Should be plenty of time.
             trx.set_expiration(vdb.db().head_block_time() + 30);
+            trx.set_reference_block(vdb.db().head_block_id());
             trx.sign(*publisherKey, vdb.db().get_chain_id());
             trx.validate();
+            auto ptrx = vdb.db().validate_transaction(trx);
+            KJ_LOG(DBG, "Broadcasting transaction to fulfill contest purchase", fc::json::to_pretty_string(ptrx));
             vdb.node().broadcast_transaction(trx);
 
             purchaseCompleted = true;
@@ -261,14 +287,17 @@ void PurchaseServer::processPayment(const graphene::chain::transfer_operation& p
                 notification.setNotification("true");
                 notification.send();
             }
+            newBlockSubscription.release();
         } catch (fc::exception& e) {
-            KJ_LOG(ERROR, "Caught exception while publishing a contest!", e.to_detail_string());
+            KJ_LOG(ERROR, "Caught exception while fulfilling contest order", e.to_detail_string());
             for (auto listener : completedListeners) {
                 auto notification = listener.notifyRequest();
                 notification.setNotification("false");
                 notification.send();
             }
         }
+    } else {
+        KJ_LOG(ERROR, "Transfer was not correct; not fulfilling order!");
     }
 }
 
@@ -276,23 +305,32 @@ graphene::chain::custom_operation PurchaseServer::buildPublishOperation() {
     gch::custom_operation op;
     op.payer = publisher;
 
-    // Why do I have to explicitly cast MallocMessageBuilder to MessageBuilder&? Are you drunk, compiler?
     ReaderPacker packer(message.getRoot<Datagram>().asReader());
-    op.data.resize(packer.array().size());
-    memcpy(op.data.data(), packer.array().begin(), op.data.size());
+    auto buffer = packer.array().asChars();
+    auto magic = *::VOTE_MAGIC;
+
+    op.data.resize(magic.size() + buffer.size());
+    // Copy vote magic and datagram into the op's data field
+    memcpy(op.data.data(), magic.begin(), magic.size());
+    memcpy(op.data.data() + magic.size(), buffer.begin(), op.data.size() - magic.size());
+
     op.fee = op.calculate_fee(vdb.db().current_fee_schedule().get<gch::custom_operation>());
 
+    wdump((op));
     return op;
 }
 
 ::kj::Promise<void> PurchaseServer::complete(Purchase::Server::CompleteContext context) {
+    KJ_LOG(DBG, __FUNCTION__, context.getParams());
     context.initResults().setResult(purchaseCompleted);
     return kj::READY_NOW;
 }
 
 ::kj::Promise<void> PurchaseServer::prices(Purchase::Server::PricesContext context) {
+    KJ_LOG(DBG, __FUNCTION__, context.getParams());
     const auto& db = vdb.db();
     gch::custom_operation op = buildPublishOperation();
+    wdump((op));
 
     // Calculate surcharges
     std::map<std::string, int64_t> adjustments;
@@ -306,7 +344,7 @@ graphene::chain::custom_operation PurchaseServer::buildPublishOperation() {
     // TODO: handle sponsorships
     // TODO: handle promo codes
 
-    auto price = context.initResults().initPrices(1)[0];
+    auto price = context.getResults().initPrices(1)[0];
     price.setCoinId(vote.instance);
     price.setAmount(votePrice);
     price.setPayAddress(publisher(db).name);
@@ -324,6 +362,7 @@ graphene::chain::custom_operation PurchaseServer::buildPublishOperation() {
 }
 
 ::kj::Promise<void> PurchaseServer::subscribe(Purchase::Server::SubscribeContext context) {
+    KJ_LOG(DBG, __FUNCTION__, context.getParams());
     if (purchaseCompleted) {
         auto notification = context.getParams().getNotifier().notifyRequest();
         notification.setNotification("true");

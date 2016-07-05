@@ -22,8 +22,9 @@
 
 namespace swv {
 
-VoteDatabase::VoteDatabase(gch::database& chain, graphene::net::node& p2p_node)
-    : chain(chain), p2p_node(p2p_node) {}
+VoteDatabase::VoteDatabase(gch::database& chain)
+    : chain(chain) {
+}
 
 void VoteDatabase::registerIndexes() {
     chain.register_evaluator<CustomEvaluator>();
@@ -35,7 +36,8 @@ void VoteDatabase::registerIndexes() {
     _coinVolumeHistoryIndex = chain.add_index<gdb::primary_index<CoinVolumeHistoryIndex>>();
 }
 
-void VoteDatabase::startup() {
+void VoteDatabase::startup(graphene::net::node_ptr node) {
+    p2p_node = node;
     config.open((chain.get_data_dir() / "configuration.bin").preferred_string().c_str());
 }
 

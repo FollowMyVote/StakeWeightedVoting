@@ -1,15 +1,16 @@
 import qbs
+import qbs.Environment
 
 Module {
   name: "VPlay"
 
   // include vplay header, lib and resources
-  property string sdkPath
+  property string sdkPath: Environment.getEnv("VPLAY_PATH")
   property string qtIncPath: sdkPath + "/include"
   property string includePath: qtIncPath+"/VPlay"
   property string staticLibrary: "VPlay"
                        + (qbs.targetOS.contains("ios-simulator") ? "_iphonesimulator" : "")
-                       + (qbs.buildVariant === "debug" ? "_debug" : "")
+//                       + (qbs.buildVariant === "debug" ? "_debug" : "")
 
   // add required Qt dependencies
   Depends {

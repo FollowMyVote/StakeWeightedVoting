@@ -16,6 +16,7 @@
 
 @0x908359cb8da82d06;
 
+using ContestId = import "ids.capnp".ContestId;
 using Purchase = import "purchase.capnp".Purchase;
 using Notifier = import "purchase.capnp".Notifier;
 using ContestGenerator = import "contestgenerator.capnp".ContestGenerator;
@@ -29,7 +30,7 @@ interface Backend {
     # Get a generator for current user's contest feed
     searchContests @1 (filters :List(Filter)) -> (generator :ContestGenerator);
     # Search contests and get a generator for the results
-    getContestResults @2 (contestId :Data) -> (results :ContestResults);
+    getContestResults @2 (contestId :ContestId) -> (results :ContestResults);
     # Get the instantaneous live results for the specified contest
 
     getCoinDetails @4 (coinId :UInt64, volumeHistoryLength :Int32 = -1) -> (details :CoinDetails);

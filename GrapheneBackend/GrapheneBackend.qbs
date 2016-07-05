@@ -3,7 +3,9 @@ import qbs
 CppApplication {
     name: "GrapheneBackend"
     consoleApplication: true
-    condition: graphene.found
+    // Only clang can build the GrapheneBackend; g++ can't handle boost
+    condition: graphene.found && cpp.compilerName === "clang++"
+    cpp.cxxFlags: "-fno-limit-debug-info"
 
     Depends { name: "shared" }
     Depends { name: "graphene" }

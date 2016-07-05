@@ -15,6 +15,7 @@ namespace swv {
 BackendConfiguration::BackendConfiguration() {}
 
 void BackendConfiguration::open(kj::StringPtr configFilePath, bool createIfMissing) {
+    KJ_LOG(DBG, "Opening Follow My Vote configuration", configFilePath);
     auto fd = ::open(configFilePath.cStr(), O_RDONLY);
 
     if (!createIfMissing)

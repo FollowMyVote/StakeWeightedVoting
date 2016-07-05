@@ -299,7 +299,7 @@ Promise* VotingSystem::configureChainAdaptor(bool useTestingBackend) {
     } else {
         if (!d->bitsharesBridge)
             d->bitsharesBridge = kj::heap<bts::BitsharesWalletBridge>(qApp->applicationName());
-        if (!d->bitsharesBridge->isListening() && !d->bitsharesBridge->listen(QHostAddress::LocalHost)) {
+        if (!d->bitsharesBridge->isListening() && !d->bitsharesBridge->listen(QHostAddress::LocalHost, 27073)) {
             setLastError(tr("Unable to listen for Bitshares wallet: %1").arg(d->bitsharesBridge->errorString()));
             return nullptr;
         }
@@ -387,8 +387,7 @@ Promise* VotingSystem::castCurrentDecision(swv::data::Contest* contest) {
             request.setPublishingBalance(balance.getId());
 
             auto dgram = request.initDatagram();
-            dgram.initIndex().setType(Datagram::DatagramType::DECISION);
-            dgram.getIndex().setKey(balance.getId());
+            dgram.initKey().initKey().initDecisionKey().setBalanceId(balance.getId());
             dgram.setContent(packer.array());
 
             promises.add(request.send().then([](auto){}));

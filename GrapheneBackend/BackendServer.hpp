@@ -31,8 +31,8 @@ public:
     BackendServer(VoteDatabase& vdb);
     virtual ~BackendServer();
 
-    // Backend::Server interface
 protected:
+    // Backend::Server interface
     virtual ::kj::Promise<void> getContestFeed(GetContestFeedContext context) override;
     virtual ::kj::Promise<void> searchContests(SearchContestsContext context) override;
     virtual ::kj::Promise<void> getContestResults(GetContestResultsContext context) override;

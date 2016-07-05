@@ -28,8 +28,9 @@ Module {
         "graphene_egenesis_full",
         "graphene_db",
         "graphene_debug_witness",
+        "graphene_account_history",
         "graphene_market_history",
-        qbs.hostOS.contains("osx")? "fc_debug" : "fc",
+        "fc_debug",
         "secp256k1",
         "z"
     ]
