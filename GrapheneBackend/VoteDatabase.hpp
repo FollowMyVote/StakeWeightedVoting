@@ -24,6 +24,7 @@
 #include "BackendConfiguration.hpp"
 
 #include <graphene/chain/database.hpp>
+#include <graphene/net/node.hpp>
 
 #include <kj/debug.h>
 
@@ -49,7 +50,7 @@ class CustomEvaluator;
 class VoteDatabase
 {
     gch::database& chain;
-    graphene::net::node& p2p_node;
+    graphene::net::node_ptr p2p_node;
     CustomEvaluator* _customEvaluator = nullptr;
     gdb::primary_index<ContestIndex>* _contestIndex = nullptr;
     gdb::primary_index<DecisionIndex>* _decisionIndex = nullptr;
@@ -70,10 +71,10 @@ class VoteDatabase
     };
 
 public:
-    VoteDatabase(gch::database& chain, graphene::net::node& p2p_node);
+    VoteDatabase(gch::database& chain);
 
     void registerIndexes();
-    void startup();
+    void startup(graphene::net::node_ptr node);
 
     gch::database& db() {
         return chain;
@@ -82,10 +83,10 @@ public:
         return chain;
     }
     graphene::net::node& node() {
-        return p2p_node;
+        return *p2p_node;
     }
     const graphene::net::node& node() const {
-        return p2p_node;
+        return *p2p_node;
     }
 
     GETTERS(customEvaluator)

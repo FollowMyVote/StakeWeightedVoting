@@ -27,6 +27,7 @@
 #include "compat/FcEventPort.hpp"
 
 #include <graphene/app/application.hpp>
+#include <graphene/account_history/account_history_plugin.hpp>
 
 #include <fc/filesystem.hpp>
 #include <fc/exception/exception.hpp>
@@ -88,6 +89,7 @@ int main(int argc, char** argv) {
             ;
 
       auto backend_plugin = node->register_plugin<swv::BackendPlugin>();
+      auto history_plugin = node->register_plugin<account_history::account_history_plugin>();
 
       bpo::variables_map options;
 

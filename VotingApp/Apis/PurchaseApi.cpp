@@ -5,19 +5,18 @@
 
 namespace swv {
 
-void PurchaseApi::setComplete(bool complete)
-{
-    if (complete == m_complete) return;
-    m_complete = complete;
-    emit completeChanged(complete);
+void PurchaseApi::setComplete(bool success) {
+    KJ_LOG(DBG, "Purchase complete", success);
+    if (success == m_complete) return;
+    m_complete = success;
+    emit completeChanged(success);
 }
 
 PurchaseApi::PurchaseApi(Purchase::Client&& api, kj::TaskSet& tasks, QObject *parent)
     : QObject(parent),
       api(kj::mv(api)),
       tasks(tasks),
-      converter(tasks)
-{
+      converter(tasks) {
     class CompleteNotifier : public Notifier<capnp::Text>::Server {
         PurchaseApi& wrapper;
         virtual ::kj::Promise<void> notify(NotifyContext context) {
@@ -40,8 +39,7 @@ PurchaseApi::PurchaseApi(Purchase::Client&& api, kj::TaskSet& tasks, QObject *pa
 PurchaseApi::~PurchaseApi() noexcept
 {}
 
-Promise* PurchaseApi::prices(QStringList promoCodes)
-{
+Promise* PurchaseApi::prices(QStringList promoCodes) {
     auto request = api.pricesRequest();
     auto codes = request.initPromoCodes(promoCodes.size());
 
@@ -63,8 +61,7 @@ Promise* PurchaseApi::prices(QStringList promoCodes)
     });
 }
 
-void PurchaseApi::paymentSent(qint16 selectedPrice)
-{
+void PurchaseApi::paymentSent(qint16 selectedPrice) {
     auto request = api.paymentSentRequest();
     request.setSelectedPrice(selectedPrice);
     tasks.add(request.send().then([](capnp::Response<Purchase::PaymentSentResults>){}));

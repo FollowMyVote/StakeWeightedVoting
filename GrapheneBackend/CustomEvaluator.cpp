@@ -94,7 +94,7 @@ void processDecision(gch::database& db, const gch::account_balance_object& balan
     // Store decision and update tally
     auto& newDecision = db.create<Decision>([&db, decision, &contest, balance](Decision& d) {
         auto& index = db.get_index_type<gch::simple_index<gch::operation_history_object>>();
-        d.decisionId = gch::operation_history_id_type(index.size() - 1);
+        d.decisionId = gch::operation_history_id_type(index.size());
         d.voter = balance.id;
         d.contestId = contest.contestId;
         for (auto opinion : decision.getOpinions())
@@ -139,7 +139,7 @@ void processContest(gch::database& db, ::Datagram::ContestKey::Creator::Reader k
     // request.
     db.create<Contest>([&db, key, contestDigest, contest](Contest& c) {
         auto& index = db.get_index_type<gch::simple_index<gch::operation_history_object>>();
-        c.contestId = gch::operation_history_id_type(index.size() - 1);
+        c.contestId = gch::operation_history_id_type(index.size());
         if (key.isSignature()) {
             auto signaturePack = key.getSignature();
             auto id = unpack<gch::account_id_type>(signaturePack.getId());
@@ -159,50 +159,60 @@ void processContest(gch::database& db, ::Datagram::ContestKey::Creator::Reader k
         c.startTime = fc::time_point(fc::milliseconds(contest.getStartTime()));
         c.endTime = fc::time_point(fc::milliseconds(contest.getEndTime()));
     });
+    KJ_LOG(DBG, "Created new contest", db.get_index_type<ContestIndex>().indices().size());
 }
 
 graphene::chain::void_result CustomEvaluator::do_apply(const CustomEvaluator::operation_type& op) {
-    kj::ArrayPtr<const kj::byte> data(reinterpret_cast<const kj::byte*>(op.data.data()), op.data.size());
-    if (data.size() <= VOTE_MAGIC->size() || data.slice(0, VOTE_MAGIC->size() - 1) != *VOTE_MAGIC)
-        // Not my circus, not my monkey.
-        return {};
-
     try {
-        BlobMessageReader message(data.slice(VOTE_MAGIC->size(), data.size()));
-        auto datagram = message->getRoot<Datagram>();
-        BlobMessageReader datagramMessage(datagram.getContent());
+        kj::ArrayPtr<const kj::byte> data(reinterpret_cast<const kj::byte*>(op.data.data()), op.data.size());
+        if (data.size() <= VOTE_MAGIC->size() || data.slice(0, VOTE_MAGIC->size()) != *VOTE_MAGIC)
+            // Not my circus, not my monkey.
+            return {};
+        // Cut off the magic
+        data = data.slice(VOTE_MAGIC->size(), data.size());
 
-        switch (datagram.getKey().getKey().which()) {
-        case Datagram::DatagramKey::Key::DECISION_KEY: {
-            auto key = datagram.getKey().getKey().getDecisionKey();
-            auto publisherId = gch::account_id_type(key.getBalanceId().getAccountInstance());
-            auto assetId = gch::asset_id_type(key.getBalanceId().getCoinInstance());
-            KJ_REQUIRE(publisherId == op.fee_payer(),
-                       "Nice try. You may not publish decisions for someone else");
-            auto& balanceIndex = db().get_index_type<gch::account_balance_index>()
+        try {
+            KJ_LOG(DBG, "Found vote custom operation", fc::json::to_pretty_string(op));
+            BlobMessageReader message(data);
+            auto datagram = message->getRoot<Datagram>();
+            BlobMessageReader datagramMessage(datagram.getContent());
+
+            switch (datagram.getKey().getKey().which()) {
+            case Datagram::DatagramKey::Key::DECISION_KEY: {
+                auto content = datagramMessage->getRoot<::Decision>();
+                KJ_LOG(DBG, "Custom op is a vote", datagram, content);
+                auto key = datagram.getKey().getKey().getDecisionKey();
+                auto publisherId = gch::account_id_type(key.getBalanceId().getAccountInstance());
+                auto assetId = gch::asset_id_type(key.getBalanceId().getCoinInstance());
+                KJ_REQUIRE(publisherId == op.fee_payer(),
+                           "Nice try. You may not publish decisions for someone else");
+                auto& balanceIndex = db().get_index_type<gch::account_balance_index>()
                                      .indices().get<gch::by_account_asset>();
-            auto itr = balanceIndex.find(boost::make_tuple(publisherId, assetId));
-            KJ_REQUIRE(itr != balanceIndex.end(), "Ignoring decision on a nonexistent balance.");
-            processDecision(db(), *itr, datagramMessage->getRoot<::Decision>());
-            break;
+                auto itr = balanceIndex.find(boost::make_tuple(publisherId, assetId));
+                KJ_REQUIRE(itr != balanceIndex.end(), "Ignoring decision on a nonexistent balance.");
+                processDecision(db(), *itr, content);
+                break;
+            }
+            case Datagram::DatagramKey::Key::CONTEST_KEY: {
+                auto content = datagramMessage->getRoot<::Contest>();
+                KJ_LOG(DBG, "Custom op is a contest", datagram, content);
+                KJ_REQUIRE(kj::StringPtr(op.fee_payer()(db()).name) == CONTEST_PUBLISHING_ACCOUNT,
+                           "Unauthorized account attempted to publish contest",
+                           op.fee_payer()(db()).name, *CONTEST_PUBLISHING_ACCOUNT);
+                processContest(db(), datagram.getKey().getKey().getContestKey().getCreator(),
+                               digest(datagram.getContent()), content);
+                break;
+            }
+            }
+        } catch (kj::Exception& e) {
+            KJ_LOG(ERROR, "Exception while processing datagram", e, data);
+        } catch (fc::exception& e) {
+            edump((e));
+            KJ_LOG(ERROR, data);
         }
-        case Datagram::DatagramKey::Key::CONTEST_KEY: {
-            KJ_REQUIRE(kj::StringPtr(op.fee_payer()(db()).name) == CONTEST_PUBLISHING_ACCOUNT,
-                       "Unauthorized account attempted to publish contest",
-                       op.fee_payer()(db()).name, *CONTEST_PUBLISHING_ACCOUNT);
-            processContest(db(), datagram.getKey().getKey().getContestKey().getCreator(),
-                           digest(datagram.getContent()), datagramMessage->getRoot<::Contest>());
-            break;
-        }
-        }
-    } catch (kj::Exception& e) {
-        KJ_LOG(WARNING, "Exception while processing datagram", e, data);
-    } catch (fc::exception& e) {
-        wlog("Exception while processing datagram", ("exception", e));
-        KJ_LOG(WARNING, data);
-    }
 
-    return {};
+        return {};
+    } FC_CAPTURE_AND_RETHROW((op))
 }
 
 } // namespace swv

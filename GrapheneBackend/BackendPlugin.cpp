@@ -34,13 +34,13 @@ std::string BackendPlugin::plugin_name() const {
 
 void BackendPlugin::plugin_initialize(const boost::program_options::variables_map& options) {
     serverPort = options["port"].as<uint16_t>();
-    database = kj::heap<VoteDatabase>(*app().chain_database(), p2p_node());
+    database = kj::heap<VoteDatabase>(*app().chain_database());
     database->registerIndexes();
     KJ_LOG(INFO, "Follow My Vote plugin initialized");
 }
 
 void BackendPlugin::plugin_startup() {
-    database->startup();
+    database->startup(app().p2p_node());
     running = true;
     server.set_reuse_address();
     server.listen(serverPort);

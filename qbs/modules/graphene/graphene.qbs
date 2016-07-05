@@ -28,6 +28,7 @@ Module {
         "graphene_egenesis_full",
         "graphene_db",
         "graphene_debug_witness",
+        "graphene_account_history",
         "graphene_market_history",
         "fc_debug",
         "secp256k1",

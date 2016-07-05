@@ -18,7 +18,6 @@
 #include "ContestCreatorServer.hpp"
 #include "VoteDatabase.hpp"
 #include "Utilities.hpp"
-#include "vendor/base64/base64.h"
 
 #include <graphene/chain/protocol/transaction.hpp>
 #include <graphene/utilities/key_conversion.hpp>
@@ -31,6 +30,7 @@
 
 #include <fc/smart_ref_impl.hpp>
 #include <fc/signals.hpp>
+#include <fc/crypto/hex.hpp>
 
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/random_generator.hpp>
@@ -69,8 +69,8 @@ class PurchaseServer : public ::Purchase::Server {
         return *voteItr;
     }
 
-    gch::account_id_type publisher = lookupPublisher().id;
-    gch::asset_id_type vote = lookupVote().id;
+    gch::account_id_type publisher;
+    gch::asset_id_type vote;
 
     struct PaymentTransferVisitor;
 
@@ -212,12 +212,17 @@ struct PurchaseServer::PaymentTransferVisitor {
     using result_type = bool;
 
     bool operator()(const gch::transfer_operation& transfer) const {
-        auto uuid = fc::json::from_string(purchase.purchaseUuid).as<std::vector<char>>();
+        std::vector<char> uuid(purchase.purchaseUuid.size() / 2);
+        fc::from_hex(purchase.purchaseUuid, uuid.data(), uuid.size());
         // If it's a transfer to the publishing account, and the memo matches our UUID...
         if (purchase.publisher == transfer.to && transfer.memo && transfer.memo->message == uuid) {
-            // ...schedule it for payment (but don't do it now; this signal handler needs to be fast
+            // ...schedule it for payment (but don't do it now; this signal handler needs to be fast)
             KJ_LOG(DBG, "Found a relevant transfer");
-            fc::async([this, transfer] { purchase.processPayment(transfer); });
+            fc::async([&purchase=purchase, transfer] {
+                try {
+                    purchase.processPayment(transfer);
+                } FC_CAPTURE_AND_LOG((transfer)(purchase.purchaseUuid))
+            });
             return true;
         }
         KJ_LOG(DBG, "Ignoring unrelated transfer");
@@ -229,7 +234,8 @@ struct PurchaseServer::PaymentTransferVisitor {
 
 PurchaseServer::PurchaseServer(VoteDatabase& vdb, int64_t votePrice, bool oversized,
                                ContestCreator::ContestCreationRequest::Reader request)
-    : vdb(vdb), votePrice(votePrice), oversized(oversized) {
+    : vdb(vdb), votePrice(votePrice), oversized(oversized),
+      vote(lookupVote().id), publisher(lookupPublisher().id) {
     // Copy the contest creation details from the creation request to a datagram which we can deploy with a
     // custom_operation when the purchase finishes
     auto datagram = message.initRoot<Datagram>();
@@ -243,9 +249,11 @@ PurchaseServer::PurchaseServer(VoteDatabase& vdb, int64_t votePrice, bool oversi
     // Go ahead and subscribe to new blocks, so we see the payment when it comes in
     KJ_LOG(DBG, "Payment is now expected. Watching new blocks for it...");
     newBlockSubscription = vdb.db().applied_block.connect([this](const gch::signed_block& newBlock) {
-        KJ_LOG(DBG, "Searching new block for payment...");
-        for (const auto& trx : newBlock.transactions)
-            trx.visit(PaymentTransferVisitor{*this});
+        try {
+            KJ_LOG(DBG, "Searching new block for payment...");
+            for (const auto& trx : newBlock.transactions)
+                trx.visit(PaymentTransferVisitor{*this});
+        } FC_CAPTURE_AND_LOG((newBlock)) // Don't let exceptions leak; they'll break chain evaluation!
     });
 }
 
@@ -266,8 +274,11 @@ void PurchaseServer::processPayment(const graphene::chain::transfer_operation& p
             trx.operations.emplace_back(buildPublishOperation());
             // Set expiration to 30 secs in the future. Should be plenty of time.
             trx.set_expiration(vdb.db().head_block_time() + 30);
+            trx.set_reference_block(vdb.db().head_block_id());
             trx.sign(*publisherKey, vdb.db().get_chain_id());
             trx.validate();
+            auto ptrx = vdb.db().validate_transaction(trx);
+            KJ_LOG(DBG, "Broadcasting transaction to fulfill contest purchase", fc::json::to_pretty_string(ptrx));
             vdb.node().broadcast_transaction(trx);
 
             purchaseCompleted = true;
@@ -276,6 +287,7 @@ void PurchaseServer::processPayment(const graphene::chain::transfer_operation& p
                 notification.setNotification("true");
                 notification.send();
             }
+            newBlockSubscription.release();
         } catch (fc::exception& e) {
             KJ_LOG(ERROR, "Caught exception while fulfilling contest order", e.to_detail_string());
             for (auto listener : completedListeners) {
@@ -294,16 +306,13 @@ graphene::chain::custom_operation PurchaseServer::buildPublishOperation() {
     op.payer = publisher;
 
     ReaderPacker packer(message.getRoot<Datagram>().asReader());
+    auto buffer = packer.array().asChars();
     auto magic = *::VOTE_MAGIC;
 
-    // Serialize the datagram into a buffer
-    std::vector<char> buffer(magic.size() + packer.array().size());
-    memcpy(buffer.data(), magic.begin(), magic.size());
-    memcpy(buffer.data() + magic.size(), packer.array().begin(), buffer.size() - magic.size());
-
-    // Base64 encode buffer into the op's data field, and shrink to fit
-    op.data.resize(Base64::EncodedLength(buffer.size()));
-    Base64::Encode(buffer.data(), buffer.size(), op.data.data(), op.data.size());
+    op.data.resize(magic.size() + buffer.size());
+    // Copy vote magic and datagram into the op's data field
+    memcpy(op.data.data(), magic.begin(), magic.size());
+    memcpy(op.data.data() + magic.size(), buffer.begin(), op.data.size() - magic.size());
 
     op.fee = op.calculate_fee(vdb.db().current_fee_schedule().get<gch::custom_operation>());
 

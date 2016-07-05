@@ -245,7 +245,7 @@ kj::Promise<void> BWB::BlockchainWalletServer::getContestById(GetContestByIdCont
 
         // Custom op should contain a serialized datagram in base64 encoding. See buildPublishOperation() in
         // GrapheneBackend/ContestCreatorServer.cpp to see how this operation was created.
-        auto operationData = QByteArray::fromBase64(decodedOp["data"].toString().toLocal8Bit());
+        auto operationData = QByteArray::fromHex(decodedOp["data"].toString().toLocal8Bit());
         auto operationDataReader = convertBlob(operationData);
         KJ_REQUIRE(capnp::Data::Reader(operationDataReader.slice(0, ::VOTE_MAGIC->size())) == *::VOTE_MAGIC,
                    "Invalid contest ID references an operation which was not published by Follow My Vote software",

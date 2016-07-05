@@ -53,10 +53,10 @@ BackendServer::BackendServer(VoteDatabase& db)
 BackendServer::~BackendServer() {}
 
 ::kj::Promise<void> BackendServer::getContestFeed(Backend::Server::GetContestFeedContext context) {
-    KJ_LOG(DBG, __FUNCTION__);
     auto& contestIndex = vdb.contestIndex().indices();
+    KJ_LOG(DBG, __FUNCTION__, contestIndex.size());
     auto& startTimeIndex = contestIndex.get<ByStartTime>();
-    auto itr = startTimeIndex.lower_bound(vdb.db().head_block_time());
+    auto itr = startTimeIndex.begin();
     context.initResults().setGenerator(kj::heap<FeedGenerator<ByStartTime>>(itr == startTimeIndex.end()? nullptr
                                                                                                        : &*itr,
                                                                             vdb.db()));

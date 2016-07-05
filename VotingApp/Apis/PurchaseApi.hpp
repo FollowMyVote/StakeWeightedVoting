@@ -24,7 +24,7 @@ class PurchaseApi : public QObject
     PromiseConverter converter;
     bool m_complete = false;
 
-    void setComplete(bool complete);
+    void setComplete(bool success);
 
 public:
     PurchaseApi(Purchase::Client&& api, kj::TaskSet& tasks, QObject *parent = 0);
