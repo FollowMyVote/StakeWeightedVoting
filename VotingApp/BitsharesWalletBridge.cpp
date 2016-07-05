@@ -179,10 +179,8 @@ kj::Promise<void> BWB::BlockchainWalletServer::getBalance(GetBalanceContext cont
     auto balanceId = context.getParams().getId();
     auto accountId = QStringLiteral("1.2.%1").arg(balanceId.getAccountInstance());
     auto coinId = QStringLiteral("1.3.%1").arg(balanceId.getCoinInstance());
-    return beginCall("blockchain.getObjectById",
-                     QJsonArray() << accountId).then([this](QJsonValue response) {
-        return beginCall("blockchain.getAccountBalances", QJsonArray() << response.toObject()["name"].toString());
-    }).then([context, coinId, balanceId](QJsonValue response) mutable {
+    return beginCall("blockchain.getAccountBalances",
+                     QJsonArray() << accountId).then([context, coinId, balanceId](QJsonValue response) mutable {
         auto balances = response.toArray();
         auto balanceItr = std::find_if(balances.begin(), balances.end(), [coinId](const QJsonValue& balance ) {
             return balance.toObject()["type"].toString() == coinId;
@@ -268,8 +266,50 @@ kj::Promise<void> BWB::BlockchainWalletServer::getContestById(GetContestByIdCont
 }
 
 kj::Promise<void> BWB::BlockchainWalletServer::getDatagramByBalance(GetDatagramByBalanceContext context) {
-    KJ_LOG(DBG, __FUNCTION__);
-    return beginCall({}, {}).then([](auto){});
+    KJ_LOG(DBG, __FUNCTION__, context.getParams());
+
+    // Unfortunately, there's no good way to do this with a standard Bitshares wallet. Adding explicit support for FMV
+    // to the wallet would let us track datagrams directly, but as it stands now, we just have to iterate through the
+    // account's history looking for custom ops.
+    auto accountId = QStringLiteral("1.2.%1").arg(context.getParams().getBalanceId().getAccountInstance());
+
+    // Custom operation has opcode 35
+    return beginCall("blockchain.getAccountHistoryByOpCode",
+                     QJsonArray() << accountId << 35).then([this](QJsonValue response) mutable {
+        auto operationIds = response.toArray();
+        auto operations = kj::heapArrayBuilder<kj::Promise<QJsonObject>>(operationIds.size());
+        for (auto op : operationIds) {
+            operations.add(beginCall("blockchain.getObjectById", QJsonArray() << op).then([](QJsonValue response) {
+                               return response.toObject();
+                           // If any calls fail, just store a null object; we still want to process the rest of them
+                           }, [](kj::Exception) { return QJsonObject(); }));
+        }
+
+        return kj::joinPromises(operations.finish());
+    }).then([context](kj::Array<QJsonObject> operations) mutable {
+        // Iterate the operations from most recent to oldest
+        for (auto opObject : operations) {
+            // Skip over any operations that aren't FMV custom ops
+            if (opObject == QJsonObject() || opObject["op"].toArray()[0].toInt() != 35)
+                continue;
+            auto data = QByteArray::fromHex(opObject["op"].toArray()[1].toObject()["data"].toString().toLocal8Bit());
+            if (!data.startsWith(convertBlob(*VOTE_MAGIC)))
+                continue;
+
+            // Deserialize the datagram
+            data = data.mid(VOTE_MAGIC->size());
+            BlobMessageReader datagramMessage(convertBlob(data));
+            auto datagram = datagramMessage->getRoot<::Datagram>();
+
+            // If the datagram's key matches our search key, finish the call
+            if (datagram.getKey() == context.getParams().getKey()) {
+                context.getResults().setDatagram(datagramMessage->getRoot<::Datagram>());
+                return;
+            }
+        }
+
+        KJ_FAIL_REQUIRE("Could not find requested datagram", context.getParams());
+    });
 }
 
 kj::Promise<void> BWB::BlockchainWalletServer::publishDatagram(PublishDatagramContext context) {

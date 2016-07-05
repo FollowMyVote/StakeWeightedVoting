@@ -1,5 +1,6 @@
 #include "FakeBlockchain.hpp"
 #include "BackendStub.hpp"
+#include <Utilities.hpp>
 
 #include <kj/debug.h>
 
@@ -142,27 +143,6 @@ kj::Promise<void> FakeBlockchain::getContestById(BlockchainWallet::Server::GetCo
                                       "Could not find the specified contest", context.getParams().getId());
     context.initResults().setContest(contest.getReader());
     return kj::READY_NOW;
-}
-
-bool operator== (const ::Datagram::DatagramKey::Reader& a, const ::Datagram::DatagramKey::Reader& b) {
-    if (a.getKey().which() != b.getKey().which())
-        return false;
-    if (a.getKey().isContestKey()) {
-        auto ac = a.getKey().getContestKey().getCreator();
-        auto bc = b.getKey().getContestKey().getCreator();
-        if (ac.which() != bc.which())
-            return false;
-        if (ac.isAnonymous())
-            return bc.isAnonymous();
-        return ac.getSignature().getId() == bc.getSignature().getId() &&
-                ac.getSignature().getSignature() == bc.getSignature().getSignature();
-    }
-    auto ad = a.getKey().getDecisionKey().getBalanceId();
-    auto bd = b.getKey().getDecisionKey().getBalanceId();
-    return ad.getAccountInstance() == bd.getAccountInstance() && ad.getCoinInstance() == bd.getCoinInstance();
-}
-bool operator!= (const ::Datagram::DatagramKey::Reader& a, const ::Datagram::DatagramKey::Reader& b) {
-    return !(a==b);
 }
 
 kj::Promise<void> FakeBlockchain::getDatagramByBalance(BlockchainWallet::Server::GetDatagramByBalanceContext context) {
