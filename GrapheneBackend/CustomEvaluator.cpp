@@ -132,6 +132,11 @@ void processDecision(gch::database& db, const gch::account_balance_object& balan
     }
 }
 
+template <typename T>
+inline T unpack(capnp::Data::Reader r) {
+    return fc::raw::unpack<T>(std::vector<char>(r.begin(), r.end()));
+}
+
 void processContest(gch::database& db, ::Datagram::ContestKey::Creator::Reader key,
                     fc::sha256 contestDigest, ::Contest::Reader contest) {
     // All relevant data consistency checks should have been done before FMV published the contest to the chain. We
@@ -160,6 +165,10 @@ void processContest(gch::database& db, ::Datagram::ContestKey::Creator::Reader k
         c.endTime = fc::time_point(fc::milliseconds(contest.getEndTime()));
     });
     KJ_LOG(DBG, "Created new contest", db.get_index_type<ContestIndex>().indices().size());
+}
+
+inline fc::sha256 digest(capnp::Data::Reader r) {
+    return fc::digest(std::vector<char>(r.begin(), r.end()));
 }
 
 graphene::chain::void_result CustomEvaluator::do_apply(const CustomEvaluator::operation_type& op) {

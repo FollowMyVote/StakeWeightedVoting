@@ -5,11 +5,6 @@
 
 #include <capnp/serialize-packed.h>
 
-#ifdef HAVE_GRAPHENE
-#include <fc/io/raw_variant.hpp>
-#include <fc/crypto/digest.hpp>
-#endif
-
 #include <map.capnp.h>
 
 #include <map>
@@ -17,16 +12,6 @@
 #include <string>
 
 namespace swv {
-
-#ifdef HAVE_GRAPHENE
-template <typename T>
-inline T unpack(capnp::Data::Reader r) {
-    return fc::raw::unpack<T>(std::vector<char>(r.begin(), r.end()));
-}
-inline fc::sha256 digest(capnp::Data::Reader r) {
-    return fc::digest(std::vector<char>(r.begin(), r.end()));
-}
-#endif
 
 inline std::map<std::string, std::string> convertMap(::Map<capnp::Text, capnp::Text>::Reader map) {
     std::map<std::string, std::string> result;
