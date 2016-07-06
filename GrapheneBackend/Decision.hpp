@@ -44,6 +44,7 @@ struct ByContest;
 using DecisionObjectMultiIndex = bmi::multi_index_container<
     Decision,
     bmi::indexed_by<
+        bmi::ordered_unique<bmi::tag<gch::by_id>, bmi::member<gch::object, gch::object_id_type, &gch::object::id>>,
         bmi::ordered_unique<bmi::tag<ById>,
                             bmi::member<Decision, gch::operation_history_id_type, &Decision::decisionId>>,
         bmi::ordered_unique<bmi::tag<ByVoter>,

@@ -63,6 +63,7 @@ struct ByCoin;
 using CoinVolumeHistoryMultiIndex = bmi::multi_index_container<
     CoinVolumeHistory,
     bmi::indexed_by<
+        bmi::ordered_unique<bmi::tag<gch::by_id>, bmi::member<gch::object, gch::object_id_type, &gch::object::id>>,
         bmi::ordered_unique<bmi::tag<ByCoin>,
             bmi::member<CoinVolumeHistory, gch::asset_id_type, &CoinVolumeHistory::coinId>
         >
