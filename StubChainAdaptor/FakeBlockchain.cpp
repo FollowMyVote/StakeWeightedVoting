@@ -4,6 +4,7 @@
 #include <kj/debug.h>
 
 #include <algorithm>
+#include <string>
 
 namespace swv {
 FakeBlockchain::FakeBlockchain() {
@@ -300,7 +301,7 @@ Signed<Contest>::Builder FakeBlockchain::createContest() {
     return pair.first->second.get();
 }
 
-Balance::Builder FakeBlockchain::createBalance(const std::string& owner, uint64_t type) {
+Balance::Builder FakeBlockchain::createBalance(std::string owner, uint64_t type) {
     auto accountId = accounts.size();
     auto itr = std::find(accounts.begin(), accounts.end(), owner);
     if (itr != accounts.end())

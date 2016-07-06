@@ -7,7 +7,7 @@ StaticLibrary {
     Depends { name: "cpp" }
     cpp.includePaths: ["capnp"]
     cpp.cxxLanguageVersion: "c++14"
-    cpp.cxxStandardLibrary: "libstdc++"
+    cpp.cxxStandardLibrary: qbs.hostOS.contains("osx") ? "libc++" : "libstdc++"
     Depends { name: "Qt"; submodules: ["qml"] }
     Depends { name: "capnp" }
 
@@ -35,7 +35,7 @@ StaticLibrary {
         Depends { name : "cpp" }
         cpp.includePaths: [".", "capnp"]
         cpp.cxxLanguageVersion: "c++14"
-        cpp.cxxStandardLibrary: "libstdc++"
+        cpp.cxxStandardLibrary: qbs.hostOS.contains("osx") ? "libc++" : "libstdc++"
         cpp.cxxFlags: capnpProbe.cflags
         cpp.dynamicLibraries: capnpProbe.libs.filter(function(name) { return name.startsWith("-l") }).map(function(name) { return name === "-pthread"? "" : name.slice(2) })
     }

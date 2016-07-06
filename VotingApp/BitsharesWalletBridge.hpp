@@ -18,6 +18,13 @@ class BitsharesWalletBridge : public QWebSocketServer {
     /// BlockchainWallet::Client objects
     class BlockchainWalletServer;
 
+    struct ClientContext{
+        QMetaObject::Connection connection;
+        kj::Own<kj::PromiseFulfiller<BlockchainWallet::Client>> fulfiller;
+    };
+    std::map<int, ClientContext> contexts;
+    int nextContextId = 0;
+
 public:
     BitsharesWalletBridge(const QString& serverName);
     virtual ~BitsharesWalletBridge();

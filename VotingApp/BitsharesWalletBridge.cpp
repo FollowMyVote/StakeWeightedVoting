@@ -343,17 +343,16 @@ kj::Promise<BlockchainWallet::Client> BitsharesWalletBridge::nextWalletClient() 
     }
 
     auto paf = kj::newPromiseAndFulfiller<BlockchainWallet::Client>();
-    // Use shared_ptr's to avoid making a noncopyable lambda
-    auto connection = std::make_shared<QMetaObject::Connection>();
-    auto fulfiller = std::make_shared<decltype(paf.fulfiller)>(kj::mv(paf.fulfiller));
-    *connection = connect(this, &QWebSocketServer::newConnection, [this, connection, fulfiller]() mutable {
-        disconnect(*connection);
-        connection.reset();
+    contexts.emplace(std::make_pair(nextContextId, ClientContext{QMetaObject::Connection(), kj::mv(paf.fulfiller)}));
+    contexts[nextContextId].connection = connect(this, &QWebSocketServer::newConnection,
+                                                 [this, contextId = nextContextId++]() mutable {
+        auto context = kj::mv(contexts[contextId]);
+        contexts.erase(contextId);
+        disconnect(context.connection);
         KJ_LOG(DBG, "Fulfilling promise for a BlockchainWallet client");
         std::unique_ptr<QWebSocket> peer(nextPendingConnection());
         qDebug() << "Connection from" << peer->peerName() << "at" << peer->peerAddress() << ":" << peer->peerPort();
-        (*fulfiller)->fulfill(kj::heap<BlockchainWalletServer>(kj::mv(peer)));
-        fulfiller.reset();
+        context.fulfiller->fulfill(kj::heap<BlockchainWalletServer>(kj::mv(peer)));
     });
     KJ_LOG(DBG, "Promising a BlockchainWallet client");
     return kj::mv(paf.promise);

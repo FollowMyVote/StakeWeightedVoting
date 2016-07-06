@@ -58,7 +58,7 @@ private:
     kj::Maybe<capnp::Orphan<Coin>&> getCoinOrphan(kj::StringPtr name);
     kj::Maybe<const capnp::Orphan<Coin>&> getCoinOrphan(kj::StringPtr name) const;
     ::Signed<::Contest>::Builder createContest();
-    ::Balance::Builder createBalance(const std::__cxx11::string& owner, uint64_t type);
+    ::Balance::Builder createBalance(std::string owner, uint64_t type);
     ::Coin::Builder createCoin();
 };
 
