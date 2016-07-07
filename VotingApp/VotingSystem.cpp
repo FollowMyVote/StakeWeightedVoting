@@ -377,10 +377,12 @@ Promise* VotingSystem::castCurrentDecision(swv::data::Contest* contest) {
 
         capnp::MallocMessageBuilder message;
         auto builder = message.initRoot<::Decision>();
+        decision->update_contestId(contest->get_id());
         decision->serialize(builder);
         ReaderPacker packer(builder.asReader());
 
         auto promises = kj::heapArrayBuilder<kj::Promise<void>>(balances.size());
+        KJ_LOG(DBG, balances);
         for (auto balance : balances) {
             auto request = chain->chain().publishDatagramRequest();
             request.setPayingBalance(balance.getId());

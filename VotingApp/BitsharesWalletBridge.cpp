@@ -22,7 +22,7 @@ class BWB::BlockchainWalletServer : public BlockchainWallet::Server {
     int64_t nextQueryId = 0;
     std::map<int64_t, kj::Own<kj::PromiseFulfiller<QJsonValue>>> pendingRequests;
     // Promise is not default constructible; set a failed promise now; we'll overwrite it in our constructor
-    kj::Promise<uint64_t> contestPublisherIdPromise = KJ_EXCEPTION(FAILED, "If you see this, it's a bug.");
+    kj::ForkedPromise<uint64_t> contestPublisherIdPromise;
     uint64_t contestPublisherId = 0;
 
 public:
@@ -33,6 +33,8 @@ protected:
     void checkConnection();
     kj::Promise<QJsonValue> beginCall(QString method, QJsonArray params);
     void finishCall(QString message);
+
+    kj::Promise<QString> setFeesAndBroadcastTransaction(QJsonArray operations);
 
     // BlockchainWallet::Server interface
     virtual ::kj::Promise<void> getCoinById(GetCoinByIdContext context) override;
@@ -48,7 +50,7 @@ protected:
 };
 
 BWB::BlockchainWalletServer::BlockchainWalletServer(std::unique_ptr<QWebSocket> connection)
-    : connection(kj::mv(connection)) {
+    : connection(kj::mv(connection)), contestPublisherIdPromise(nullptr) {
     KJ_REQUIRE(this->connection && this->connection->state() == QAbstractSocket::SocketState::ConnectedState,
                "Internal Error: Attempted to create Bitshares blockchain wallet server with no connection to a "
                "Bitshares wallet");
@@ -74,7 +76,7 @@ BWB::BlockchainWalletServer::BlockchainWalletServer(std::unique_ptr<QWebSocket> 
          auto account = response.toObject();
          contestPublisherId = account["id"].toString().replace("1.2.", QString::null).toULongLong();
          return contestPublisherId;
-    });
+    }).fork();
 
     // Someday we can implment encrypted communication with the BTS wallet, which would be negotiated here.
 }
@@ -107,6 +109,16 @@ void BWB::BlockchainWalletServer::finishCall(QString message) {
         itr->second->reject(KJ_EXCEPTION(FAILED,
                                          QString(QJsonDocument(response["error"].toObject()).toJson()).toStdString()));
     pendingRequests.erase(itr);
+}
+
+kj::Promise<QString> BWB::BlockchainWalletServer::setFeesAndBroadcastTransaction(QJsonArray operations) {
+    return beginCall("blockchain.getTransactionFees", QJsonArray() << operations).then([this](QJsonValue response) {
+        KJ_LOG(DBG, "Broadcasting transaction", QJsonDocument(response.toObject()).toJson().data());
+        return beginCall("wallet.broadcastTransaction", QJsonArray() << response.toArray());
+    }).then([](QJsonValue response) {
+        qDebug() << response;
+        return response.toString();
+    });
 }
 
 kj::Promise<QJsonValue> BWB::BlockchainWalletServer::beginCall(QString method, QJsonArray params) {
@@ -224,7 +236,7 @@ kj::Promise<void> BWB::BlockchainWalletServer::getContestById(GetContestByIdCont
     auto operationId = QStringLiteral("1.11.%1").arg(operationInstance);
 
     // First of all, make sure we've resolved the contest publisher (most likely this promise is already resolved)
-    return contestPublisherIdPromise.then([this, operationId](uint64_t) {
+    return contestPublisherIdPromise.addBranch().then([this, operationId](uint64_t) {
         // Look up the operation which published the contest
         return beginCall("blockchain.getObjectById", QJsonArray() << operationId);
     }).then([this, context, operationInstance](QJsonValue response) mutable {
@@ -314,7 +326,24 @@ kj::Promise<void> BWB::BlockchainWalletServer::getDatagramByBalance(GetDatagramB
 
 kj::Promise<void> BWB::BlockchainWalletServer::publishDatagram(PublishDatagramContext context) {
     KJ_LOG(DBG, __FUNCTION__, context.getParams());
-    return beginCall({}, {}).then([](auto){});
+
+    auto publisherId = QStringLiteral("1.2.%1").arg(context.getParams().getPublishingBalance().getAccountInstance());
+    auto payerId = QStringLiteral("1.2.%1").arg(context.getParams().getPayingBalance().getAccountInstance());
+
+    ReaderPacker packer(context.getParams().getDatagram());
+    auto buffer = convertBlob(*VOTE_MAGIC) + convertBlob(packer.array());
+
+    auto customOp = QJsonObject{
+        // The opcode for a custom operation is 35
+        {"code", 35},
+        {"op", QJsonObject{
+             {"payer", payerId},
+             {"required_auths", publisherId == payerId? QJsonArray() : QJsonArray() << publisherId},
+             {"id", 0},
+             {"data", QString(buffer.toHex())}
+         }}
+    };
+    return setFeesAndBroadcastTransaction(QJsonArray() << customOp).then([](auto){});
 }
 
 kj::Promise<void> BWB::BlockchainWalletServer::transfer(TransferContext context) {
@@ -366,13 +395,8 @@ kj::Promise<void> BWB::BlockchainWalletServer::transfer(TransferContext context)
 
     // Wait for all promises in the vector to resolve; at that point, transferOp will be ready.
     return kj::joinPromises(promises.releaseAsArray()).then([this, op = kj::mv(transferOp)] {
-        return beginCall("blockchain.getTransactionFees", QJsonArray() << (QJsonArray() << *op));
-    }).then([this](QJsonValue response) {
-        KJ_LOG(DBG, "Broadcasting transfer", QJsonDocument(response.toObject()).toJson().data());
-        return beginCall("wallet.broadcastTransaction", QJsonArray() << response.toArray());
-    }).then([](QJsonValue response) {
-        qDebug() << response;
-    });
+        return setFeesAndBroadcastTransaction(QJsonArray() << *op);
+    }).then([](auto){});
 }
 ////////////////////////////// END BlockchainWalletServer implementation
 

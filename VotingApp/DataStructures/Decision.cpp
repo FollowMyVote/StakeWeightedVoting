@@ -53,10 +53,8 @@ void Decision::updateFields(::Decision::Reader r) {
 void Decision::serialize(::Decision::Builder b) {
     QByteArray bin = QByteArray::fromHex(m_id.toLocal8Bit());
     bin = QByteArray::fromHex(m_contestId.toLocal8Bit());
-    {
-        BlobMessageReader reader(convertBlob(bin));
-        b.setContest(reader->getRoot<::ContestId>());
-    }
+    BlobMessageReader reader(convertBlob(bin));
+    b.setContest(reader->getRoot<::ContestId>());
     serializeOpinions(b);
     serializeWriteIns(b);
 }
