@@ -17,7 +17,9 @@ Module {
         return true
     }
     property var cxxFlags: capnpProbe.cflags
-    property var dynamicLibraries: capnpProbe.libs.filter(function(name) { return name.startsWith("-l") }).map(function(name) { return name.slice(2) })
+    property var dynamicLibraries: capnpProbe.libs.filter(function(name) {
+        return name.startsWith("-l")
+    }).map(function(name) { return name.slice(2) })
 
     PropertyOptions {
         name: "capnpPath"

@@ -4,18 +4,16 @@ StaticLibrary {
     name: "shared"
 
     Depends { name: "cpp" }
+    Depends { name: "capnp" }
+    Depends { name: "botan" }
+
     cpp.includePaths: ["capnp"]
     cpp.cxxLanguageVersion: "c++14"
     cpp.cxxStandardLibrary: qbs.hostOS.contains("osx") ? "libc++" : "libstdc++"
-    Depends { name: "Qt"; submodules: ["qml"] }
-    Depends { name: "capnp" }
-
-    cpp.cxxFlags: capnp.cflags
-    cpp.dynamicLibraries: capnp.dynamicLibraries
+    cpp.cxxFlags: [].concat(capnp.cxxFlags, botan.cxxFlags).filter(function(x) { return !!x })
+    cpp.dynamicLibraries: [].concat(capnp.dynamicLibraries, botan.dynamicLibraries)
 
     files: [
-        "TwoPartyServer.cpp",
-        "TwoPartyServer.hpp",
         "Utilities.hpp",
         "capnp/*.capnp",
     ]
@@ -23,10 +21,11 @@ StaticLibrary {
     Export {
         Depends { name : "cpp" }
         Depends { name : "capnp" }
+        Depends { name : "botan" }
         cpp.includePaths: [".", "capnp"]
         cpp.cxxLanguageVersion: "c++14"
         cpp.cxxStandardLibrary: qbs.hostOS.contains("osx") ? "libc++" : "libstdc++"
-        cpp.cxxFlags: capnp.cflags
-        cpp.dynamicLibraries: capnp.dynamicLibraries
+        cpp.cxxFlags: [].concat(capnp.cxxFlags, botan.cxxFlags).filter(function(x) { return !!x })
+        cpp.dynamicLibraries: [].concat(capnp.dynamicLibraries, botan.dynamicLibraries)
     }
 }
