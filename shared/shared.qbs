@@ -1,5 +1,4 @@
 import qbs
-import qbs.Probes
 
 StaticLibrary {
     name: "shared"
@@ -11,18 +10,8 @@ StaticLibrary {
     Depends { name: "Qt"; submodules: ["qml"] }
     Depends { name: "capnp" }
 
-    Probes.PkgConfigProbe {
-        id: capnpProbe
-        name: "capnp-rpc"
-    }
-    property bool foundCapnp: {
-        if (!capnpProbe.found)
-            throw "Unable to find capnp. Try setting PATH and PKG_CONFIG_PATH to ensure capnp can be found."
-        return true
-    }
-
-    cpp.cxxFlags: capnpProbe.cflags
-    cpp.dynamicLibraries: capnpProbe.libs.filter(function(name) { return name.startsWith("-l") }).map(function(name) { return name.slice(2) })
+    cpp.cxxFlags: capnp.cflags
+    cpp.dynamicLibraries: capnp.dynamicLibraries
 
     files: [
         "TwoPartyServer.cpp",
@@ -33,10 +22,11 @@ StaticLibrary {
 
     Export {
         Depends { name : "cpp" }
+        Depends { name : "capnp" }
         cpp.includePaths: [".", "capnp"]
         cpp.cxxLanguageVersion: "c++14"
         cpp.cxxStandardLibrary: qbs.hostOS.contains("osx") ? "libc++" : "libstdc++"
-        cpp.cxxFlags: capnpProbe.cflags
-        cpp.dynamicLibraries: capnpProbe.libs.filter(function(name) { return name.startsWith("-l") }).map(function(name) { return name === "-pthread"? "" : name.slice(2) })
+        cpp.cxxFlags: capnp.cflags
+        cpp.dynamicLibraries: capnp.dynamicLibraries
     }
 }

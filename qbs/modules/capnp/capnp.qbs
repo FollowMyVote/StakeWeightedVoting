@@ -1,5 +1,6 @@
 import qbs
 import qbs.File
+import qbs.Probes
 import qbs.FileInfo
 import qbs.ModUtils
 import qbs.Environment
@@ -9,6 +10,15 @@ Module {
     property string capnpPath: qbs.hostOS.contains("osx")? "/usr/local/bin" : "/usr/bin"
     property var importPaths: []
 
+    // Outputs
+    property bool foundCapnp: {
+        if (!capnpProbe.found)
+            throw "Unable to find capnp. Try setting PATH and PKG_CONFIG_PATH to ensure capnp can be found."
+        return true
+    }
+    property var cxxFlags: capnpProbe.cflags
+    property var dynamicLibraries: capnpProbe.libs.filter(function(name) { return name.startsWith("-l") }).map(function(name) { return name.slice(2) })
+
     PropertyOptions {
         name: "capnpPath"
         description: "Path to the capnp executables"
@@ -16,6 +26,11 @@ Module {
     PropertyOptions {
         name: "importPaths"
         description: "Directories to search for non-relative imports"
+    }
+
+    Probes.PkgConfigProbe {
+        id: capnpProbe
+        name: "capnp-rpc"
     }
 
     validate: {
