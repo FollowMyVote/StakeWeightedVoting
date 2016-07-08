@@ -18,7 +18,7 @@
 #ifndef CONTEST_HPP
 #define CONTEST_HPP
 
-#include "Types.hpp"
+#include "Objects.hpp"
 
 #include <graphene/db/object.hpp>
 #include <graphene/db/generic_index.hpp>

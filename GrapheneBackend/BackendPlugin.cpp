@@ -16,8 +16,8 @@
  * along with SWV.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "BackendPlugin.hpp"
-#include "BackendServer.hpp"
 #include "VoteDatabase.hpp"
+#include "ApiServers/BackendServer.hpp"
 #include "compat/FcStreamWrapper.hpp"
 
 #include <capnp/rpc-twoparty.h>

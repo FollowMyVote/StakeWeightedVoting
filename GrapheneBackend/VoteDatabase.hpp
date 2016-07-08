@@ -18,9 +18,9 @@
 #ifndef VOTEDATABASE_HPP
 #define VOTEDATABASE_HPP
 
-#include "Contest.hpp"
-#include "Decision.hpp"
-#include "CoinVolumeHistory.hpp"
+#include "Objects/Contest.hpp"
+#include "Objects/Decision.hpp"
+#include "Objects/CoinVolumeHistory.hpp"
 #include "BackendConfiguration.hpp"
 
 #include <graphene/chain/database.hpp>

@@ -18,7 +18,7 @@
 #ifndef COINVOLUMEHISTORY_HPP
 #define COINVOLUMEHISTORY_HPP
 
-#include "Types.hpp"
+#include "Objects.hpp"
 
 namespace swv {
 

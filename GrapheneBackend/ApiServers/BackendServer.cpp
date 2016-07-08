@@ -20,8 +20,8 @@
 #include "FeedGenerator.hpp"
 #include "ContestResultsServer.hpp"
 #include "ContestCreatorServer.hpp"
+#include "Objects/Contest.hpp"
 #include "Utilities.hpp"
-#include "Contest.hpp"
 
 #include <fc/io/json.hpp>
 

@@ -18,7 +18,7 @@
 #ifndef FEEDGENERATOR_HPP
 #define FEEDGENERATOR_HPP
 
-#include "Contest.hpp"
+#include "Objects/Contest.hpp"
 #include "Utilities.hpp"
 
 #include <contestgenerator.capnp.h>

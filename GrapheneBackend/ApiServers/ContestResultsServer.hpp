@@ -1,7 +1,7 @@
 #ifndef CONTESTRESULTSSERVER_HPP
 #define CONTESTRESULTSSERVER_HPP
 
-#include "Types.hpp"
+#include "Objects/Objects.hpp"
 
 #include <backend.capnp.h>
 #include <purchase.capnp.h>

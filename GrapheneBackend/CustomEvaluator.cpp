@@ -16,10 +16,10 @@
  * along with SWV.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "CustomEvaluator.hpp"
-#include "Contest.hpp"
-#include "Decision.hpp"
-#include "CoinVolumeHistory.hpp"
 #include "Utilities.hpp"
+#include "Objects/Contest.hpp"
+#include "Objects/Decision.hpp"
+#include "Objects/CoinVolumeHistory.hpp"
 
 #include <datagram.capnp.h>
 #include <decision.capnp.h>

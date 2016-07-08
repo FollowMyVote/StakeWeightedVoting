@@ -18,7 +18,7 @@
 #ifndef DECISION_HPP
 #define DECISION_HPP
 
-#include "Types.hpp"
+#include "Objects.hpp"
 
 #include <boost/multi_index/composite_key.hpp>
 
