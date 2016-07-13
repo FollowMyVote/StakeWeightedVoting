@@ -16,7 +16,7 @@
  * along with SWV.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "VoteDatabase.hpp"
-#include "CustomEvaluator.hpp"
+#include "GrapheneIntegration/CustomEvaluator.hpp"
 #include "Objects/Contest.hpp"
 #include "Objects/Decision.hpp"
 
