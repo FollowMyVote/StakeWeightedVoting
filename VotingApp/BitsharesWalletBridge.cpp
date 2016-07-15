@@ -47,6 +47,7 @@ protected:
     virtual ::kj::Promise<void> getDatagramByBalance(GetDatagramByBalanceContext context) override;
     virtual ::kj::Promise<void> publishDatagram(PublishDatagramContext context) override;
     virtual ::kj::Promise<void> transfer(TransferContext context) override;
+    virtual ::kj::Promise<void> getSharedSecret(GetSharedSecretContext context) override;
 };
 
 BWB::BlockchainWalletServer::BlockchainWalletServer(std::unique_ptr<QWebSocket> connection)
@@ -397,6 +398,19 @@ kj::Promise<void> BWB::BlockchainWalletServer::transfer(TransferContext context)
     return kj::joinPromises(promises.releaseAsArray()).then([this, op = kj::mv(transferOp)] {
         return setFeesAndBroadcastTransaction(QJsonArray() << *op);
     }).then([](auto){});
+}
+
+::kj::Promise<void> BWB::BlockchainWalletServer::getSharedSecret(GetSharedSecretContext context) {
+    KJ_LOG(DBG, __FUNCTION__, context.getParams());
+
+    auto myNameOrId = QString::fromStdString(context.getParams().getMyAccountNameOrId());
+    auto otherNameOrId = QString::fromStdString(context.getParams().getOtherAccountNameOrId());
+
+    return beginCall("wallet.getSharedSecret",
+                     QJsonArray() << myNameOrId << otherNameOrId).then([this, context](QJsonValue response) mutable {
+        auto secret = QByteArray::fromHex(response.toString().toLocal8Bit());
+        context.getResults().setSecret(convertBlob(secret));
+    });
 }
 ////////////////////////////// END BlockchainWalletServer implementation
 

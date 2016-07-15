@@ -16,13 +16,6 @@
  * along with SWV.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <kj/debug.h>
-#include <kj/common.h>
-
-#include <QDebug>
-#include <QQmlEngine>
-#include <Utilities.hpp>
-
 #include "VotingSystem.hpp"
 #include "DataStructures/Coin.hpp"
 #include "DataStructures/Balance.hpp"
@@ -35,14 +28,22 @@
 #include "PromiseConverter.hpp"
 #include "TwoPartyClient.hpp"
 #include "BitsharesWalletBridge.hpp"
+#include "capnqt/QSocketWrapper.hpp"
 
 #include <FakeBlockchain.hpp>
-#include <QDesktopServices>
 
-#include "capnqt/QSocketWrapper.hpp"
+#include <Utilities.hpp>
+#include <BotanIntegration/TlsPskAdaptorFactory.hpp>
+
+#include <QDebug>
+#include <QQmlEngine>
+#include <QDesktopServices>
 
 #include <capnp/message.h>
 #include <capnp/serialize-packed.h>
+
+#include <kj/debug.h>
+#include <kj/common.h>
 
 namespace swv {
 
@@ -80,19 +81,39 @@ public:
     kj::Own<TwoPartyClient> client;
     kj::Own<BackendApi> backend;
     kj::Own<QTcpSocket> socket;
-    kj::Own<QSocketWrapper> socketWrapper;
+    kj::Own<fmv::TlsPskAdaptorFactory> cryptoFactory;
+    kj::Own<kj::AsyncIoStream> serverStream;
     kj::Own<bts::BitsharesWalletBridge> bitsharesBridge;
     swv::data::Account* currentAccount = nullptr;
 
     void completeConnection(Promise* connectionPromise) {
         Q_Q(VotingSystem);
 
-        socketWrapper = kj::heap<QSocketWrapper>(*socket);
-        client = kj::heap<TwoPartyClient>(*socketWrapper);
-        backend = kj::heap<BackendApi>(client->bootstrap().castAs<Backend>(), *promiseConverter);
-        emit q->backendConnectedChanged(true);
-        connectionPromise->resolve({});
-        QQmlEngine::setObjectOwnership(connectionPromise, QQmlEngine::JavaScriptOwnership);
+        if (!currentAccount) {
+            q->setLastError("Unable to connect: no current account is selected. "
+                            "Go to settings and select an account.");
+            return;
+        }
+
+        auto request = chain->chain().getSharedSecretRequest();
+        request.setMyAccountNameOrId(convertText(currentAccount->get_name()));
+        request.setOtherAccountNameOrId(*CONTEST_PUBLISHING_ACCOUNT);
+        tasks.add(request.send().then(
+                      [this, q, connectionPromise](capnp::Response<BlockchainWallet::GetSharedSecretResults> response) {
+            std::vector<uint8_t> secret(response.getSecret().begin(), response.getSecret().end());
+            cryptoFactory = kj::heap<fmv::TlsPskAdaptorFactory>([secret = kj::mv(secret)](std::string serverAccount) {
+                KJ_REQUIRE(serverAccount == std::string(*CONTEST_PUBLISHING_ACCOUNT),
+                           "Server is authenticating with unexpected account; rejecting");
+                return secret;
+            }, currentAccount->get_name().toStdString());
+
+            serverStream = cryptoFactory->addClientTlsAdaptor(kj::heap<QSocketWrapper>(*socket));
+            client = kj::heap<TwoPartyClient>(*serverStream);
+            backend = kj::heap<BackendApi>(client->bootstrap().castAs<Backend>(), *promiseConverter);
+            emit q->backendConnectedChanged(true);
+            connectionPromise->resolve({});
+            QQmlEngine::setObjectOwnership(connectionPromise, QQmlEngine::JavaScriptOwnership);
+        }));
     }
 
     void socketError(QAbstractSocket::SocketError errorCode)
@@ -471,7 +492,7 @@ void VotingSystem::disconnected()
     d->backend = nullptr;
     d->backend = nullptr;
     d->client = nullptr;
-    d->socketWrapper = nullptr;
+    d->serverStream = nullptr;
     d->socket->close();
 
     emit backendConnectedChanged(false);

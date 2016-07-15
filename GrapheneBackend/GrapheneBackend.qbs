@@ -18,10 +18,6 @@ CppApplication {
     files: [
         "BackendConfiguration.cpp",
         "BackendConfiguration.hpp",
-        "BotanIntegration/TlsPskAdaptor.cpp",
-        "BotanIntegration/TlsPskAdaptor.hpp",
-        "BotanIntegration/TlsPskAdaptorFactory.cpp",
-        "BotanIntegration/TlsPskAdaptorFactory.hpp",
         "VoteDatabase.cpp",
         "VoteDatabase.hpp",
         "GrapheneIntegration/BackendPlugin.cpp",

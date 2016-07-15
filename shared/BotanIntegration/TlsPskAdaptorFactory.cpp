@@ -17,13 +17,14 @@ namespace fmv {
 class CredentialsManager : public Botan::Credentials_Manager {
     Botan::SymmetricKey sessionTicketKey;
     TlsPskAdaptorFactory::GetPskFunction getPskForAccount;
+    std::string myIdentity;
 public:
-    CredentialsManager(TlsPskAdaptorFactory::GetPskFunction&& getPskForAccount)
-        : getPskForAccount(std::move(getPskForAccount)) {}
+    CredentialsManager(TlsPskAdaptorFactory::GetPskFunction&& getPskForAccount, std::string myIdentity)
+        : getPskForAccount(std::move(getPskForAccount)), myIdentity(myIdentity) {}
     virtual ~CredentialsManager();
 
-    virtual std::string psk_identity(const std::string& type, const std::string& context,
-                                     const std::string& identity_hint) override {
+    virtual std::string psk_identity(const std::string&, const std::string&, const std::string&) override {
+        return myIdentity;
     }
     virtual Botan::SymmetricKey psk(const std::string& type, const std::string& context,
                                     const std::string& identity) override {
@@ -63,15 +64,17 @@ struct FactoryEquipment {
     fmv::TlsPolicy policy;
     Botan::TLS::Session_Manager_In_Memory sessionManager;
 
-    FactoryEquipment(TlsPskAdaptorFactory::GetPskFunction&& getPskForAccount)
-        : credentialsManager(std::move(getPskForAccount)),
+    FactoryEquipment(TlsPskAdaptorFactory::GetPskFunction&& getPskForAccount, std::string myIdentity)
+        : credentialsManager(std::move(getPskForAccount), myIdentity),
           sessionManager(rng) {}
 };
 
-TlsPskAdaptorFactory::TlsPskAdaptorFactory(GetPskFunction&& getPskForAccount)
-    : equipment(new FactoryEquipment(std::move(getPskForAccount))) {
+TlsPskAdaptorFactory::TlsPskAdaptorFactory(GetPskFunction&& getPskForAccount, std::string myAccountName)
+    : equipment(kj::heap<FactoryEquipment>(std::move(getPskForAccount), myAccountName)) {
 
 }
+
+TlsPskAdaptorFactory::~TlsPskAdaptorFactory() {}
 
 kj::Own<kj::AsyncIoStream> TlsPskAdaptorFactory::addClientTlsAdaptor(kj::Own<kj::AsyncIoStream>&& stream) {
     auto adaptor = kj::heap<TlsPskAdaptor>(kj::mv(stream));

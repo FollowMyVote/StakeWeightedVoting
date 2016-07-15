@@ -5,15 +5,20 @@ StaticLibrary {
 
     Depends { name: "cpp" }
     Depends { name: "capnp" }
+    Depends { name : "botan" }
 
-    cpp.includePaths: ["capnp"]
     cpp.cxxLanguageVersion: "c++14"
     cpp.cxxStandardLibrary: qbs.hostOS.contains("osx") ? "libc++" : "libstdc++"
     cpp.cxxFlags: capnp.cxxFlags
-    cpp.dynamicLibraries: capnp.dynamicLibraries
+    cpp.dynamicLibraries: [].concat(capnp.dynamicLibraries).concat(botan.dynamicLibraries)
+    cpp.includePaths: ["capnp"].concat(botan.includePaths)
 
     files: [
         "Utilities.hpp",
+        "BotanIntegration/TlsPskAdaptor.cpp",
+        "BotanIntegration/TlsPskAdaptor.hpp",
+        "BotanIntegration/TlsPskAdaptorFactory.cpp",
+        "BotanIntegration/TlsPskAdaptorFactory.hpp",
         "capnp/*.capnp",
     ]
 
@@ -21,10 +26,10 @@ StaticLibrary {
         Depends { name : "cpp" }
         Depends { name : "capnp" }
         Depends { name : "botan" }
-        cpp.includePaths: [".", "capnp"]
         cpp.cxxLanguageVersion: "c++14"
         cpp.cxxStandardLibrary: qbs.hostOS.contains("osx") ? "libc++" : "libstdc++"
         cpp.cxxFlags: capnp.cxxFlags
-        cpp.dynamicLibraries: capnp.dynamicLibraries
+        cpp.dynamicLibraries: [].concat(capnp.dynamicLibraries).concat(botan.dynamicLibraries)
+        cpp.includePaths: [".", "capnp"].concat(botan.includePaths)
     }
 }
