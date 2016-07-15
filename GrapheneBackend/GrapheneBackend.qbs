@@ -6,16 +6,22 @@ CppApplication {
     // Only clang can build the GrapheneBackend; g++ can't handle boost
     condition: graphene.found && cpp.compilerName === "clang++"
     cpp.cxxFlags: "-fno-limit-debug-info"
-    cpp.includePaths: "."
+    cpp.dynamicLibraries: botan.dynamicLibraries
+    cpp.includePaths: ["."].concat(botan.includePaths)
 
     Depends { name: "shared" }
     Depends { name: "graphene" }
+    Depends { name: "botan" }
     Depends { name: "capnp" }
     capnp.importPaths: ["../shared/capnp"]
 
     files: [
         "BackendConfiguration.cpp",
         "BackendConfiguration.hpp",
+        "BotanIntegration/TlsPskAdaptor.cpp",
+        "BotanIntegration/TlsPskAdaptor.hpp",
+        "BotanIntegration/TlsPskAdaptorFactory.cpp",
+        "BotanIntegration/TlsPskAdaptorFactory.hpp",
         "VoteDatabase.cpp",
         "VoteDatabase.hpp",
         "GrapheneIntegration/BackendPlugin.cpp",

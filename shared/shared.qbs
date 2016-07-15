@@ -5,13 +5,12 @@ StaticLibrary {
 
     Depends { name: "cpp" }
     Depends { name: "capnp" }
-    Depends { name: "botan" }
 
     cpp.includePaths: ["capnp"]
     cpp.cxxLanguageVersion: "c++14"
     cpp.cxxStandardLibrary: qbs.hostOS.contains("osx") ? "libc++" : "libstdc++"
-    cpp.cxxFlags: [].concat(capnp.cxxFlags, botan.cxxFlags).filter(function(x) { return !!x })
-    cpp.dynamicLibraries: [].concat(capnp.dynamicLibraries, botan.dynamicLibraries)
+    cpp.cxxFlags: capnp.cxxFlags
+    cpp.dynamicLibraries: capnp.dynamicLibraries
 
     files: [
         "Utilities.hpp",
@@ -25,7 +24,7 @@ StaticLibrary {
         cpp.includePaths: [".", "capnp"]
         cpp.cxxLanguageVersion: "c++14"
         cpp.cxxStandardLibrary: qbs.hostOS.contains("osx") ? "libc++" : "libstdc++"
-        cpp.cxxFlags: [].concat(capnp.cxxFlags, botan.cxxFlags).filter(function(x) { return !!x })
-        cpp.dynamicLibraries: [].concat(capnp.dynamicLibraries, botan.dynamicLibraries)
+        cpp.cxxFlags: capnp.cxxFlags
+        cpp.dynamicLibraries: capnp.dynamicLibraries
     }
 }
