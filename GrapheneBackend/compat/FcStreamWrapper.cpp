@@ -26,7 +26,10 @@ namespace swv {
 FcStreamWrapper::FcStreamWrapper(kj::Own<fc::iostream> wrappedStream)
     : wrappedStream(kj::mv(wrappedStream)) {}
 
-FcStreamWrapper::~FcStreamWrapper() {}
+FcStreamWrapper::~FcStreamWrapper() {
+    writerHandle.cancel_and_wait(__FUNCTION__);
+    readerHandle.cancel_and_wait(__FUNCTION__);
+}
 
 kj::Promise<void> FcStreamWrapper::write(const void* buffer, size_t size) {
     if (flushWrites)
@@ -72,19 +75,15 @@ void FcStreamWrapper::shutdownWrite() {
 }
 
 void FcStreamWrapper::startWrites() {
-    // If there is not already a context processing pending writes, queue one up
-    if (!writesProcessing) {
-        writesProcessing = true;
-        fc::async([this] {processWrites();});
-    }
+    // If there is not currently a fiber processing pending writes, queue one up
+    if (!writerHandle.valid() || writerHandle.ready())
+        writerHandle = fc::async([this] {processWrites();});
 }
 
 void FcStreamWrapper::startReads() {
-    // If there is not already a context processing pending reads, queue one up
-    if (!readsProcessing) {
-        readsProcessing = true;
-        fc::async([this] {processReads();});
-    }
+    // If there is not currently a fiber processing pending reads, queue one up
+    if (!readerHandle.valid() || readerHandle.ready())
+        readerHandle = fc::async([this] {processReads();});
 }
 
 void FcStreamWrapper::processWrites() {
@@ -105,8 +104,6 @@ void FcStreamWrapper::processWrites() {
 
     if (flushWrites)
         wrappedStream->flush();
-
-    writesProcessing = false;
 }
 
 void FcStreamWrapper::processReads()
@@ -138,8 +135,6 @@ void FcStreamWrapper::processReads()
         }
         pendingReads.pop();
     }
-
-    readsProcessing = false;
 }
 
 } // namespace swv

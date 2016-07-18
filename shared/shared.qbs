@@ -12,6 +12,7 @@ StaticLibrary {
     cpp.cxxFlags: capnp.cxxFlags
     cpp.dynamicLibraries: [].concat(capnp.dynamicLibraries).concat(botan.dynamicLibraries)
     cpp.includePaths: ["capnp"].concat(botan.includePaths)
+    cpp.libraryPaths: botan.libraryPaths
 
     files: [
         "Utilities.hpp",
@@ -31,5 +32,6 @@ StaticLibrary {
         cpp.cxxFlags: capnp.cxxFlags
         cpp.dynamicLibraries: [].concat(capnp.dynamicLibraries).concat(botan.dynamicLibraries)
         cpp.includePaths: [".", "capnp"].concat(botan.includePaths)
+        cpp.libraryPaths: botan.libraryPaths
     }
 }

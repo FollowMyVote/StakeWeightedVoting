@@ -59,18 +59,16 @@ App {
        signal connected
 
        Component.onCompleted: {
-           configureChainAdaptor(false).then(function() {
-               connectToBackend("127.0.0.1", 17073)
-           })
+           configureChainAdaptor(false).then(function(){ return initialize().then(function(){ connected() }) })
        }
        onError: {
            console.log("Error from Voting System: %1".arg(message))
            showError(message.split(";").slice(-1))
        }
-       onIsReadyChanged: {
-           console.log("Voting System Ready: " + isReady)
+       onCurrentAccountChanged: {
+           console.log("Current account set to " + currentAccount.name)
+           connectToBackend("127.0.0.1", 17073, currentAccount.name)
        }
-       onCurrentAccountChanged: console.log("Current account set to " + currentAccount.name)
     }
 
     Navigation {
@@ -87,15 +85,12 @@ App {
                     title: qsTr("My Feed")
                     votingSystem: _votingSystem
                     getContestGeneratorFunction: function() {
-                        if (votingSystem.isReady)
+                        if (votingSystem.isBackendConnected)
                             return votingSystem.backend.getFeedGenerator()
                     }
                     Component.onCompleted: {
-                        if (votingSystem.isReady) loadContests()
-                        else votingSystem.isReadyChanged.connect(function() {
-                            if (votingSystem.isReady)
-                                loadContests()
-                        })
+                        if (votingSystem.isBackendConnected) loadContests()
+                        else votingSystem.connected.connect(function() { loadContests() })
                     }
                 }
             }
@@ -111,7 +106,7 @@ App {
                     title: qsTr("My Polls")
                     votingSystem: _votingSystem
                     getContestGeneratorFunction: function() {
-                        if (votingSystem.isReady && votingSystem.currentAccount)
+                        if (votingSystem.isBackendConnected && votingSystem.currentAccount)
                             return votingSystem.backend.getContestsByCreator(votingSystem.currentAccount.name)
                     }
                     listView.headerPositioning: ListView.PullBackHeader
@@ -132,7 +127,7 @@ App {
                     title: qsTr("Voted Contests")
                     votingSystem: _votingSystem
                     getContestGeneratorFunction: function() {
-                        if (votingSystem.isReady)
+                        if (votingSystem.isBackendConnected)
                             return votingSystem.backend.getVotedContests()
                     }
                     listView.headerPositioning: ListView.PullBackHeader

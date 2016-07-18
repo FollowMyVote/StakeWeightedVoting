@@ -23,7 +23,7 @@ public:
         : getPskForAccount(std::move(getPskForAccount)), myIdentity(myIdentity) {}
     virtual ~CredentialsManager();
 
-    virtual std::string psk_identity(const std::string&, const std::string&, const std::string&) override {
+    virtual std::string psk_identity(const std::string& type, const std::string& context, const std::string& hint) override {
         return myIdentity;
     }
     virtual Botan::SymmetricKey psk(const std::string& type, const std::string& context,

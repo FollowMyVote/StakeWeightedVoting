@@ -64,7 +64,6 @@ class VotingSystem : public QObject
     Q_OBJECT
     Q_PROPERTY(swv::data::Account* currentAccount READ currentAccount WRITE setCurrentAccount NOTIFY currentAccountChanged)
     Q_PROPERTY(QString lastError READ lastError NOTIFY error)
-    Q_PROPERTY(bool isReady READ isReady NOTIFY isReadyChanged)
     Q_PROPERTY(bool isBackendConnected READ backendConnected NOTIFY backendConnectedChanged)
     Q_PROPERTY(swv::BlockchainWalletApi* chain READ chain CONSTANT)
     Q_PROPERTY(swv::BackendApi* backend READ backend NOTIFY backendConnectedChanged)
@@ -78,7 +77,6 @@ public:
     ~VotingSystem() noexcept;
 
     QString lastError() const;
-    bool isReady() const;
     bool backendConnected() const;
 
     BlockchainWalletApi* chain();
@@ -90,12 +88,18 @@ public:
      * @brief Connect to the backend at the specified network endpoint
      * @param hostname Host name or IP of the Follow My Vote server
      * @param port Port of the Follow My Vote server
+     * @param myAccountName Account to authenticate with (usually the currentAccount)
      * @return A promise which will resolve or break when the connection succeeds or fails
      *
      * The VotingSystem does not retain ownership of the returned promise; it is the caller's responsibility to delete
      * it. The returned promise does not resolve to any value; it has the semantics of a void promise.
      */
-    Q_INVOKABLE Promise* connectToBackend(QString hostname, quint16 port);
+    Q_INVOKABLE Promise* connectToBackend(QString hostname, quint16 port, QString myAccountName);
+    /**
+      * @brief Initialize the voting system by fetching chain state and account information from the backand and wallet
+      * @return A promise which will resolve when initialization is complete
+      */
+    Q_INVOKABLE Promise* initialize();
 
     /**
      * @brief Cast the current decision for the given contest
@@ -123,8 +127,6 @@ signals:
      * the error.
      */
     void error(QString message);
-    void isReadyChanged();
-    void ready();
     void backendConnectedChanged(bool backendConnected);
     void currentAccountChanged(swv::data::Account* currentAccount);
 

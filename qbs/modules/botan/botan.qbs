@@ -14,6 +14,10 @@ Module {
     property var dynamicLibraries: botanProbe.libs.filter(function(name) {
         return name.startsWith("-l")
     }).map(function(name) { return name.slice(2) })
+    property var libraryPaths: botanProbe.libs.filter(function(name) {
+        return name.startsWith("-L")
+    }).map(function(name) { return name.slice(2) })
+
 
     Probes.PkgConfigProbe {
         id: botanProbe

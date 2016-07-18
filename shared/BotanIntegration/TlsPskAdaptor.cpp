@@ -9,7 +9,7 @@ void TlsPskAdaptor::startReadLoop() {
                       [this, buffer = kj::mv(buffer)](size_t bytesRead) mutable {
         buffer.resize(bytesRead);
         processBytes(kj::mv(buffer));
-    });
+    }).eagerlyEvaluate(nullptr);
 }
 
 void TlsPskAdaptor::processBytes(std::vector<Botan::byte> buffer) {
@@ -23,12 +23,15 @@ void TlsPskAdaptor::processBytes(std::vector<Botan::byte> buffer) {
                           [this, buffer = kj::mv(buffer)](size_t bytesRead) mutable {
             buffer.resize(bytesRead);
             processBytes(kj::mv(buffer));
-        });
+        }).eagerlyEvaluate(nullptr);
     } else
         startReadLoop();
 }
 
 void TlsPskAdaptor::processReadRequests() {
+    if (!channel->is_active())
+        return;
+
     while (!incomingApplicationData.empty())
         while (!readRequests.empty()) {
             auto& request = readRequests.front();
@@ -53,6 +56,7 @@ void TlsPskAdaptor::processReadRequests() {
 }
 
 void TlsPskAdaptor::handleEof() {
+    KJ_LOG(DBG, "Got EOF. Canceling reads.");
     processReadRequests();
     hitEof = true;
     while (!readRequests.empty()) {
@@ -82,6 +86,8 @@ Botan::TLS::Channel::data_cb TlsPskAdaptor::dataCallback() {
 
 Botan::TLS::Channel::alert_cb TlsPskAdaptor::alertCallback() {
     return [this](Botan::TLS::Alert alert, const Botan::byte data[], size_t dataSize) {
+        auto dataPtr = kj::ArrayPtr<const kj::byte>(reinterpret_cast<const kj::byte*>(data), dataSize);
+        KJ_LOG(DBG, "TLS Alert", alert.type_string(), dataPtr, dataSize, alert.is_fatal(), alert.is_valid());
         if (alert.is_fatal())
             handleEof();
     };
@@ -89,6 +95,7 @@ Botan::TLS::Channel::alert_cb TlsPskAdaptor::alertCallback() {
 
 Botan::TLS::Channel::handshake_cb TlsPskAdaptor::handshakeCallback() {
     return [this](const Botan::TLS::Session& session) -> bool {
+        KJ_LOG(DBG, "TLS handshake finished", session.ciphersuite().to_string());
         return true;
     };
 }
@@ -115,10 +122,10 @@ kj::Promise<void> TlsPskAdaptor::write(const void* buffer, size_t size) {
 }
 
 kj::Promise<size_t> TlsPskAdaptor::read(void* buffer, size_t minBytes, size_t maxBytes) {
-    if (!channel)
+    if (!channel) {
+        KJ_LOG(ERROR, "tryRead with no channel");
         return KJ_EXCEPTION(DISCONNECTED, "Adaptor cannot be used without a channel. Call setChannel first");
-    if (!channel->is_active())
-        return KJ_EXCEPTION(DISCONNECTED, "Connection is no longer active");
+    }
     if (hitEof)
         return KJ_EXCEPTION(DISCONNECTED, "EOF");
 
@@ -132,10 +139,10 @@ kj::Promise<size_t> TlsPskAdaptor::read(void* buffer, size_t minBytes, size_t ma
 }
 
 kj::Promise<size_t> TlsPskAdaptor::tryRead(void* buffer, size_t minBytes, size_t maxBytes) {
-    if (!channel)
+    if (!channel) {
+        KJ_LOG(ERROR, "tryRead with no channel");
         return KJ_EXCEPTION(DISCONNECTED, "Adaptor cannot be used without a channel. Call setChannel first");
-    if (!channel->is_active())
-        return KJ_EXCEPTION(DISCONNECTED, "Connection is no longer active");
+    }
     if (hitEof)
         return size_t(0);
 
