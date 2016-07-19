@@ -5,7 +5,7 @@ const static int INITIAL_READ_SIZE = 100;
 
 void TlsPskAdaptor::startReadLoop() {
     auto buffer = std::vector<Botan::byte>(INITIAL_READ_SIZE);
-    readPromise = stream->read(buffer.data(), 1, buffer.size()).then(
+    readPromise = stream->tryRead(buffer.data(), 1, buffer.size()).then(
                       [this, buffer = kj::mv(buffer)](size_t bytesRead) mutable {
         buffer.resize(bytesRead);
         processBytes(kj::mv(buffer));
@@ -18,45 +18,71 @@ void TlsPskAdaptor::processBytes(std::vector<Botan::byte> buffer) {
     auto bytesNeeded = channel->received_data(kj::mv(buffer));
 
     if (bytesNeeded) {
-        buffer.resize(bytesNeeded);
-        readPromise = stream->read(buffer.data(), buffer.size(), buffer.size()).then(
-                          [this, buffer = kj::mv(buffer)](size_t bytesRead) mutable {
-            buffer.resize(bytesRead);
-            processBytes(kj::mv(buffer));
-        }).eagerlyEvaluate(nullptr);
+        try {
+            buffer.resize(bytesNeeded);
+            readPromise = stream->read(buffer.data(), buffer.size(), buffer.size()).then(
+                              [this, buffer = kj::mv(buffer)](size_t bytesRead) mutable {
+                buffer.resize(bytesRead);
+                processBytes(kj::mv(buffer));
+            }).eagerlyEvaluate(nullptr);
+        } catch (kj::Exception& e) {
+            KJ_LOG(ERROR, "Exception when reading from wire", e);
+            handleEof();
+        }
     } else
         startReadLoop();
+}
+
+kj::Promise<void> TlsPskAdaptor::writeImpl(kj::ArrayPtr<const kj::byte> buffer) {
+        // As per botan docs, a call to send will trigger at least one call to outputFunction before it returns.
+        // outputFunction will populate sendPromises with the promises from the underlying AsyncIoStream. Join those
+        // promises as our return promise.
+        while(sendPromises.size()) sendPromises.removeLast();
+        auto tlsException = kj::runCatchingExceptions([this, buffer] {
+            channel->send(static_cast<const Botan::byte*>(buffer.begin()), buffer.size());
+        });
+        KJ_IF_MAYBE(e, tlsException) {
+            while(sendPromises.size()) sendPromises.removeLast();
+            return kj::mv(*e);
+        }
+
+        return kj::joinPromises(sendPromises.releaseAsArray());
+}
+
+kj::ForkedPromise<void> TlsPskAdaptor::setupHandshakeCompletedPromise() {
+    auto paf = kj::newPromiseAndFulfiller<void>();
+    handshakeCompletedFulfiller = kj::mv(paf.fulfiller);
+    return paf.promise.fork();
 }
 
 void TlsPskAdaptor::processReadRequests() {
     if (!channel->is_active())
         return;
 
-    while (!incomingApplicationData.empty())
-        while (!readRequests.empty()) {
-            auto& request = readRequests.front();
-            if (incomingApplicationData.size() >= request.buffer.size()) {
-                for (size_t i = 0; i < request.buffer.size(); ++i) {
-                    request.buffer[i] = incomingApplicationData.front();
-                    incomingApplicationData.pop();
-                }
-                request.fulfiller->fulfill(request.buffer.size());
-                readRequests.pop();
-            } else if (incomingApplicationData.size() >= request.minBytes) {
-                auto bytesAvailable = incomingApplicationData.size();
-                for (size_t i = 0; i < bytesAvailable; ++i) {
-                    request.buffer[i] = incomingApplicationData.front();
-                    incomingApplicationData.pop();
-                }
-                request.fulfiller->fulfill(kj::mv(bytesAvailable));
-                readRequests.pop();
-            } else
-                return;
-        }
+    while (!incomingApplicationData.empty() && !readRequests.empty()) {
+        auto& request = readRequests.front();
+        if (incomingApplicationData.size() >= request.buffer.size()) {
+            for (size_t i = 0; i < request.buffer.size(); ++i) {
+                request.buffer[i] = incomingApplicationData.front();
+                incomingApplicationData.pop();
+            }
+            request.fulfiller->fulfill(request.buffer.size());
+            readRequests.pop();
+        } else if (incomingApplicationData.size() >= request.minBytes) {
+            auto bytesAvailable = incomingApplicationData.size();
+            for (size_t i = 0; i < bytesAvailable; ++i) {
+                request.buffer[i] = incomingApplicationData.front();
+                incomingApplicationData.pop();
+            }
+            request.fulfiller->fulfill(kj::mv(bytesAvailable));
+            readRequests.pop();
+        } else
+            return;
+    }
 }
 
 void TlsPskAdaptor::handleEof() {
-    KJ_LOG(DBG, "Got EOF. Canceling reads.");
+    KJ_LOG(INFO, "Got EOF. Canceling reads.");
     processReadRequests();
     hitEof = true;
     while (!readRequests.empty()) {
@@ -87,7 +113,7 @@ Botan::TLS::Channel::data_cb TlsPskAdaptor::dataCallback() {
 Botan::TLS::Channel::alert_cb TlsPskAdaptor::alertCallback() {
     return [this](Botan::TLS::Alert alert, const Botan::byte data[], size_t dataSize) {
         auto dataPtr = kj::ArrayPtr<const kj::byte>(reinterpret_cast<const kj::byte*>(data), dataSize);
-        KJ_LOG(DBG, "TLS Alert", alert.type_string(), dataPtr, dataSize, alert.is_fatal(), alert.is_valid());
+        KJ_LOG(INFO, "TLS Alert", alert.type_string(), dataPtr, dataSize, alert.is_fatal(), alert.is_valid());
         if (alert.is_fatal())
             handleEof();
     };
@@ -95,7 +121,8 @@ Botan::TLS::Channel::alert_cb TlsPskAdaptor::alertCallback() {
 
 Botan::TLS::Channel::handshake_cb TlsPskAdaptor::handshakeCallback() {
     return [this](const Botan::TLS::Session& session) -> bool {
-        KJ_LOG(DBG, "TLS handshake finished", session.ciphersuite().to_string());
+        KJ_LOG(INFO, "TLS handshake finished", session.ciphersuite().to_string());
+        handshakeCompletedFulfiller->fulfill();
         return true;
     };
 }
@@ -103,22 +130,20 @@ Botan::TLS::Channel::handshake_cb TlsPskAdaptor::handshakeCallback() {
 TlsPskAdaptor::TlsPskAdaptor(kj::Own<AsyncIoStream> stream)
     : stream(kj::mv(stream)) {}
 
-kj::Promise<void> TlsPskAdaptor::write(const void* buffer, size_t size) {
+kj::Promise<void> TlsPskAdaptor::write(const void* data, size_t dataSize) {
     if (!channel)
         return KJ_EXCEPTION(DISCONNECTED, "Adaptor cannot be used without a channel. Call setChannel first");
-    // As per botan docs, a call to send will trigger at least one call to outputFunction before it returns.
-    // outputFunction will populate sendPromises with the promises from the underlying AsyncIoStream. Join those
-    // promises as our return promise.
-    while(sendPromises.size()) sendPromises.removeLast();
-    auto tlsException = kj::runCatchingExceptions([this, buffer, size] {
-        channel->send(static_cast<const Botan::byte*>(buffer), size);
-    });
-    KJ_IF_MAYBE(e, tlsException) {
-        while(sendPromises.size()) sendPromises.removeLast();
-        return kj::mv(*e);
-    }
 
-    return kj::joinPromises(sendPromises.releaseAsArray());
+    if (handshakeCompletedFulfiller->isWaiting()) {
+        // Defer passing this data to the TLS layer until after the handshake completes
+        auto buffer = kj::heapArray<const kj::byte>(static_cast<const kj::byte*>(data), dataSize);
+        return handshakeCompleted.addBranch().then([this, buffer = kj::mv(buffer)]() mutable -> kj::Promise<void> {
+            return writeImpl(buffer);
+        });
+    } else {
+        // Go ahead and send it now, skip making a copy :D
+        return writeImpl(kj::ArrayPtr<const kj::byte>(static_cast<const kj::byte*>(data), dataSize));
+    }
 }
 
 kj::Promise<size_t> TlsPskAdaptor::read(void* buffer, size_t minBytes, size_t maxBytes) {
@@ -153,7 +178,6 @@ kj::Promise<size_t> TlsPskAdaptor::tryRead(void* buffer, size_t minBytes, size_t
                                                 false});
     processReadRequests();
     return kj::mv(paf.promise);
-
 }
 
 void TlsPskAdaptor::shutdownWrite() {

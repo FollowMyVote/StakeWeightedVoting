@@ -59,7 +59,7 @@ App {
        signal connected
 
        Component.onCompleted: {
-           configureChainAdaptor(false).then(function(){ return initialize().then(function(){ connected() }) })
+           configureChainAdaptor(false).then(initialize)
        }
        onError: {
            console.log("Error from Voting System: %1".arg(message))
@@ -67,7 +67,7 @@ App {
        }
        onCurrentAccountChanged: {
            console.log("Current account set to " + currentAccount.name)
-           connectToBackend("127.0.0.1", 17073, currentAccount.name)
+           connectToBackend("127.0.0.1", 17073, currentAccount.name).then(connected)
        }
     }
 
@@ -90,7 +90,7 @@ App {
                     }
                     Component.onCompleted: {
                         if (votingSystem.isBackendConnected) loadContests()
-                        else votingSystem.connected.connect(function() { loadContests() })
+                        else votingSystem.connected.connect(loadContests)
                     }
                 }
             }

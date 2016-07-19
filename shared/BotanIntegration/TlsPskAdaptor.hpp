@@ -15,6 +15,14 @@ class TlsPskAdaptor : public kj::AsyncIoStream {
     kj::Own<kj::AsyncIoStream> stream;
     kj::Own<Botan::TLS::Channel> channel;
 
+    /// Promise/fulfiller that resolves when the handshake completes
+    /// @{
+    // NOTE: The fulfiller must be declared before the promise, as we initialize both in the promise's initialization
+    kj::Own<kj::PromiseFulfiller<void>> handshakeCompletedFulfiller;
+    kj::ForkedPromise<void> handshakeCompleted = setupHandshakeCompletedPromise();
+    kj::ForkedPromise<void> setupHandshakeCompletedPromise();
+    /// @}
+
     /// Promises for data being written to wire
     kj::Vector<kj::Promise<void>> sendPromises;
     /// Promise for more data from the wire
@@ -48,6 +56,8 @@ class TlsPskAdaptor : public kj::AsyncIoStream {
     /// The body of the read loop
     void processBytes(std::vector<Botan::byte> buffer);
 
+    kj::Promise<void> writeImpl(kj::ArrayPtr<const kj::byte> buffer);
+
 public:
     TlsPskAdaptor(kj::Own<kj::AsyncIoStream> stream);
     virtual ~TlsPskAdaptor(){}
@@ -58,7 +68,7 @@ public:
     }
 
     // AsyncOutputStream interface
-    virtual kj::Promise<void> write(const void* buffer, size_t size) override;
+    virtual kj::Promise<void> write(const void* data, size_t dataSize) override;
     virtual kj::Promise<void> write(kj::ArrayPtr<const kj::ArrayPtr<const kj::byte>> pieces) override {
         return kj::joinPromises(KJ_MAP(piece, pieces) {
             return write(piece.begin(), piece.size());
