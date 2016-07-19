@@ -23,7 +23,7 @@
  * THE SOFTWARE.
  */
 
-#include "BackendPlugin.hpp"
+#include "GrapheneIntegration/BackendPlugin.hpp"
 #include "compat/FcEventPort.hpp"
 
 #include <graphene/app/application.hpp>

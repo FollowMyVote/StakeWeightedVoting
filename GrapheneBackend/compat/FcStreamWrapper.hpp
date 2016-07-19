@@ -20,6 +20,7 @@
 
 #include <kj/async-io.h>
 
+#include <fc/thread/future.hpp>
 #include <fc/io/iostream.hpp>
 
 #include <queue>
@@ -70,11 +71,11 @@ class FcStreamWrapper : public kj::AsyncIoStream
     kj::Own<fc::iostream> wrappedStream;
 
     std::queue<WriteContext> pendingWrites;
-    bool writesProcessing = false;
+    fc::future<void> writerHandle;
     bool flushWrites = false;
 
     std::queue<ReadContext> pendingReads;
-    bool readsProcessing = false;
+    fc::future<void> readerHandle;
     bool eof = false;
 
 public:

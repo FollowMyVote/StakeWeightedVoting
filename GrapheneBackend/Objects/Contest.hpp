@@ -18,7 +18,7 @@
 #ifndef CONTEST_HPP
 #define CONTEST_HPP
 
-#include "Types.hpp"
+#include "Objects.hpp"
 
 #include <graphene/db/object.hpp>
 #include <graphene/db/generic_index.hpp>
@@ -69,6 +69,7 @@ struct ByStartTime;
 using ContestObjectMultiIndex = bmi::multi_index_container<
     Contest,
     bmi::indexed_by<
+        bmi::ordered_unique<bmi::tag<gch::by_id>, bmi::member<gch::object, gch::object_id_type, &gch::object::id>>,
         bmi::ordered_unique<bmi::tag<ById>, bmi::member<Contest, gch::operation_history_id_type, &Contest::contestId>>,
         bmi::ordered_non_unique<bmi::tag<ByCreator>, bmi::member<Contest, gch::account_id_type, &Contest::creator>>,
         bmi::ordered_non_unique<bmi::tag<ByCoin>, bmi::member<Contest, gch::asset_id_type, &Contest::coin>>,

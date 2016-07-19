@@ -27,6 +27,7 @@
 
 #include <map>
 
+namespace fmv { class TlsPskAdaptorFactory; }
 namespace swv {
 class VoteDatabase;
 
@@ -47,6 +48,7 @@ class BackendPlugin : public graphene::app::plugin
     uint64_t nextClientId = 0;
     kj::TaskSet tasks;
     kj::Own<VoteDatabase> database;
+    kj::Own<fmv::TlsPskAdaptorFactory> cryptoFactory;
 
     void acceptLoop();
     kj::Own<ClientConnection> prepareClient(kj::Own<fc::tcp_socket> clientSocket);

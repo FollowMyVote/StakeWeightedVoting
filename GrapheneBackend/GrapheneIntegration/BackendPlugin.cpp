@@ -16,11 +16,18 @@
  * along with SWV.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "BackendPlugin.hpp"
-#include "BackendServer.hpp"
 #include "VoteDatabase.hpp"
+#include "ApiServers/BackendServer.hpp"
 #include "compat/FcStreamWrapper.hpp"
+#include <BotanIntegration/TlsPskAdaptorFactory.hpp>
+
+#include <contest.capnp.h>
 
 #include <capnp/rpc-twoparty.h>
+
+#include <graphene/utilities/key_conversion.hpp>
+
+#include <fc/crypto/digest.hpp>
 
 namespace swv {
 
@@ -41,6 +48,19 @@ void BackendPlugin::plugin_initialize(const boost::program_options::variables_ma
 
 void BackendPlugin::plugin_startup() {
     database->startup(app().p2p_node());
+    cryptoFactory = kj::heap<fmv::TlsPskAdaptorFactory>([&vdb = database](std::string clientName) {
+        KJ_LOG(DBG, "Client authenticating", clientName);
+        auto& index = vdb->db().get_index_type<gch::account_index>().indices().get<gch::by_name>();
+        auto itr = index.find(clientName);
+        KJ_REQUIRE(itr != index.end(), "Could not find client's account", clientName);
+
+        auto privateKey = *graphene::utilities::wif_to_key(
+                              vdb->configuration().reader().getAuthenticatingKeyWif());
+        auto secret = fc::digest(privateKey.get_shared_secret(itr->options.memo_key));
+        return std::vector<uint8_t>(reinterpret_cast<uint8_t*>(secret.data()),
+                                    reinterpret_cast<uint8_t*>(secret.data() + secret.data_size()));
+    }, *CONTEST_PUBLISHING_ACCOUNT);
+
     running = true;
     server.set_reuse_address();
     server.listen(serverPort);
@@ -97,9 +117,8 @@ void BackendPlugin::acceptLoop() {
 }
 
 kj::Own<BackendPlugin::ClientConnection> BackendPlugin::prepareClient(kj::Own<fc::tcp_socket> clientSocket) {
-    // TODO: authenticate client, setup encryption
-    return kj::heap<BackendPlugin::ClientConnection>(kj::heap<BackendServer>(*database),
-                                                     kj::heap<FcStreamWrapper>(kj::mv(clientSocket)));
+    auto stream = cryptoFactory->addServerTlsAdaptor(kj::heap<FcStreamWrapper>(kj::mv(clientSocket)));
+    return kj::heap<BackendPlugin::ClientConnection>(kj::heap<BackendServer>(*database), kj::mv(stream));
 }
 
 } // namespace swv

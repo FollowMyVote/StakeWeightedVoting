@@ -10,6 +10,8 @@ struct Config {
     # Current contest limits
     contestPublishingAccountWif @2 :Text;
     # Private key (WIF format) for the contest publishing account
+    authenticatingKeyWif @3 :Text;
+    # Private key to authenticate to client with (usually the contest publisher's memo key)
 
     struct Price {
        lineItem @0 :ContestCreator.LineItems;

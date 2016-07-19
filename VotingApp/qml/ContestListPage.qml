@@ -56,11 +56,11 @@ ListPage {
     listView.topMargin: window.dp(16)
     listView.spacing: window.dp(16)
     listView.onAtYEndChanged: {
-        if(listView.atYEnd && votingSystem.isReady) {
+        if(listView.atYEnd && votingSystem.isBackendConnected) {
             contestList.loadContests()
         }
     }
-    listView.onCountChanged: if (listView.contentHeight < height && votingSystem.isReady)
+    listView.onCountChanged: if (listView.contentHeight < height && votingSystem.isBackendConnected)
                                  contestList.loadContests()
 
     ListModel {
@@ -107,32 +107,4 @@ ListPage {
             }
         }
     }
-
-//    actions: [
-//        Action {
-//            name: qsTr("Find Polls")
-//            iconName: "action/search"
-//        },
-//        Action {
-//            name: qsTr("Notifications")
-//            iconName: "social/notifications_none"
-//        },
-//        Action {
-//            name: qsTr("Reload Polls")
-//            iconName: "navigation/refresh"
-//            onTriggered: reloadContests()
-//        },
-//        Action {
-//            name: qsTr("Settings")
-//            iconName: "action/settings"
-//        },
-//        Action {
-//            name: qsTr("Help")
-//            iconName: "action/help"
-//        },
-//        Action {
-//            name: qsTr("Send Feedback")
-//            iconName: "action/feedback"
-//        }
-//    ]
 }

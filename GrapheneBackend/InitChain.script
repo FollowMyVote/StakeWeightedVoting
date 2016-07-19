@@ -1,0 +1,11 @@
+set_password asdfghgh
+unlock asdfghgh
+import_balance nathan [5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3] true
+import_key nathan 5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3
+upgrade_account nathan true
+create_account_with_brain_key "fmvaccountkey" "follow-my-vote" nathan nathan true
+transfer nathan follow-my-vote 100000000 CORE "" true
+import_key follow-my-vote 5K8GBhm34qWAEhsfEfBcqn5RYjSz1pZ9vkJFa5SsAYjUNEd35b2
+upgrade_account follow-my-vote true
+create_asset follow-my-vote VOTE 4 {"max_supply": 100000000000000, "issuer_permissions": 79, "flags": 4, "core_exchange_rate": {"base": {"amount": 100000, "asset_id": "1.3.0"}, "quote": {"amount": 10000, "asset_id": "1.3.1"}}} null true
+issue_asset nathan 10000000 VOTE "" true

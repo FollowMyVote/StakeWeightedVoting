@@ -1,42 +1,37 @@
 import qbs
-import qbs.Probes
 
 StaticLibrary {
     name: "shared"
 
     Depends { name: "cpp" }
-    cpp.includePaths: ["capnp"]
-    cpp.cxxLanguageVersion: "c++14"
-    cpp.cxxStandardLibrary: "libstdc++"
-    Depends { name: "Qt"; submodules: ["qml"] }
     Depends { name: "capnp" }
+    Depends { name : "botan" }
 
-    Probes.PkgConfigProbe {
-        id: capnpProbe
-        name: "capnp-rpc"
-    }
-    property bool foundCapnp: {
-        if (!capnpProbe.found)
-            throw "Unable to find capnp. Try setting PATH and PKG_CONFIG_PATH to ensure capnp can be found."
-        return true
-    }
-
-    cpp.cxxFlags: capnpProbe.cflags
-    cpp.dynamicLibraries: capnpProbe.libs.filter(function(name) { return name.startsWith("-l") }).map(function(name) { return name.slice(2) })
+    cpp.cxxLanguageVersion: "c++14"
+    cpp.cxxStandardLibrary: qbs.hostOS.contains("osx") ? "libc++" : "libstdc++"
+    cpp.cxxFlags: capnp.cxxFlags
+    cpp.dynamicLibraries: [].concat(capnp.dynamicLibraries).concat(botan.dynamicLibraries)
+    cpp.includePaths: ["capnp"].concat(botan.includePaths)
+    cpp.libraryPaths: botan.libraryPaths
 
     files: [
-        "TwoPartyServer.cpp",
-        "TwoPartyServer.hpp",
         "Utilities.hpp",
+        "BotanIntegration/TlsPskAdaptor.cpp",
+        "BotanIntegration/TlsPskAdaptor.hpp",
+        "BotanIntegration/TlsPskAdaptorFactory.cpp",
+        "BotanIntegration/TlsPskAdaptorFactory.hpp",
         "capnp/*.capnp",
     ]
 
     Export {
         Depends { name : "cpp" }
-        cpp.includePaths: [".", "capnp"]
+        Depends { name : "capnp" }
+        Depends { name : "botan" }
         cpp.cxxLanguageVersion: "c++14"
-        cpp.cxxStandardLibrary: "libstdc++"
-        cpp.cxxFlags: capnpProbe.cflags
-        cpp.dynamicLibraries: capnpProbe.libs.filter(function(name) { return name.startsWith("-l") }).map(function(name) { return name === "-pthread"? "" : name.slice(2) })
+        cpp.cxxStandardLibrary: qbs.hostOS.contains("osx") ? "libc++" : "libstdc++"
+        cpp.cxxFlags: capnp.cxxFlags
+        cpp.dynamicLibraries: [].concat(capnp.dynamicLibraries).concat(botan.dynamicLibraries)
+        cpp.includePaths: [".", "capnp"].concat(botan.includePaths)
+        cpp.libraryPaths: botan.libraryPaths
     }
 }

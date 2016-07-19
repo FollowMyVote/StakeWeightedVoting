@@ -18,7 +18,7 @@
 #ifndef DECISION_HPP
 #define DECISION_HPP
 
-#include "Types.hpp"
+#include "Objects.hpp"
 
 #include <boost/multi_index/composite_key.hpp>
 
@@ -44,6 +44,7 @@ struct ByContest;
 using DecisionObjectMultiIndex = bmi::multi_index_container<
     Decision,
     bmi::indexed_by<
+        bmi::ordered_unique<bmi::tag<gch::by_id>, bmi::member<gch::object, gch::object_id_type, &gch::object::id>>,
         bmi::ordered_unique<bmi::tag<ById>,
                             bmi::member<Decision, gch::operation_history_id_type, &Decision::decisionId>>,
         bmi::ordered_unique<bmi::tag<ByVoter>,

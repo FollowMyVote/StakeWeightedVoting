@@ -45,7 +45,6 @@ Decision::~Decision() noexcept
 {}
 
 void Decision::updateFields(::Decision::Reader r) {
-    update_id(convertBlob(ReaderPacker(r.getId()).array()).toHex());
     update_contestId(convertBlob(ReaderPacker(r.getContest()).array()).toHex());
     updateOpinions(r.getOpinions());
     updateWriteIns(r.getWriteIns());
@@ -53,15 +52,9 @@ void Decision::updateFields(::Decision::Reader r) {
 
 void Decision::serialize(::Decision::Builder b) {
     QByteArray bin = QByteArray::fromHex(m_id.toLocal8Bit());
-    {
-        BlobMessageReader reader(convertBlob(bin));
-        b.setId(reader->getRoot<::DecisionId>());
-    }
     bin = QByteArray::fromHex(m_contestId.toLocal8Bit());
-    {
-        BlobMessageReader reader(convertBlob(bin));
-        b.setContest(reader->getRoot<::ContestId>());
-    }
+    BlobMessageReader reader(convertBlob(bin));
+    b.setContest(reader->getRoot<::ContestId>());
     serializeOpinions(b);
     serializeWriteIns(b);
 }

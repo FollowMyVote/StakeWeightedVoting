@@ -1,12 +1,9 @@
 #ifndef UTILITIES_HPP
 #define UTILITIES_HPP
 
-#include <capnp/serialize-packed.h>
+#include "capnp/datagram.capnp.h"
 
-#ifdef HAVE_GRAPHENE
-#include <fc/io/raw_variant.hpp>
-#include <fc/crypto/digest.hpp>
-#endif
+#include <capnp/serialize-packed.h>
 
 #include <map.capnp.h>
 
@@ -15,16 +12,6 @@
 #include <string>
 
 namespace swv {
-
-#ifdef HAVE_GRAPHENE
-template <typename T>
-inline T unpack(capnp::Data::Reader r) {
-    return fc::raw::unpack<T>(std::vector<char>(r.begin(), r.end()));
-}
-inline fc::sha256 digest(capnp::Data::Reader r) {
-    return fc::digest(std::vector<char>(r.begin(), r.end()));
-}
-#endif
 
 inline std::map<std::string, std::string> convertMap(::Map<capnp::Text, capnp::Text>::Reader map) {
     std::map<std::string, std::string> result;
@@ -81,6 +68,27 @@ public:
         return outs.getArray();
     }
 };
+
+inline bool operator== (const ::Datagram::DatagramKey::Reader& a, const ::Datagram::DatagramKey::Reader& b) {
+    if (a.getKey().which() != b.getKey().which())
+        return false;
+    if (a.getKey().isContestKey()) {
+        auto ac = a.getKey().getContestKey().getCreator();
+        auto bc = b.getKey().getContestKey().getCreator();
+        if (ac.which() != bc.which())
+            return false;
+        if (ac.isAnonymous())
+            return bc.isAnonymous();
+        return ac.getSignature().getId() == bc.getSignature().getId() &&
+                ac.getSignature().getSignature() == bc.getSignature().getSignature();
+    }
+    auto ad = a.getKey().getDecisionKey().getBalanceId();
+    auto bd = b.getKey().getDecisionKey().getBalanceId();
+    return ad.getAccountInstance() == bd.getAccountInstance() && ad.getCoinInstance() == bd.getCoinInstance();
+}
+inline bool operator!= (const ::Datagram::DatagramKey::Reader& a, const ::Datagram::DatagramKey::Reader& b) {
+    return !(a==b);
+}
 
 } // namespace swv
 #endif // UTILITIES_HPP

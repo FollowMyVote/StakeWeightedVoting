@@ -16,13 +16,6 @@
  * along with SWV.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <kj/debug.h>
-#include <kj/common.h>
-
-#include <QDebug>
-#include <QQmlEngine>
-#include <Utilities.hpp>
-
 #include "VotingSystem.hpp"
 #include "DataStructures/Coin.hpp"
 #include "DataStructures/Balance.hpp"
@@ -35,14 +28,22 @@
 #include "PromiseConverter.hpp"
 #include "TwoPartyClient.hpp"
 #include "BitsharesWalletBridge.hpp"
+#include "capnqt/QSocketWrapper.hpp"
 
 #include <FakeBlockchain.hpp>
-#include <QDesktopServices>
 
-#include "capnqt/QSocketWrapper.hpp"
+#include <Utilities.hpp>
+#include <BotanIntegration/TlsPskAdaptorFactory.hpp>
+
+#include <QDebug>
+#include <QQmlEngine>
+#include <QDesktopServices>
 
 #include <capnp/message.h>
 #include <capnp/serialize-packed.h>
+
+#include <kj/debug.h>
+#include <kj/common.h>
 
 namespace swv {
 
@@ -80,19 +81,124 @@ public:
     kj::Own<TwoPartyClient> client;
     kj::Own<BackendApi> backend;
     kj::Own<QTcpSocket> socket;
-    kj::Own<QSocketWrapper> socketWrapper;
+    kj::Own<fmv::TlsPskAdaptorFactory> cryptoFactory;
+    kj::Own<kj::AsyncIoStream> serverStream;
     kj::Own<bts::BitsharesWalletBridge> bitsharesBridge;
     swv::data::Account* currentAccount = nullptr;
 
-    void completeConnection(Promise* connectionPromise) {
+    kj::Promise<void> populateCoinList() {
         Q_Q(VotingSystem);
 
-        socketWrapper = kj::heap<QSocketWrapper>(*socket);
-        client = kj::heap<TwoPartyClient>(*socketWrapper);
-        backend = kj::heap<BackendApi>(client->bootstrap().castAs<Backend>(), *promiseConverter);
-        emit q->backendConnectedChanged(true);
-        connectionPromise->resolve({});
-        QQmlEngine::setObjectOwnership(connectionPromise, QQmlEngine::JavaScriptOwnership);
+        return chain->chain().getAllCoinsRequest().send().then(
+                    [this, q](capnp::Response<BlockchainWallet::GetAllCoinsResults> response) {
+            for (int i = 0; i < q->m_coins->count(); ++i)
+                q->m_coins->get(i)->deleteLater();
+            q->m_coins->clear();
+
+            // Create a wrapper for each coin, set its contents, and add it to the coin list. Also, schedule a fetch of
+            // the statistics when the backend is connected
+            for(auto coin : response.getCoins()) {
+                auto wrapper = new data::Coin(q);
+                wrapper->updateFields(coin);
+                q->m_coins->append(wrapper);
+
+                QObject::connect(q, &VotingSystem::backendConnectedChanged,
+                                 wrapper, [this, q, wrapper]() mutable {
+                    if (!q->backendConnected()) return;
+
+                    auto request = backend->backend().getCoinDetailsRequest();
+                    request.setCoinId(wrapper->get_coinId());
+                    // Get one week of volume history
+                    request.setVolumeHistoryLength(24 * 7);
+                    tasks.add(request.send().then([wrapper](auto r) {
+                        wrapper->updateFields(r.getDetails());
+                    }));
+                });
+            };
+        });
+    }
+
+    kj::Promise<void> populateMyAccounts() {
+        Q_Q(VotingSystem);
+
+        using BalanceList = capnp::Response<BlockchainWallet::GetBalancesBelongingToResults>;
+        return chain->chain().listMyAccountsRequest().send().then(
+                                       [this](auto response) {
+            auto accountNames = response.getAccountNames();
+            // Get balances for each account
+            auto accounts = kj::heapArrayBuilder<kj::Promise<std::tuple<QString,
+                    BalanceList>>>(accountNames.size());
+            for (auto name : accountNames) {
+                auto request = chain->chain().getBalancesBelongingToRequest();
+                request.setOwner(name);
+                accounts.add(request.send().then([name = QString::fromStdString(name)](BalanceList response) {
+                    return std::make_tuple(name, kj::mv(response));
+                }));
+            }
+            return kj::joinPromises(accounts.finish());
+        }).then([this, q](kj::Array<std::tuple<QString, BalanceList>> accountsBalances) {
+            // Get the persisted current account name, if any
+            auto currentAccountName = QSettings().value("currentAccount").toString();
+            qDebug() << "Persisted current account is" << currentAccountName;
+
+            // Create Account object with AccountBalances populated, add them to myAccounts list
+            for (auto& tuple : accountsBalances) {
+                QString name = std::get<0>(tuple);
+                BalanceList balances = kj::mv(std::get<1>(tuple));
+
+                auto account = new data::Account(q);
+                account->update_name(name);
+
+                // Sum up balances by coin ID
+                std::map<quint64, qint64> balanceSums;
+                for (Balance::Reader balance : balances.getBalances())
+                    balanceSums[balance.getType()] += balance.getAmount();
+                // Store balance sums in Account object
+                for (auto balPair : balanceSums) {
+                    data::AccountBalance balance{balPair.first, balPair.second};
+                    account->get_balances()->append(QVariant::fromValue(balance));
+                }
+
+                q->m_myAccounts->append(account);
+                // If this account is the persisted current account, set that too
+                if (account->get_name() == currentAccountName)
+                    q->setCurrentAccount(account);
+            }
+            // If no account is set yet, go ahead and set the first one we find (we should set a current account at
+            // startup if at all possible)
+            if (currentAccount == nullptr && !q->m_myAccounts->isEmpty())
+                q->setCurrentAccount(q->m_myAccounts->first());
+        });
+    }
+
+    void completeConnection(Promise* connectionPromise, QString authenticatingAccount) {
+        Q_Q(VotingSystem);
+
+        if (!currentAccount) {
+            q->setLastError("Unable to connect: no current account is selected. "
+                            "Go to settings and select an account.");
+            return;
+        }
+
+        auto request = chain->chain().getSharedSecretRequest();
+        request.setMyAccountNameOrId(convertText(authenticatingAccount));
+        request.setOtherAccountNameOrId(*CONTEST_PUBLISHING_ACCOUNT);
+        tasks.add(request.send().then(
+                      [this, q, connectionPromise,
+                       authenticatingAccount](capnp::Response<BlockchainWallet::GetSharedSecretResults> response) {
+            auto secret = QCryptographicHash::hash(convertBlob(response.getSecret()), QCryptographicHash::Sha256);
+            cryptoFactory = kj::heap<fmv::TlsPskAdaptorFactory>([secret = kj::mv(secret)](std::string) {
+                return std::vector<uint8_t>(secret.begin(), secret.end());
+            }, authenticatingAccount.toStdString());
+
+            qDebug() << "Authenticating to server as" << authenticatingAccount;
+            serverStream = cryptoFactory->addClientTlsAdaptor(kj::heap<QSocketWrapper>(*socket));
+            client = kj::heap<TwoPartyClient>(*serverStream);
+            backend = kj::heap<BackendApi>(client->bootstrap().castAs<Backend>(), *promiseConverter);
+            emit q->backendConnectedChanged(true);
+            connectionPromise->resolve({});
+            QQmlEngine::setObjectOwnership(connectionPromise, QQmlEngine::JavaScriptOwnership);
+        }));
     }
 
     void socketError(QAbstractSocket::SocketError errorCode)
@@ -143,92 +249,8 @@ VotingSystem::VotingSystem(QObject *parent)
             QSettings().remove("currentAccount");
     });
 
-    connect(this, &VotingSystem::backendConnectedChanged, this, &VotingSystem::isReadyChanged);
     connect(d->chain, &BlockchainWalletApi::error, this, [this](QString error) {
         setLastError(error);
-    });
-    connect(this, &VotingSystem::isReadyChanged, this, [this, d] {
-        if (isReady()) {
-            emit ready();
-
-            // Fetch coin list, populate property
-            d->promiseConverter->adopt(d->chain->chain().getAllCoinsRequest().send().then(
-                                          [this, d](capnp::Response<BlockchainWallet::GetAllCoinsResults> response) {
-                for (int i = 0; i < m_coins->count(); ++i)
-                    m_coins->get(i)->deleteLater();
-                m_coins->clear();
-
-                // For each coin, fetch the statistics and return a promise for the coin and statistics
-                return kj::joinPromises(KJ_MAP(coin, response.getCoins()) {
-                                            auto wrapper = new data::Coin(this);
-                                            wrapper->updateFields(coin);
-
-                                            auto request = d->backend->backend().getCoinDetailsRequest();
-                                            request.setCoinId(coin.getId());
-                                            // Get one week of volume history
-                                            request.setVolumeHistoryLength(24 * 7);
-                                            return request.send().then([wrapper](auto r) {
-                                                return std::make_tuple(wrapper, kj::mv(r));
-                                            });
-                                        });
-            }).then([this, d](kj::Array<std::tuple<data::Coin*, capnp::Response<Backend::GetCoinDetailsResults>>> r) {
-                // Create wrappers for the coins with statistics set
-                for (const auto& tuple : r) {
-                    auto wrapper = std::get<0>(tuple);
-                    wrapper->updateFields(std::get<1>(tuple).getDetails());
-                    m_coins->append(wrapper);
-                }
-            }));
-
-            // Get my accounts, populate property
-            using BalanceList = capnp::Response<BlockchainWallet::GetBalancesBelongingToResults>;
-            d->promiseConverter->adopt(d->chain->chain().listMyAccountsRequest().send().then(
-                                           [this, d](auto response) {
-                auto accountNames = response.getAccountNames();
-                // Get balances for each account
-                auto accounts = kj::heapArrayBuilder<kj::Promise<std::tuple<QString,
-                                                                            BalanceList>>>(accountNames.size());
-                for (auto name : accountNames) {
-                    auto request = d->chain->chain().getBalancesBelongingToRequest();
-                    request.setOwner(name);
-                    accounts.add(request.send().then([name = QString::fromStdString(name)](BalanceList response) {
-                        return std::make_tuple(name, kj::mv(response));
-                    }));
-                }
-                return kj::joinPromises(accounts.finish());
-            }).then([this, d](kj::Array<std::tuple<QString, BalanceList>> accountsBalances) {
-                // Get the persisted current account name, if any
-                auto currentAccountName = QSettings().value("currentAccount").toString();
-
-                // Create Account object with AccountBalances populated, add them to myAccounts list
-                for (auto& tuple : accountsBalances) {
-                    QString name = std::get<0>(tuple);
-                    BalanceList balances = kj::mv(std::get<1>(tuple));
-
-                    auto account = new data::Account(this);
-                    account->update_name(name);
-
-                    // Sum up balances by coin ID
-                    std::map<quint64, qint64> balanceSums;
-                    for (Balance::Reader balance : balances.getBalances())
-                        balanceSums[balance.getType()] += balance.getAmount();
-                    // Store balance sums in Account object
-                    for (auto balPair : balanceSums) {
-                        data::AccountBalance balance{balPair.first, balPair.second};
-                        account->get_balances()->append(QVariant::fromValue(balance));
-                    }
-
-                    m_myAccounts->append(account);
-                    // If this account is the persisted current account, set that too
-                    if (account->get_name() == currentAccountName)
-                        setCurrentAccount(account);
-                    // If no account is set yet, go ahead and set the first one we find (we should set a current
-                    // account at startup if at all possible)
-                    else if (d->currentAccount == nullptr)
-                        setCurrentAccount(account);
-                }
-            }));
-        }
     });
 }
 
@@ -238,10 +260,6 @@ VotingSystem::~VotingSystem() noexcept
 QString VotingSystem::lastError() const {
     Q_D(const VotingSystem);
     return d->lastError;
-}
-
-bool VotingSystem::isReady() const {
-    return backendConnected();
 }
 
 bool VotingSystem::backendConnected() const {
@@ -263,7 +281,7 @@ data::Account* VotingSystem::currentAccount() const {
     return d->currentAccount;
 }
 
-Promise* VotingSystem::connectToBackend(QString hostname, quint16 port) {
+Promise* VotingSystem::connectToBackend(QString hostname, quint16 port, QString myAccountName) {
     Q_D(VotingSystem);
 
     Promise* connectPromise = new Promise(this);
@@ -272,15 +290,25 @@ Promise* VotingSystem::connectToBackend(QString hostname, quint16 port) {
     // of to do this is with a shared pointer.
     auto connection = std::make_shared<QMetaObject::Connection>();
     *connection = connect(d->socket, &QTcpSocket::connected, this,
-                          [d, connectPromise, connection]() mutable {
+                          [d, connectPromise, connection, myAccountName]() mutable {
         QObject::disconnect(*connection);
         connection.reset();
-        d->completeConnection(connectPromise);
+        d->completeConnection(connectPromise, myAccountName);
     });
+    d->socket->abort();
     d->socket->connectToHost(hostname, port);
     KJ_LOG(DBG, "Attempting new connection", hostname.toStdString(), port);
 
     return connectPromise;
+}
+
+Promise* VotingSystem::initialize() {
+    Q_D(VotingSystem);
+
+    auto promises = kj::heapArrayBuilder<kj::Promise<void>>(2);
+    promises.add(d->populateCoinList());
+    promises.add(d->populateMyAccounts());
+    return d->promiseConverter->convert(kj::joinPromises(promises.finish()));
 }
 
 Promise* VotingSystem::configureChainAdaptor(bool useTestingBackend) {
@@ -322,7 +350,7 @@ Promise* VotingSystem::configureChainAdaptor(bool useTestingBackend) {
 Promise* VotingSystem::castCurrentDecision(swv::data::Contest* contest) {
     Q_D(VotingSystem);
 
-    if (!isReady()) {
+    if (!backendConnected()) {
         setLastError(tr("Unable to cast vote. Please ensure that you are online and that you have connected this app "
                         "to the blockchain."));
         return nullptr;
@@ -377,10 +405,12 @@ Promise* VotingSystem::castCurrentDecision(swv::data::Contest* contest) {
 
         capnp::MallocMessageBuilder message;
         auto builder = message.initRoot<::Decision>();
+        decision->update_contestId(contest->get_id());
         decision->serialize(builder);
         ReaderPacker packer(builder.asReader());
 
         auto promises = kj::heapArrayBuilder<kj::Promise<void>>(balances.size());
+        KJ_LOG(DBG, balances);
         for (auto balance : balances) {
             auto request = chain->chain().publishDatagramRequest();
             request.setPayingBalance(balance.getId());
@@ -423,7 +453,7 @@ data::Account* VotingSystem::getAccount(QString name) {
 void VotingSystem::cancelCurrentDecision(data::Contest* contest) {
     Q_D(VotingSystem);
 
-    if (!isReady()) {
+    if (!backendConnected()) {
         setLastError(tr("Unable to cancel vote. Please ensure that you are online and that you have connected this "
                         "app to the blockchain."));
         return;
@@ -469,7 +499,7 @@ void VotingSystem::disconnected()
     d->backend = nullptr;
     d->backend = nullptr;
     d->client = nullptr;
-    d->socketWrapper = nullptr;
+    d->serverStream = nullptr;
     d->socket->close();
 
     emit backendConnectedChanged(false);

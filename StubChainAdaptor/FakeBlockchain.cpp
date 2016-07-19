@@ -1,9 +1,11 @@
 #include "FakeBlockchain.hpp"
 #include "BackendStub.hpp"
+#include <Utilities.hpp>
 
 #include <kj/debug.h>
 
 #include <algorithm>
+#include <string>
 
 namespace swv {
 FakeBlockchain::FakeBlockchain() {
@@ -143,27 +145,6 @@ kj::Promise<void> FakeBlockchain::getContestById(BlockchainWallet::Server::GetCo
     return kj::READY_NOW;
 }
 
-bool operator== (const ::Datagram::DatagramKey::Reader& a, const ::Datagram::DatagramKey::Reader& b) {
-    if (a.getKey().which() != b.getKey().which())
-        return false;
-    if (a.getKey().isContestKey()) {
-        auto ac = a.getKey().getContestKey().getCreator();
-        auto bc = b.getKey().getContestKey().getCreator();
-        if (ac.which() != bc.which())
-            return false;
-        if (ac.isAnonymous())
-            return bc.isAnonymous();
-        return ac.getSignature().getId() == bc.getSignature().getId() &&
-                ac.getSignature().getSignature() == bc.getSignature().getSignature();
-    }
-    auto ad = a.getKey().getDecisionKey().getBalanceId();
-    auto bd = b.getKey().getDecisionKey().getBalanceId();
-    return ad.getAccountInstance() == bd.getAccountInstance() && ad.getCoinInstance() == bd.getCoinInstance();
-}
-bool operator!= (const ::Datagram::DatagramKey::Reader& a, const ::Datagram::DatagramKey::Reader& b) {
-    return !(a==b);
-}
-
 kj::Promise<void> FakeBlockchain::getDatagramByBalance(BlockchainWallet::Server::GetDatagramByBalanceContext context) {
     auto key = context.getParams().getKey();
     auto balanceId = context.getParams().getBalanceId();
@@ -300,7 +281,7 @@ Signed<Contest>::Builder FakeBlockchain::createContest() {
     return pair.first->second.get();
 }
 
-Balance::Builder FakeBlockchain::createBalance(const std::string& owner, uint64_t type) {
+Balance::Builder FakeBlockchain::createBalance(std::string owner, uint64_t type) {
     auto accountId = accounts.size();
     auto itr = std::find(accounts.begin(), accounts.end(), owner);
     if (itr != accounts.end())

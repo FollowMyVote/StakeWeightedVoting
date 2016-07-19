@@ -6,7 +6,6 @@ Module {
     Depends { name: "cpp" }
     property string graphenePath: Environment.getEnv("GRAPHENE_PATH")
     property bool found: File.exists(graphenePath+"/lib/libgraphene_app.a")
-    cpp.defines: ["HAVE_GRAPHENE"]
     cpp.includePaths: graphenePath+"/include"
     cpp.libraryPaths: [graphenePath+"/lib", graphenePath+"/lib/cryptonomex"]
     cpp.staticLibraries: [

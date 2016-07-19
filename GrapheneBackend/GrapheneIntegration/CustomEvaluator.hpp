@@ -18,10 +18,10 @@
 #ifndef CUSTOMEVALUATOR_HPP
 #define CUSTOMEVALUATOR_HPP
 
-#include "Types.hpp"
-
 #include <graphene/chain/evaluator.hpp>
 #include <graphene/chain/protocol/custom.hpp>
+
+namespace gch = graphene::chain;
 
 namespace swv {
 

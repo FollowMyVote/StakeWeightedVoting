@@ -55,9 +55,14 @@ interface BlockchainWallet {
     # publishingBalance (payingBalance and publishingBalance must belong to the same account). This call will complete
     # after the publishing transaction has been broadcast, but before it is confirmed. Return value is the hex-encoded
     # ID of the publishing transaction
+
     transfer @9 (sendingAccount :Text, receivingAccount :Text,
                  amount :Int64, coinId :UInt64, memo :Text) -> (transactionId :Text);
     # Transfer specified amount from sendingAccount to receivingAccount with memo. Memo will not be encrypted. This
     # call will complete after the transfer transaction has been broadcast, but before it is confirmed. Return value is
     # the hex-encoded ID of the transfer transaction.
+
+    getSharedSecret @10 (myAccountNameOrId :Text, otherAccountNameOrId :Text) -> (secret :Data);
+    # Get the shared secret between my account's private memo key and other account's public memo key
+    # Returns the 512-bit shared secret
 }
