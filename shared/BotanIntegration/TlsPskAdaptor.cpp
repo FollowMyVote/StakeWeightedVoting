@@ -5,11 +5,11 @@ const static int INITIAL_READ_SIZE = 100;
 
 void TlsPskAdaptor::startReadLoop() {
     auto buffer = std::vector<Botan::byte>(INITIAL_READ_SIZE);
-    readPromise = stream->tryRead(buffer.data(), 1, buffer.size()).then(
+    tasks.add(stream->tryRead(buffer.data(), 1, buffer.size()).then(
                       [this, buffer = kj::mv(buffer)](size_t bytesRead) mutable {
         buffer.resize(bytesRead);
         processBytes(kj::mv(buffer));
-    }).eagerlyEvaluate(nullptr);
+    }));
 }
 
 void TlsPskAdaptor::processBytes(std::vector<Botan::byte> buffer) {
@@ -18,17 +18,12 @@ void TlsPskAdaptor::processBytes(std::vector<Botan::byte> buffer) {
     auto bytesNeeded = channel->received_data(kj::mv(buffer));
 
     if (bytesNeeded) {
-        try {
-            buffer.resize(bytesNeeded);
-            readPromise = stream->read(buffer.data(), buffer.size(), buffer.size()).then(
-                              [this, buffer = kj::mv(buffer)](size_t bytesRead) mutable {
-                buffer.resize(bytesRead);
-                processBytes(kj::mv(buffer));
-            }).eagerlyEvaluate(nullptr);
-        } catch (kj::Exception& e) {
-            KJ_LOG(ERROR, "Exception when reading from wire", e);
-            handleEof();
-        }
+        buffer.resize(bytesNeeded);
+        tasks.add(stream->read(buffer.data(), buffer.size(), buffer.size()).then(
+                          [this, buffer = kj::mv(buffer)](size_t bytesRead) mutable {
+            buffer.resize(bytesRead);
+            processBytes(kj::mv(buffer));
+        }));
     } else
         startReadLoop();
 }
@@ -128,7 +123,7 @@ Botan::TLS::Channel::handshake_cb TlsPskAdaptor::handshakeCallback() {
 }
 
 TlsPskAdaptor::TlsPskAdaptor(kj::Own<AsyncIoStream> stream)
-    : stream(kj::mv(stream)) {}
+    : stream(kj::mv(stream)), errorHandler(*this), tasks(errorHandler) {}
 
 kj::Promise<void> TlsPskAdaptor::write(const void* data, size_t dataSize) {
     if (!channel)
@@ -143,6 +138,8 @@ kj::Promise<void> TlsPskAdaptor::write(const void* data, size_t dataSize) {
     } else {
         // Go ahead and send it now, skip making a copy :D
         return writeImpl(kj::ArrayPtr<const kj::byte>(static_cast<const kj::byte*>(data), dataSize));
+
+
     }
 }
 
@@ -184,6 +181,11 @@ void TlsPskAdaptor::shutdownWrite() {
     KJ_REQUIRE(!!channel, "Adaptor cannot be used without a channel. Call setChannel first");
     channel->close();
     stream->shutdownWrite();
+}
+
+void TlsPskAdaptor::ErrorHandler::taskFailed(kj::Exception&& exception) {
+    KJ_LOG(ERROR, "Exception when reading from wire", exception);
+    adaptor.handleEof();
 }
 
 } // namespace fmv

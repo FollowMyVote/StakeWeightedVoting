@@ -15,6 +15,15 @@ class TlsPskAdaptor : public kj::AsyncIoStream {
     kj::Own<kj::AsyncIoStream> stream;
     kj::Own<Botan::TLS::Channel> channel;
 
+    struct ErrorHandler : public kj::TaskSet::ErrorHandler {
+        TlsPskAdaptor& adaptor;
+        ErrorHandler(TlsPskAdaptor& adaptor) : adaptor(adaptor) {}
+        virtual ~ErrorHandler() {}
+        // ErrorHandler interface
+        virtual void taskFailed(kj::Exception&& exception) override;
+    } errorHandler;
+    kj::TaskSet tasks;
+
     /// Promise/fulfiller that resolves when the handshake completes
     /// @{
     // NOTE: The fulfiller must be declared before the promise, as we initialize both in the promise's initialization
@@ -25,8 +34,6 @@ class TlsPskAdaptor : public kj::AsyncIoStream {
 
     /// Promises for data being written to wire
     kj::Vector<kj::Promise<void>> sendPromises;
-    /// Promise for more data from the wire
-    kj::Promise<void> readPromise = KJ_EXCEPTION(FAILED, "readPromise is not yet set. Call setChannel");
 
     /// Store incoming app-layer data here until something reads it
     std::queue<kj::byte> incomingApplicationData;
