@@ -15,6 +15,7 @@ Page {
 
     property VotingSystem votingSystem
     property var contestCreator
+    property var dialog
 
     function showError(message) {
         var errorString = message
@@ -28,6 +29,11 @@ Page {
         else
             message = errorString
 
+        if (dialog) {
+            dialog.close()
+            dialog.destroy()
+            dialog = null
+        }
         NativeDialog.confirm("Error purchasing contest", message, function(){}, false)
         internal.lastErrorTime = new Date().getTime()
     }
@@ -73,8 +79,8 @@ Page {
                         purchaseRequest.sponsorEndDate = endTime
                     }
 
-                    var dialog = purchaseDialog.createObject(createContestPage,
-                                                             {"purchaseApi": purchaseRequest.submit()})
+                    var purchaseApi = purchaseRequest.submit()
+                    dialog = purchaseDialog.createObject(createContestPage, {"purchaseApi": purchaseApi})
                     dialog.accepted.connect(function() {
                         var transferPromise = votingSystem.chain.transfer(votingSystem.currentAccount.name,
                                                                           dialog.selectedPrice.payAddress,
@@ -86,18 +92,21 @@ Page {
                             dialog.close()
                             createContestPage.navigationStack.pop()
                             dialog.destroy()
+                            dialog = null
                         }, showError)
                     })
                     dialog.canceled.connect(function() {
                         dialog.close()
                         dialog.destroy()
+                        dialog = null
                     })
-
-                    dialog.open()
                 } catch (exception) {
                     NativeDialog.confirm(qsTr("Error creating contest"),
                                          qsTr("An error occurred when processing your request: %1").arg(exception),
                                          function(){}, false)
+                    dialog.close()
+                    dialog.destroy()
+                    dialog = null
                 }
             }
         }
@@ -118,7 +127,7 @@ Page {
             property var selectedPriceIndex: priceList.currentIdx
             property var selectedPrice: priceList.currentKey
 
-            contentWidth: window.width * .6
+            contentWidth: window.width * .8
             contentHeight: window.height * .6
 
             function updatePrices(totals, adjustments) {
@@ -126,7 +135,10 @@ Page {
                 priceList.currentIdx = 0
                 adjustmentRepeater.model = adjustments
             }
-            Component.onCompleted: purchaseApi.prices([]).then(updatePrices)
+            Component.onCompleted: purchaseApi.prices([]).then(function(prices) {
+                updatePrices(prices)
+                open()
+            })
 
             MouseArea {
                 anchors.fill: parent
@@ -136,14 +148,17 @@ Page {
                 anchors.fill: parent
                 spacing: window.dp(8)
 
-                Row {
+                RowLayout {
                     spacing: window.dp(8)
+                    width: parent.width
+
                     AppText {
                         text: qsTr('Promo code')
                     }
                     AppTextField {
                         id: promoCodeField
                         onAccepted: promoCodeApplyButton.clicked()
+                        Layout.fillWidth: true
                     }
                     AppButton {
                         id: promoCodeApplyButton
@@ -159,8 +174,8 @@ Page {
                     ComboList {
                         id: priceList
                         delegate: ComboListDelegateForSimpleVar {
-                            property var coin: votingSystem.getCoin(modelData.coinId)
-                            value: modelData.amount / Math.pow(10, coin.precision) + " " + coin.name
+                            property var coin: votingSystem.getCoin(modelData? modelData.coinId : 0)
+                            value: (modelData? modelData.amount : 0) / Math.pow(10, coin.precision) + " " + coin.name
                         }
                     }
                 }
