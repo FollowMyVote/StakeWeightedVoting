@@ -185,7 +185,8 @@ public:
         request.setOtherAccountNameOrId(*CONTEST_PUBLISHING_ACCOUNT);
         tasks.add(request.send().then(
                       [this, q, connectionPromise,
-                       authenticatingAccount](capnp::Response<BlockchainWallet::GetSharedSecretResults> response) {
+                       authenticatingAccount](capnp::Response<BlockchainWallet::GetSharedSecretResults> response)
+        {
             auto secret = QCryptographicHash::hash(convertBlob(response.getSecret()), QCryptographicHash::Sha256);
             cryptoFactory = kj::heap<fmv::TlsPskAdaptorFactory>([secret = kj::mv(secret)](std::string) {
                 return std::vector<uint8_t>(secret.begin(), secret.end());

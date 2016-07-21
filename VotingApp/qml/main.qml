@@ -59,7 +59,12 @@ App {
        signal connected
 
        Component.onCompleted: {
-           configureChainAdaptor(false).then(initialize)
+           configureChainAdaptor(false).then(function() {
+               loadingOverlay.state = "WALLET_LOADING"
+               initialize().then(function() {
+                   loadingOverlay.state = "WALLET_UNLOCKING"
+               })
+           })
        }
        onError: {
            console.log("Error from Voting System: %1".arg(message))
@@ -67,7 +72,10 @@ App {
        }
        onCurrentAccountChanged: {
            console.log("Current account set to " + currentAccount.name)
-           connectToBackend("127.0.0.1", 17073, currentAccount.name).then(connected)
+           connectToBackend("127.0.0.1", 17073, currentAccount.name).then(function() {
+               loadingOverlay.state = "LOADED"
+               connected()
+           })
        }
     }
 
@@ -159,5 +167,101 @@ App {
                 }
             }
         }
+    }
+
+    Rectangle {
+        id: loadingOverlay
+        anchors.fill: parent
+        color: "grey"
+        enabled: !!opacity
+        state: "WALLET_CONNECTING"
+
+        property alias text: loadingText.text
+
+        MouseArea {
+            anchors.fill: parent
+            onClicked: { return true }
+            acceptedButtons: Qt.AllButtons
+            preventStealing: true
+        }
+        AppText {
+            id: loadingText
+            anchors.fill: parent
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+            wrapMode: Text.WrapAtWordBoundaryOrAnywhere
+        }
+
+        states: [
+            State {
+                name: "LOADING"
+                PropertyChanges {
+                    target: loadingOverlay
+                    opacity: .4
+                }
+            },
+            State {
+                name: "WALLET_CONNECTING"
+                extend: "LOADING"
+                PropertyChanges {
+                    target: loadingOverlay
+                    text: "Connecting to Wallet..."
+                }
+            },
+            State {
+                name: "WALLET_LOADING"
+                extend: "LOADING"
+                PropertyChanges {
+                    target: loadingOverlay
+                    text: "Wallet is Initializing..."
+                }
+            },
+            State {
+                name: "WALLET_UNLOCKING"
+                extend: "LOADING"
+                PropertyChanges {
+                    target: loadingOverlay
+                    text: "Connected to Wallet\nPlease unlock wallet"
+                }
+            },
+            State {
+                name: "BACKEND_CONNECTING"
+                extend: "LOADING"
+                PropertyChanges {
+                    target: loadingOverlay
+                    text: "Loading..."
+                }
+            },
+            State {
+                name: "LOADED"
+                PropertyChanges {
+                    target: loadingOverlay
+                    opacity: 0
+                }
+            }
+        ]
+        transitions: [
+            Transition {
+                from: "*"
+                to: "*"
+                PropertyAnimation {
+                    property: "opacity"
+                    duration: 500
+                }
+                SequentialAnimation {
+                    NumberAnimation {
+                        target: loadingText
+                        property: "opacity"
+                        from: 1; to: 0
+                    }
+                    PropertyAction { target: loadingOverlay; property: "text" }
+                    NumberAnimation {
+                        target: loadingText
+                        property: "opacity"
+                        from: 0; to: 1
+                    }
+                }
+            }
+        ]
     }
 }
