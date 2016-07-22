@@ -110,28 +110,28 @@ void FcStreamWrapper::processReads()
 {
     while (!pendingReads.empty()) {
         auto& currentRead = pendingReads.front();
-        size_t totalBytes = 0;
+        size_t bytesRead = 0;
 
-        auto reader = [this, &currentRead, &totalBytes] {
+        auto reader = [this, &currentRead, &bytesRead] {
             // Keep reading until we have at least minBytes
-            while (totalBytes < currentRead.minBytes) {
+            while (bytesRead < currentRead.minBytes) {
                 // Ask for maxBytes -- readsome will give us all of them if they're available, or fewer if not.
                 // It will only throw if it gets an EOF before the first byte is read.
-                totalBytes += wrappedStream->readsome(static_cast<char*>(currentRead.buffer) + totalBytes,
-                                                     currentRead.maxBytes - totalBytes);
+                bytesRead += wrappedStream->readsome(static_cast<char*>(currentRead.buffer) + bytesRead,
+                                                     currentRead.maxBytes - bytesRead);
             }
         };
 
-        if (kj::runCatchingExceptions(kj::mv(reader)) == nullptr)
+        if (!eof && kj::runCatchingExceptions(kj::mv(reader)) == nullptr)
             // Nominal case -- everything is fine
-            currentRead.fulfiller->fulfill(kj::mv(totalBytes));
+            currentRead.fulfiller->fulfill(kj::mv(bytesRead));
         else {
             eof = true;
             if (currentRead.truncateForEof)
-                currentRead.fulfiller->fulfill(kj::mv(totalBytes));
+                currentRead.fulfiller->fulfill(kj::mv(bytesRead));
             else
                 currentRead.fulfiller->reject(KJ_EXCEPTION(DISCONNECTED, "EOF when attempting to read",
-                                                           totalBytes, currentRead.minBytes));
+                                                           bytesRead, currentRead.minBytes));
         }
         pendingReads.pop();
     }

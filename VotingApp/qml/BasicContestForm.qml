@@ -47,9 +47,9 @@ Item {
         interactive: true
         flickableDirection: Flickable.VerticalFlick
         contentHeight: createContestFormColumn.height
-        width: parent.width
+        anchors.fill: parent
         anchors.rightMargin: window.dp(8)
-        
+
         Column {
             id: createContestFormColumn
             width: parent.width
@@ -57,25 +57,24 @@ Item {
             anchors.centerIn: parent
             ExtraAnchors.topLeftCorner: parent
             anchors.margins: window.dp(16)
-            
+
             AppTextField {
                 id: contestName
                 width: parent.width - window.dp(32)
                 placeholderText: qsTr("Contest Name")
-//                maximumLength: contestLimits[ContestLimits.NameLength]
+                maximumLength: contestLimits[ContestLimits.NameLength]? contestLimits[ContestLimits.NameLength] : 100
                 Component.onCompleted: forceActiveFocus()
                 KeyNavigation.tab: contestDescription
             }
-            // Temporarily a one line field because multi line edits aren't developed enough
-            AppTextField {
+            AppTextEdit {
                 id: contestDescription
                 width: parent.width - window.dp(32)
                 placeholderText: qsTr("Description")
-//                wrapMode: TextEdit.Wrap
+                wrapMode: TextEdit.Wrap
             }
             Row {
                 spacing: window.dp(8)
-                
+
                 AppText {
                     id: weightCoinLabel
                     text: qsTr("Coin to Poll:")
@@ -96,15 +95,14 @@ Item {
             }
             Column {
                 width: parent.width
-//                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.centerIn:parent
+                anchors.horizontalCenter: parent.horizontalCenter
                 spacing: window.dp(8)
                 Repeater {
                     id: contestantRepeater
                     model: ListModel{}
                     delegate: RowLayout {
                         width: parent.width
-                        
+
                         IconButton {
                             icon: IconType.remove
                             onClicked: contestantRepeater.model.remove(index)
@@ -112,10 +110,9 @@ Item {
                         IconButton {
                             icon: IconType.edit
                             onClicked: {
-                                var dialog = contestantDialog.createObject(basicContestForm, {
-                                                                               "contestantName": name,
+                                var dialog = contestantDialog.createObject(basicContestForm, { "contestantName": name,
                                                                                "contestantDescription": description})
-                                
+
                                 dialog.accepted.connect(function() {
                                     name = dialog.contestantName
                                     description = dialog.contestantDescription
@@ -126,7 +123,7 @@ Item {
                                     dialog.close()
                                     dialog.destroy()
                                 })
-                                
+
                                 dialog.open()
                             }
                         }
@@ -148,11 +145,11 @@ Item {
             }
             AppButton {
                 text: qsTr("Add Contestant")
-                
+
                 onClicked: {
                     // Create a new dialog as defined by the contestDialog component
                     var dialog = contestantDialog.createObject(basicContestForm)
-                    
+
                     // Handle dialog accepted/canceled signals
                     dialog.accepted.connect(function() {
                         var contestant = {"name": dialog.contestantName, "description": dialog.contestantDescription}
@@ -160,13 +157,13 @@ Item {
                         dialog.close()
                     })
                     dialog.canceled.connect(dialog.close)
-                    
+
                     dialog.open()
                 }
             }
             Row {
                 spacing: window.dp(8)
-                
+
                 AppText {
                     id: contestEndsLabel
                     text: qsTr("Contest Ends")
