@@ -20,6 +20,8 @@
 #include "Objects/Contest.hpp"
 #include "Objects/Decision.hpp"
 
+#include <fc/smart_ref_impl.hpp>
+
 namespace swv {
 
 VoteDatabase::VoteDatabase(gch::database& chain)
