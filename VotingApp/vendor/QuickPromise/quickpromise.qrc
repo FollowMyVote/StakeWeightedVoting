@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/">
+        <file>QuickPromise/qmldir</file>
+        <file>QuickPromise/Promise.qml</file>
+        <file>QuickPromise/promise.js</file>
+        <file>QuickPromise/Q.qml</file>
+        <file>QuickPromise/combinator.js</file>
+    </qresource>
+</RCC>
