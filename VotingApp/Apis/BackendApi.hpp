@@ -46,7 +46,7 @@ class ContestResultsApi;
 class BackendApi : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(swv::ContestCreatorApi* contestCreator READ contestCreator CONSTANT);
+    Q_PROPERTY(swv::ContestCreatorApi* contestCreator READ contestCreator CONSTANT)
 
 public:
     BackendApi(Backend::Client backend, PromiseConverter& promiseConverter, QObject *parent = 0);

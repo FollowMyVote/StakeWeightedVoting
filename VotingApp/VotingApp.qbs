@@ -3,8 +3,6 @@ import qbs.FileInfo
 
 QtGuiApplication {
     name: "VotingApp"
-    // Only g++ can build against V-Play, some weird issue with the std libs
-    enabled: cpp.compilerName === "g++"
 
     Depends { name: "shared" }
     Depends { name: "StubChainAdaptor" }
@@ -16,7 +14,8 @@ QtGuiApplication {
 
     qmlImportPaths: [VPlay.sdkPath + "/qml"]
     cpp.cxxLanguageVersion: "c++14"
-    cpp.includePaths: [".", "qml-promise/src", VPlay.includePath]
+    cpp.cxxStandardLibrary: qbs.hostOS.contains("osx")? "libc++" : "libstdc++"
+    cpp.includePaths: [".", "qml-promise/src", "vendor/QuickPromise", VPlay.includePath]
     cpp.libraryPaths: VPlay.sdkPath + "/lib"
     cpp.staticLibraries: VPlay.staticLibrary
 
@@ -51,6 +50,11 @@ QtGuiApplication {
         "vendor/QQmlObjectListModel.cpp",
         "vendor/QQmlObjectListModel.h",
         "vendor/QQmlEnumClassHelper.h",
+        "vendor/QuickPromise/qptimer.h",
+        "vendor/QuickPromise/qptimer.cpp",
+        "vendor/QuickPromise/qmlpromise.h",
+        "vendor/QuickPromise/qmlpromise.cpp",
+        "vendor/QuickPromise/quickpromise.qrc",
     ]
 
     property bool install: true

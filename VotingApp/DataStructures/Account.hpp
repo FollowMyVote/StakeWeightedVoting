@@ -1,10 +1,10 @@
 #ifndef ACCOUNT_HPP
 #define ACCOUNT_HPP
 
-#include <QObject>
-
 #include "vendor/QQmlVarPropertyHelpers.h"
 #include "vendor/QQmlVariantListModel.h"
+
+#include <QObject>
 
 namespace swv { namespace data {
 

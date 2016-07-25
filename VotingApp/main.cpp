@@ -40,6 +40,7 @@
 #include "Apis/PurchaseApi.hpp"
 #include "VotingSystem.hpp"
 #include "Promise.hpp"
+#include "qmlpromise.h"
 
 #include <capnqt/QtEventPort.hpp>
 
@@ -98,6 +99,8 @@ int main(int argc, char *argv[])
     // Other registrations
     qmlRegisterType<swv::VotingSystem>("FollowMyVote.StakeWeightedVoting", 1, 0, "VotingSystem");
     qmlRegisterType<Promise>("FollowMyVote.StakeWeightedVoting", 1, 0, "Promise");
+    qmlRegisterUncreatableType<QmlPromise>("FollowMyVote.StakeWeightedVoting", 1, 0, "QmlPromise",
+                                           "This promise must be created from C++");
     qmlRegisterType<QQmlObjectListModelBase>();
     qmlRegisterType<QSortFilterProxyModel>();
 
