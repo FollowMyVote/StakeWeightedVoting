@@ -36,10 +36,10 @@
 #include <memory>
 
 class BlockchainAdaptorInterface;
-class Promise;
-class PromiseConverter;
+class QmlPromise;
 
 namespace swv {
+class PromiseConverter;
 namespace data {
 class Balance;
 }
@@ -81,7 +81,7 @@ public:
      *
      * The wrapper maintains ownership of the returned object.
      */
-    Q_INVOKABLE Promise* getBalance(QByteArray id);
+    Q_INVOKABLE QJSValue getBalance(QByteArray id);
     /**
      * @brief Get all balances belonging to the specified owner
      * @param owner Unambiguous ID of the owner; exact semantics are chain-specific
@@ -93,7 +93,7 @@ public:
      * The wrapper maintains ownership of the returned objects. The returned list will be empty if the adaptor is not
      * set.
      */
-    Q_INVOKABLE Promise* getBalancesBelongingTo(QString owner);
+    Q_INVOKABLE QJSValue getBalancesBelongingTo(QString owner);
 
     /**
      * @brief Get the contest with the specified ID
@@ -102,7 +102,7 @@ public:
      *
      * The returned contest will have its currentDecision set
      */
-    Q_INVOKABLE Promise* getContest(QString contestId);
+    Q_INVOKABLE QJSValue getContest(QString contestId);
 
     /**
      * @brief Get the on-chain decision for the specified owner and contest
@@ -118,7 +118,7 @@ public:
      * Avoid calling this function frequently for the same decision as it does not implement any cacheing, so it may be
      * slow and will construct a new Decision on each call.
      */
-    Q_INVOKABLE Promise* getDecision(QString owner, QString contestId);
+    Q_INVOKABLE QJSValue getDecision(QString owner, QString contestId);
     /// @brief Identical to getDecision, but returns a kj::Promise instead of a Promise*. For C++ use.
     kj::Promise<data::Decision*> _getDecision(QString owner, QString contestId);
 
@@ -131,7 +131,7 @@ public:
      * @param memo Memo for transaction. This string will be placed on the chain *unencrypted!*
      * @return A promise which resolves when the transaction has been broadcast, or breaks if transfer fails
      */
-    Q_INVOKABLE Promise* transfer(QString sender, QString recipient, qint64 amount, quint64 coinId, QString memo);
+    Q_INVOKABLE QJSValue transfer(QString sender, QString recipient, qint64 amount, quint64 coinId, QString memo);
 
 signals:
     void error(QString message);

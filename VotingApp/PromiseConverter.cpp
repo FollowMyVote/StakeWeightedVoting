@@ -18,26 +18,30 @@
 
 #include "PromiseConverter.hpp"
 
-PromiseConverter::PromiseConverter(kj::TaskSet& tasks, QObject* parent)
+namespace swv {
+
+PromiseConverter::PromiseConverter(kj::TaskSet& tasks, QObject* promiseParent, QObject* parent)
     : QObject(parent),
+      promiseParent(promiseParent),
       tasks(tasks)
 {}
 
-Promise* PromiseConverter::convert(kj::Promise<void> promise)
+QJSValue PromiseConverter::convert(kj::Promise<void> promise)
 {
-    auto result = new Promise(this);
+    auto convertedPromise = kj::heap<QmlPromise>(promiseParent);
 
     auto responsePromise = promise.then(
-                [result]() {
-        result->resolve({});
-        QQmlEngine::setObjectOwnership(result, QQmlEngine::JavaScriptOwnership);
-    }, [result](kj::Exception&& exception) {
-        result->reject({QString::fromStdString(exception.getDescription())});
-        QQmlEngine::setObjectOwnership(result, QQmlEngine::JavaScriptOwnership);
-        if (!result->hasRejectHandler())
-            throw exception;
+                [convertedPromise = convertedPromise.get()] {
+        convertedPromise->resolve();
+    }, [convertedPromise = convertedPromise.get()](kj::Exception&& exception) {
+        convertedPromise->reject({QString::fromStdString(exception.getDescription())});
+        KJ_LOG(WARNING, "Exception in PromiseConverter", exception);
     });
-    tasks.add(kj::mv(responsePromise));
+
+    QJSValue result = *convertedPromise;
+    tasks.add(responsePromise.attach(kj::mv(convertedPromise)));
 
     return result;
 }
+
+} // namespace swv

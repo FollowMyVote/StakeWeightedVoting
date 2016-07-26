@@ -12,11 +12,10 @@ void PurchaseApi::setComplete(bool success) {
     emit completeChanged(success);
 }
 
-PurchaseApi::PurchaseApi(Purchase::Client&& api, kj::TaskSet& tasks, QObject *parent)
+PurchaseApi::PurchaseApi(Purchase::Client&& api, PromiseConverter& converter, QObject *parent)
     : QObject(parent),
       api(kj::mv(api)),
-      tasks(tasks),
-      converter(tasks) {
+      converter(converter) {
     class CompleteNotifier : public Notifier<capnp::Text>::Server {
         PurchaseApi& wrapper;
         virtual ::kj::Promise<void> notify(NotifyContext context) {
@@ -30,20 +29,20 @@ PurchaseApi::PurchaseApi(Purchase::Client&& api, kj::TaskSet& tasks, QObject *pa
 
     auto request = this->api.subscribeRequest();
     request.setNotifier(kj::heap<CompleteNotifier>(*this));
-    tasks.add(request.send().then([](capnp::Response<Purchase::SubscribeResults>){}));
-    tasks.add(this->api.completeRequest().send().then([this] (capnp::Response<Purchase::CompleteResults> r) {
-                  setComplete(r.getResult());
-              }));
+    converter.adopt(request.send().then([](capnp::Response<Purchase::SubscribeResults>){}));
+    converter.adopt(this->api.completeRequest().send().then([this] (capnp::Response<Purchase::CompleteResults> r) {
+        setComplete(r.getResult());
+    }));
 }
 
 PurchaseApi::~PurchaseApi() noexcept
 {}
 
-Promise* PurchaseApi::prices(QStringList promoCodes) {
+QJSValue PurchaseApi::prices(QStringList promoCodes) {
     auto request = api.pricesRequest();
     auto codes = request.initPromoCodes(promoCodes.size());
 
-    for (int i = 0; i < codes.size(); ++i)
+    for (auto i = 0u; i < codes.size(); ++i)
         codes.set(i, convertText(promoCodes[i]));
 
     return converter.convert(request.send(), [](capnp::Response<Purchase::PricesResults> r) {
@@ -57,14 +56,14 @@ Promise* PurchaseApi::prices(QStringList promoCodes) {
         for (auto adjustment : r.getAdjustments().getEntries())
             adjustments.append(QVariantMap{{"reason", QVariant::fromValue(convertText(adjustment.getKey()))},
                                            {"amount", QVariant::fromValue(qreal(adjustment.getValue().getPrice()))}});
-        return QVariantList() << QVariant::fromValue(totals) << QVariant::fromValue(adjustments);
+        return QVariantMap{{"totals", totals}, {"adjustments", adjustments}};
     });
 }
 
 void PurchaseApi::paymentSent(qint16 selectedPrice) {
     auto request = api.paymentSentRequest();
     request.setSelectedPrice(selectedPrice);
-    tasks.add(request.send().then([](capnp::Response<Purchase::PaymentSentResults>){}));
+    converter.adopt(request.send().then([](capnp::Response<Purchase::PaymentSentResults>){}));
 }
 
 } // namespace swv

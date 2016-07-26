@@ -15,7 +15,7 @@ QtGuiApplication {
     qmlImportPaths: [VPlay.sdkPath + "/qml"]
     cpp.cxxLanguageVersion: "c++14"
     cpp.cxxStandardLibrary: qbs.hostOS.contains("osx")? "libc++" : "libstdc++"
-    cpp.includePaths: [".", "qml-promise/src", "vendor/QuickPromise", VPlay.includePath]
+    cpp.includePaths: [".", "vendor/QuickPromise", VPlay.includePath]
     cpp.libraryPaths: VPlay.sdkPath + "/lib"
     cpp.staticLibraries: VPlay.staticLibrary
 
@@ -43,8 +43,6 @@ QtGuiApplication {
         "Apis/*.cpp",
         "Apis/*.hpp",
         "Apis/README.md",
-        "qml-promise/src/Promise.cpp",
-        "qml-promise/src/Promise.hpp",
         "vendor/QQmlVariantListModel.cpp",
         "vendor/QQmlVariantListModel.h",
         "vendor/QQmlObjectListModel.cpp",

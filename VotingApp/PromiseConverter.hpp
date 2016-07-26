@@ -19,13 +19,15 @@
 #ifndef PROMISEWRAPPER_HPP
 #define PROMISEWRAPPER_HPP
 
+#include "qmlpromise.h"
+
 #include <kj/async.h>
 #include <kj/debug.h>
 
 #include <QObject>
 #include <QQmlEngine>
 
-#include "Promise.hpp"
+namespace swv {
 
 /**
  * @brief The PromiseConverter class converts kj::Promise objects to QML-friendly Promise objects.
@@ -42,14 +44,16 @@
 class PromiseConverter : public QObject
 {
     Q_OBJECT
+    QObject* promiseParent;
 public:
-    explicit PromiseConverter(kj::TaskSet& tasks, QObject *parent = 0);
+    /// @param promiseParent An object known to the QML engine, to be set as the parent of the created Promises
+    explicit PromiseConverter(kj::TaskSet& tasks, QObject* promiseParent, QObject *parent = 0);
     virtual ~PromiseConverter() noexcept {}
 
     /**
      * @brief Convert a kj promise to a QML-friendly promise
      * @param promise The promise to convert
-     * @param TConverter A callable taking a T as an argument and returning a QVariantList
+     * @param TConverter A callable taking a T as an argument and returning a QVariant
      * @return A Promise which fulfills or breaks with the provided promise
      * @tparam PromisedType The type the kj promise resolves to
      *
@@ -60,8 +64,8 @@ public:
      * for it to be meaningful to QML. TConverter effects this conversion.
      */
     template<typename PromisedType, typename Func>
-    Promise* convert(kj::Promise<PromisedType> promise, Func TConverter);
-    Promise* convert(kj::Promise<void> promise);
+    QJSValue convert(kj::Promise<PromisedType> promise, Func TConverter);
+    QJSValue convert(kj::Promise<void> promise);
 
     /// @brief Take a promise and ensure it completes or report the failure, but do not convert it
     void adopt(kj::Promise<void>&& promise) {
@@ -73,23 +77,20 @@ private:
 };
 
 template<typename T, typename Func>
-Promise* PromiseConverter::convert(kj::Promise<T> promise, Func TConverter)
-{
-    auto result = new Promise(this);
+QJSValue PromiseConverter::convert(kj::Promise<T> promise, Func TConverter) {
+    auto convertedPromise = kj::heap<QmlPromise>(promiseParent);
 
     auto responsePromise = promise.then(
-        [result, TConverter](T&& results) {
-            result->resolve(TConverter(kj::mv(results)));
-            QQmlEngine::setObjectOwnership(result, QQmlEngine::JavaScriptOwnership);
-        }, [result](kj::Exception&& exception) {
-            result->reject({QString::fromStdString(exception.getDescription())});
-            QQmlEngine::setObjectOwnership(result, QQmlEngine::JavaScriptOwnership);
-            if (!result->hasRejectHandler())
-                throw exception;
+        [convertedPromise = convertedPromise.get(), TConverter](T&& results) {
+            convertedPromise->resolve(TConverter(kj::mv(results)));
+        }, [convertedPromise = convertedPromise.get()](kj::Exception&& exception) {
+            convertedPromise->reject({QString::fromStdString(exception.getDescription())});
+            KJ_LOG(WARNING, "Exception in PromiseConverter", exception);
         });
-    tasks.add(kj::mv(responsePromise));
+    tasks.add(responsePromise.attach(kj::mv(convertedPromise)));
 
-    return result;
+    return *convertedPromise;
 }
 
+} // namespace swv
 #endif // PROMISEWRAPPER_HPP

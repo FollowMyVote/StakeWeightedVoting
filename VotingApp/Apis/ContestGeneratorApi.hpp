@@ -5,8 +5,6 @@
 
 #include "PromiseConverter.hpp"
 
-#include <Promise.hpp>
-
 namespace swv {
 
 class ContestGeneratorApi : public QObject
@@ -19,8 +17,8 @@ public:
     ContestGeneratorApi(ContestGenerator::Client generator, PromiseConverter& converter, QObject *parent = 0);
     virtual ~ContestGeneratorApi() noexcept;
 
-    Q_INVOKABLE Promise* getContest();
-    Q_INVOKABLE Promise* getContests(int count);
+    Q_INVOKABLE QJSValue getContest();
+    Q_INVOKABLE QJSValue getContests(int count);
 };
 
 }

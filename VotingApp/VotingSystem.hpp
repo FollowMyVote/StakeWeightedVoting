@@ -25,10 +25,10 @@
 #include "vendor/QQmlObjectListModel.h"
 
 #include <QObject>
+#include <QJSValue>
 
 #include <kj/async.h>
 
-class Promise;
 namespace swv {
 namespace data {
 class Contest;
@@ -94,12 +94,12 @@ public:
      * The VotingSystem does not retain ownership of the returned promise; it is the caller's responsibility to delete
      * it. The returned promise does not resolve to any value; it has the semantics of a void promise.
      */
-    Q_INVOKABLE Promise* connectToBackend(QString hostname, quint16 port, QString myAccountName);
+    Q_INVOKABLE QJSValue connectToBackend(QString hostname, quint16 port, QString myAccountName);
     /**
       * @brief Initialize the voting system by fetching chain state and account information from the backand and wallet
       * @return A promise which will resolve when initialization is complete
       */
-    Q_INVOKABLE Promise* initialize();
+    Q_INVOKABLE QJSValue initialize();
 
     /**
      * @brief Cast the current decision for the given contest
@@ -110,7 +110,7 @@ public:
      *
      * See also @ref cancelCurrentDecision
      */
-    Q_INVOKABLE Promise* castCurrentDecision(swv::data::Contest* contest);
+    Q_INVOKABLE QJSValue castCurrentDecision(swv::data::Contest* contest);
 
     Q_INVOKABLE swv::data::Coin* getCoin(quint64 id);
     Q_INVOKABLE swv::data::Coin* getCoin(QString name);
@@ -131,7 +131,7 @@ signals:
     void currentAccountChanged(swv::data::Account* currentAccount);
 
 public slots:
-    Promise* configureChainAdaptor(bool useTestingBackend = false);
+    QJSValue configureChainAdaptor(bool useTestingBackend = false);
 
     /**
      * @brief Cancel changes to the decision on the given contest

@@ -23,9 +23,8 @@
 
 #include <backend.capnp.h>
 
-class Promise;
-class PromiseConverter;
 namespace swv {
+class PromiseConverter;
 class ContestGeneratorApi;
 class ContestCreatorApi;
 class ContestResultsApi;

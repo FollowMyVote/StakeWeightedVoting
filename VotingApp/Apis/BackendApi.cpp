@@ -24,8 +24,6 @@
 #include "Apis/ContestCreatorApi.hpp"
 #include "Converters.hpp"
 
-#include <Promise.hpp>
-
 #include <kj/debug.h>
 
 #include <QDebug>
@@ -91,7 +89,7 @@ ContestResultsApi* BackendApi::getContestResults(QString contestId) {
 ContestCreatorApi* BackendApi::contestCreator() {
     // Lazy load the creator; most runs we will probably never need it.
     if (creator.get() == nullptr)
-        creator = kj::heap<ContestCreatorApi>(m_backend.createContestRequest().send().getCreator());
+        creator = kj::heap<ContestCreatorApi>(m_backend.createContestRequest().send().getCreator(), promiseConverter);
     return creator.get();
 }
 
