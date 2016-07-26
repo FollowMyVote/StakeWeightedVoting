@@ -20,7 +20,6 @@
 #include "DataStructures/Coin.hpp"
 #include "DataStructures/Balance.hpp"
 #include "Converters.hpp"
-#include "Promise.hpp"
 #include "PromiseConverter.hpp"
 
 #include <Utilities.hpp>
@@ -44,9 +43,9 @@ void BlockchainWalletApi::setChain(BlockchainWallet::Client chain) {
     this->m_chain = chain;
 }
 
-Promise* BlockchainWalletApi::getDecision(QString owner, QString contestId) {
+QJSValue BlockchainWalletApi::getDecision(QString owner, QString contestId) {
     auto promise = _getDecision(kj::mv(owner), kj::mv(contestId));
-    return promiseConverter.convert(kj::mv(promise), [](swv::data::Decision* d) -> QVariantList {
+    return promiseConverter.convert(kj::mv(promise), [](swv::data::Decision* d) -> QVariant {
         return {QVariant::fromValue<QObject*>(d)};
     });
 }
@@ -161,17 +160,17 @@ kj::Promise<data::Decision*> BlockchainWalletApi::_getDecision(QString owner, QS
     return kj::mv(promise);
 }
 
-Promise* BlockchainWalletApi::getBalance(QByteArray id) {
+QJSValue BlockchainWalletApi::getBalance(QByteArray id) {
     auto request = m_chain.getBalanceRequest();
     BlobMessageReader reader(convertBlob(id));
     request.setId(reader->getRoot<::BalanceId>());
-    return promiseConverter.convert(request.send(), [](auto response) -> QVariantList {
+    return promiseConverter.convert(request.send(), [](auto response) -> QVariant {
         return {QVariant::fromValue<QObject*>(new data::Balance(response.getBalance()))};
     });
 }
 
-Promise* BlockchainWalletApi::getBalancesBelongingTo(QString owner) {
-    return promiseConverter.convert(getBalancesBelongingToImpl(owner), [](auto response) -> QVariantList {
+QJSValue BlockchainWalletApi::getBalancesBelongingTo(QString owner) {
+    return promiseConverter.convert(getBalancesBelongingToImpl(owner), [](auto response) -> QVariant {
         auto balances = response.getBalances();
         QList<data::Balance*> results;
         std::transform(balances.begin(), balances.end(), std::back_inserter(results),
@@ -180,7 +179,7 @@ Promise* BlockchainWalletApi::getBalancesBelongingTo(QString owner) {
     });
 }
 
-Promise* BlockchainWalletApi::getContest(QString contestId) {
+QJSValue BlockchainWalletApi::getContest(QString contestId) {
     auto promise = getContestImpl(contestId).then([this, contestId](auto results) {
         //TODO: Check signature
         auto contest = new data::Contest(contestId, results.getContest().getValue());
@@ -219,12 +218,12 @@ Promise* BlockchainWalletApi::getContest(QString contestId) {
         contest->setCurrentDecision(decision);
         return contest;
     });
-    return promiseConverter.convert(kj::mv(promise), [](data::Contest* contest) -> QVariantList {
+    return promiseConverter.convert(kj::mv(promise), [](data::Contest* contest) -> QVariant {
         return {QVariant::fromValue<QObject*>(contest)};
     });
 }
 
-Promise* BlockchainWalletApi::transfer(QString sender, QString recipient, qint64 amount, quint64 coinId, QString memo) {
+QJSValue BlockchainWalletApi::transfer(QString sender, QString recipient, qint64 amount, quint64 coinId, QString memo) {
     auto request = m_chain.transferRequest();
     request.setSendingAccount(sender.toStdString());
     request.setReceivingAccount(recipient.toStdString());
@@ -232,7 +231,7 @@ Promise* BlockchainWalletApi::transfer(QString sender, QString recipient, qint64
     request.setCoinId(coinId);
     request.setMemo(memo.toStdString());
     return promiseConverter.convert(request.send(), [](capnp::Response<BlockchainWallet::TransferResults> results) {
-        return QVariantList() << QString::fromStdString(results.getTransactionId());
+        return QVariant(QString::fromStdString(results.getTransactionId()));
     });
 }
 

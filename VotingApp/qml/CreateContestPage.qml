@@ -130,13 +130,13 @@ Page {
             contentWidth: window.width * .8
             contentHeight: window.height * .6
 
-            function updatePrices(totals, adjustments) {
-                priceList.model = totals
+            function updatePrices(totalsAndAdjustments) {
+                priceList.model = totalsAndAdjustments.totals
                 priceList.currentIdx = 0
-                adjustmentRepeater.model = adjustments
+                adjustmentRepeater.model = totalsAndAdjustments.adjustments
             }
-            Component.onCompleted: purchaseApi.prices([]).then(function(prices) {
-                updatePrices(prices)
+            Component.onCompleted: purchaseApi.prices([]).then(function(totalsAndAdjustments) {
+                updatePrices(totalsAndAdjustments)
                 open()
             })
 

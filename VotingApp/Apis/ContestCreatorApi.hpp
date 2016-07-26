@@ -10,6 +10,7 @@
 
 namespace swv {
 class PurchaseContestRequestApi;
+class PromiseConverter;
 
 class ContestCreatorApi : public QObject, private kj::TaskSet::ErrorHandler
 {
@@ -26,8 +27,10 @@ class ContestCreatorApi : public QObject, private kj::TaskSet::ErrorHandler
     // ErrorHandler interface
     void taskFailed(kj::Exception&& exception);
 
+    PromiseConverter& converter;
+
 public:
-    explicit ContestCreatorApi(::ContestCreator::Client&& creator);
+    explicit ContestCreatorApi(::ContestCreator::Client&& creator, PromiseConverter& converter);
     virtual ~ContestCreatorApi() noexcept {}
 
     /// @brief Get the cached price schedule

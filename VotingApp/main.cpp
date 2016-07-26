@@ -39,7 +39,7 @@
 #include "Apis/PurchaseContestRequestApi.hpp"
 #include "Apis/PurchaseApi.hpp"
 #include "VotingSystem.hpp"
-#include "Promise.hpp"
+#include "qmlpromise.h"
 
 #include <capnqt/QtEventPort.hpp>
 
@@ -97,13 +97,12 @@ int main(int argc, char *argv[])
 
     // Other registrations
     qmlRegisterType<swv::VotingSystem>("FollowMyVote.StakeWeightedVoting", 1, 0, "VotingSystem");
-    qmlRegisterType<Promise>("FollowMyVote.StakeWeightedVoting", 1, 0, "Promise");
     qmlRegisterType<QQmlObjectListModelBase>();
     qmlRegisterType<QSortFilterProxyModel>();
 
     QQmlApplicationEngine engine;
+    engine.addImportPath("qrc:/");
     registerQtQmlTricksUiElements(&engine);
-    Promise::setEngine(&engine);
     vplay.initialize(&engine);
     vplay.setMainQmlFileName(QStringLiteral("qrc:/qml/main.qml"));
     engine.load(QUrl(vplay.mainQmlFileName()));

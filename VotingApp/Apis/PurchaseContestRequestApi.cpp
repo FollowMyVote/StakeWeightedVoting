@@ -57,12 +57,11 @@
     }
 
 namespace swv {
-PurchaseContestRequestApi::PurchaseContestRequestApi(PurchaseRequest&& request,
-                                                             kj::TaskSet& taskTracker,
-                                                             QObject* parent)
+PurchaseContestRequestApi::PurchaseContestRequestApi(PurchaseRequest&& request, kj::TaskSet& taskTracker,
+                                                     PromiseConverter& converter, QObject* parent)
     : QObject(parent),
-      tasks(taskTracker),
-      converter(tasks),
+      tasks(tasks),
+      converter(converter),
       request(kj::mv(request))
 {}
 
@@ -102,7 +101,7 @@ PurchaseApi* PurchaseContestRequestApi::submit() {
     auto promise = request.send();
     auto purchase = promise.getPurchaseApi();
 
-    return new PurchaseApi(kj::mv(purchase), tasks, this);
+    return new PurchaseApi(kj::mv(purchase), converter, this);
 }
 
 void PurchaseContestRequestApi::setSponsorshipEnabled(bool enabled) {

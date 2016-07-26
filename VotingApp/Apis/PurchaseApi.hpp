@@ -20,20 +20,19 @@ class PurchaseApi : public QObject
     Q_PROPERTY(bool complete READ complete NOTIFY completeChanged)
 
     Purchase::Client api;
-    kj::TaskSet& tasks;
-    PromiseConverter converter;
+    PromiseConverter& converter;
     bool m_complete = false;
 
     void setComplete(bool success);
 
 public:
-    PurchaseApi(Purchase::Client&& api, kj::TaskSet& tasks, QObject *parent = 0);
+    PurchaseApi(Purchase::Client&& api, PromiseConverter& converter, QObject *parent = 0);
     virtual ~PurchaseApi() noexcept;
 
     bool complete() const {
         return m_complete;
     }
-    Q_INVOKABLE Promise* prices(QStringList promoCodes);
+    Q_INVOKABLE QJSValue prices(QStringList promoCodes);
 
 public slots:
     /**

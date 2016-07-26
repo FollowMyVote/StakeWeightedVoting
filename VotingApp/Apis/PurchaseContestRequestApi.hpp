@@ -48,8 +48,8 @@ class PurchaseContestRequestApi : public QObject
     Q_PROPERTY(qint64 sponsorIncentive READ sponsorIncentive WRITE setSponsorIncentive NOTIFY sponsorIncentiveChanged)
 
     kj::TaskSet& tasks;
+    PromiseConverter& converter;
     QQmlVariantListModel m_contestants;
-    PromiseConverter converter;
 
 public:
     using PurchaseRequest = capnp::Request<::ContestCreator::PurchaseContestParams,
@@ -60,14 +60,13 @@ public:
      * @param taskTracker The task set to add the submission promise to
      * @param parent The QObject parent must be set to an object which will not outlive taskTracker
      */
-    PurchaseContestRequestApi(PurchaseRequest&& request, kj::TaskSet& taskTracker, QObject* parent);
+    PurchaseContestRequestApi(PurchaseRequest&& request, kj::TaskSet& tasks,
+                              PromiseConverter& converter, QObject* parent);
     virtual ~PurchaseContestRequestApi() noexcept {}
 
     QString name() const;
     QString description() const;
-    QQmlVariantListModel* contestants() {
-        return &m_contestants;
-    }
+    QQmlVariantListModel* contestants() { return &m_contestants; }
     quint64 weightCoin() const;
     qint64 expiration() const;
     ContestType::Type contestType() const;

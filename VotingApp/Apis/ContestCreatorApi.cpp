@@ -13,10 +13,10 @@ void ContestCreatorApi::taskFailed(kj::Exception&& exception)
     emit error(QString::fromStdString(exception.getDescription()));
 }
 
-ContestCreatorApi::ContestCreatorApi(::ContestCreator::Client&& creator)
+ContestCreatorApi::ContestCreatorApi(::ContestCreator::Client&& creator, PromiseConverter& converter)
     : creator(kj::mv(creator)),
-      tasks(*this)
-{
+      tasks(*this),
+      converter(converter) {
     refreshPrices();
     refreshLimits();
 }
@@ -25,8 +25,7 @@ ContestCreatorApi::ContestCreatorApi(::ContestCreator::Client&& creator)
 void ContestCreatorApi::refreshPrices()
 {
     auto promise = creator.getPriceScheduleRequest().send();
-    tasks.add(promise.then([this](capnp::Response<::ContestCreator::GetPriceScheduleResults> r)
-    {
+    tasks.add(promise.then([this](capnp::Response<::ContestCreator::GetPriceScheduleResults> r) {
         m_priceSchedule.clear();
         for (auto lineItemPrice : r.getSchedule().getEntries())
             m_priceSchedule[QString::number(static_cast<uint16_t>(lineItemPrice.getKey().getItem()))] =
@@ -38,8 +37,7 @@ void ContestCreatorApi::refreshPrices()
 void ContestCreatorApi::refreshLimits()
 {
     auto promise = creator.getContestLimitsRequest().send();
-    tasks.add(promise.then([this](capnp::Response<::ContestCreator::GetContestLimitsResults> r)
-    {
+    tasks.add(promise.then([this](capnp::Response<::ContestCreator::GetContestLimitsResults> r) {
         m_contestLimits.clear();
         for (auto limitKeyValue : r.getLimits().getEntries())
             m_contestLimits[QString::number(static_cast<uint16_t>(limitKeyValue.getKey().getLimit()))] =
@@ -52,7 +50,7 @@ PurchaseContestRequestApi* ContestCreatorApi::getPurchaseContestRequest()
 {
     refreshPrices();
     refreshLimits();
-    return new PurchaseContestRequestApi(creator.purchaseContestRequest(), tasks, this);
+    return new PurchaseContestRequestApi(creator.purchaseContestRequest(), tasks, converter, this);
 }
 
 } // namespace swv
