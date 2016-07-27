@@ -5,7 +5,7 @@ This is the official repository for Follow My Vote's Stake-Weighted Voting appli
 
 Linux and Mac are both fully supported. Windows support is pending.
 
-More developers are always welcome! [Get involved](https://followmyvote.com/code-contributors/)
+More developers are always welcome! [Get started](https://followmyvote.com/code-contributors/)
 
 ## What's in the box
 In this repo are 4 components:
@@ -29,9 +29,6 @@ See [Architecture](Architecture.md) for more information on how the components i
  - If building with graphene, be sure to set the `GRAPHENE_PATH` environment variable to the path graphene is installed to
  
 A video showing how to set up the development environment is available [here](https://youtu.be/lvTyZ0GAT-k)
-
-> ###### Note
-> We use submodules, so be sure to run `git submodule update --init` after cloning and `git submodule update` when the submodules are updated.
 
 Once the dependencies are installed, building the application is as simple as running `qbs` in the top-level directory. If this doesn't work, probably qbs is not configured yet or Cap'n Proto is not in PATH. If you use the QtCreator IDE, you can skip configuring qbs manually as QtCreator does this automatically. QtCreator also allows you to customize PATH (and other environment variables) in the Projects pane.
 
