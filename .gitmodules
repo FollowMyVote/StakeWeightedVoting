@@ -1,3 +1,0 @@
-[submodule "qt-quick-ui-elements"]
-	path = vendor/qt-quick-ui-elements
-	url = http://gitlab.unique-conception.org/qt-qml-tricks/qt-quick-ui-elements.git
