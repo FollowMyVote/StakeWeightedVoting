@@ -19,10 +19,10 @@
 #ifndef COIN_HPP
 #define COIN_HPP
 
-#include "vendor/QQmlVarPropertyHelpers.h"
-
 #include "coin.capnp.h"
 #include "backend.capnp.h"
+
+#include <QQmlVarPropertyHelpers.h>
 
 #include <QObject>
 #include <QUrl>

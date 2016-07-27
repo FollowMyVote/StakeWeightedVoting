@@ -45,17 +45,12 @@
 
 #include <QtQmlTricksPlugin.h>
 
-#include <VPApplication>
-
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
     app.setApplicationName(QObject::tr("Stake Weighted Voting"));
     app.setOrganizationName(QStringLiteral("Follow My Vote"));
     app.setOrganizationDomain(QStringLiteral("followmyvote.com"));
-
-    VPApplication vplay;
-    vplay.setPreservePlatformFonts(true);
 
     QtEventPort eventPort;
     kj::EventLoop loop(eventPort);
@@ -103,9 +98,7 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
     engine.addImportPath("qrc:/");
     registerQtQmlTricksUiElements(&engine);
-    vplay.initialize(&engine);
-    vplay.setMainQmlFileName(QStringLiteral("qrc:/qml/main.qml"));
-    engine.load(QUrl(vplay.mainQmlFileName()));
+    engine.load(QUrl("qrc:/qml/main.qml"));
 
     return app.exec();
 }

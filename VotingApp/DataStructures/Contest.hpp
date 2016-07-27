@@ -19,11 +19,11 @@
 #ifndef CONTEST_HPP
 #define CONTEST_HPP
 
-#include "vendor/QQmlVarPropertyHelpers.h"
-
 #include "Decision.hpp"
 
 #include <contest.capnp.h>
+
+#include <QQmlVarPropertyHelpers.h>
 
 #include <QObject>
 #include <QDateTime>

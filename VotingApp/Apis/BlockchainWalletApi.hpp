@@ -26,7 +26,7 @@
 #include "DataStructures/Coin.hpp"
 #include "DataStructures/Contest.hpp"
 
-#include "vendor/QQmlObjectListModel.h"
+#include <QQmlObjectListModel.h>
 
 #include <QObject>
 #include <QtQml>

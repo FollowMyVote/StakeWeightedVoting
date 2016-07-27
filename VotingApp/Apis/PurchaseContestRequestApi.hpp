@@ -6,9 +6,9 @@
 #include <PromiseConverter.hpp>
 #include <contestcreator.capnp.h>
 
-#include "vendor/QQmlEnumClassHelper.h"
-#include "vendor/QQmlObjectListModel.h"
-#include "vendor/QQmlVariantListModel.h"
+#include <QQmlEnumClassHelper.h>
+#include <QQmlObjectListModel.h>
+#include <QQmlVariantListModel.h>
 
 namespace swv {
 class PurchaseApi;

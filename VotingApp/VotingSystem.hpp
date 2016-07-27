@@ -22,7 +22,7 @@
 #include "DataStructures/Account.hpp"
 #include "DataStructures/Coin.hpp"
 
-#include "vendor/QQmlObjectListModel.h"
+#include <QQmlObjectListModel.h>
 
 #include <QObject>
 #include <QJSValue>
@@ -67,7 +67,7 @@ class VotingSystem : public QObject
     Q_PROPERTY(bool isBackendConnected READ backendConnected NOTIFY backendConnectedChanged)
     Q_PROPERTY(swv::BlockchainWalletApi* chain READ chain CONSTANT)
     Q_PROPERTY(swv::BackendApi* backend READ backend NOTIFY backendConnectedChanged)
-    QML_SORTABLE_OBJMODEL_PROPERTY(data::Coin, coins)
+    QML_OBJMODEL_PROPERTY(data::Coin, coins)
     QML_OBJMODEL_PROPERTY(swv::data::Account, myAccounts)
 
     Q_DECLARE_PRIVATE(VotingSystem)

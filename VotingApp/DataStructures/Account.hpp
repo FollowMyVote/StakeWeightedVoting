@@ -1,8 +1,8 @@
 #ifndef ACCOUNT_HPP
 #define ACCOUNT_HPP
 
-#include "vendor/QQmlVarPropertyHelpers.h"
-#include "vendor/QQmlVariantListModel.h"
+#include <QQmlVarPropertyHelpers.h>
+#include <QQmlVariantListModel.h>
 
 #include <QObject>
 

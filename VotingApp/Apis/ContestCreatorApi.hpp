@@ -1,12 +1,12 @@
 #ifndef CONTESTCREATOR_HPP
 #define CONTESTCREATOR_HPP
 
-#include <QObject>
-#include <QVariantMap>
-
 #include <contestcreator.capnp.h>
 
-#include "vendor/QQmlEnumClassHelper.h"
+#include <QQmlEnumClassHelper.h>
+
+#include <QObject>
+#include <QVariantMap>
 
 namespace swv {
 class PurchaseContestRequestApi;

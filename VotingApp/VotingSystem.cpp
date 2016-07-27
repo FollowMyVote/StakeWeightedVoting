@@ -240,8 +240,6 @@ VotingSystem::VotingSystem(QObject *parent)
 {
     Q_D(VotingSystem);
 
-    PREPARE_SORTABLE_OBJMODEL(coins);
-
     // Persist the current account
     QObject::connect(this, &VotingSystem::currentAccountChanged, [](swv::data::Account* account) {
         if (account && !account->get_name().isEmpty())

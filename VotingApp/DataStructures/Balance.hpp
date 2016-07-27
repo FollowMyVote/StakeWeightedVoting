@@ -19,9 +19,9 @@
 #ifndef BALANCE_HPP
 #define BALANCE_HPP
 
-#include "vendor/QQmlVarPropertyHelpers.h"
-
 #include "balance.capnp.h"
+
+#include <QQmlVarPropertyHelpers.h>
 
 #include <QObject>
 

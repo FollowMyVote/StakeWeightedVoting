@@ -16,8 +16,8 @@ Project {
             }
             return ret;
         }
-        cpp.cxxLanguageVersion: (Qt.core.versionMajor >= 5 && Qt.core.versionMinor >= 7 ? "c++11" : "c++98");
-        cpp.cxxStandardLibrary: "libstdc++"; // NOTE : because there are issues with libc++
+        cpp.cxxLanguageVersion: "c++14"
+        cpp.cxxStandardLibrary: qbs.hostOS.contains("osx")? "libc++" : "libstdc++"; // NOTE : because there are issues with libc++
 
         readonly property stringList qmlImportPaths : [sourceDirectory + "/imports"]; // equivalent to QML_IMPORT_PATH += $$PWD/imports
         readonly property stringList qtModules : {
@@ -31,8 +31,8 @@ Project {
 
         Export {
             cpp.includePaths: ".";
-            cpp.cxxLanguageVersion: (Qt.core.versionMajor >= 5 && Qt.core.versionMinor >= 7 ? "c++11" : "c++98");
-            cpp.cxxStandardLibrary: "libstdc++"; // NOTE : because there are issues with libc++
+            cpp.cxxLanguageVersion: "c++14"
+            cpp.cxxStandardLibrary: qbs.hostOS.contains("osx")? "libc++" : "libstdc++"; // NOTE : because there are issues with libc++
 
             Depends { name: "cpp"; }
             Depends {

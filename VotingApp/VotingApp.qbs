@@ -7,20 +7,14 @@ Project {
 
         Depends { name: "shared" }
         Depends { name: "StubChainAdaptor" }
-        Depends { name: "Qt"; submodules: ["network", "qml", "charts"] }
+        Depends { name: "Qt"; submodules: ["network", "qml", "charts", "websockets"] }
         Depends { name: "libqtqmltricks-qtquickuielements" }
         Depends { name: "libqtqmltricks-qtsupermacros" }
         Depends { name: "libqtqmltricks-qtqmlmodels" }
-        Depends { name: "VPlay" }
-        // 'original' is a keyword: https://doc.qt.io/qbs/module-item.html#special-property-values
-        VPlay.sdkPath: original? original : Qt.core.incPath + "/.."
 
-        qmlImportPaths: [VPlay.sdkPath + "/qml"]
         cpp.cxxLanguageVersion: "c++14"
         cpp.cxxStandardLibrary: qbs.hostOS.contains("osx")? "libc++" : "libstdc++"
-        cpp.includePaths: [".", "vendor/QuickPromise", VPlay.includePath]
-        cpp.libraryPaths: VPlay.sdkPath + "/lib"
-        cpp.staticLibraries: VPlay.staticLibrary
+        cpp.includePaths: [".", "vendor/QuickPromise"]
 
         files: [
             "BitsharesWalletBridge.cpp",
