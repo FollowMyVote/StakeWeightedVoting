@@ -1,0 +1,37 @@
+module QtQmlTricks.UiElements
+
+singleton Style                         2.0 Style.qml
+
+AbstractSymbol                          2.0 AbstractSymbol.qml
+Accordion                               2.0 Accordion.qml
+AutoRepeatableClicker                   2.0 AutoRepeatableClicker.qml
+Balloon                                 2.0 Balloon.qml
+Calendar                                2.0 Calendar.qml
+CheckableBox                            2.0 CheckableBox.qml
+ComboList                               2.0 ComboList.qml
+ComboListDelegate                       2.0 ComboListDelegate.qml
+ComboListDelegateForSimpleVar           2.0 ComboListDelegateForSimpleVar.qml
+ComboListDelegateForModelWithRoles      2.0 ComboListDelegateForModelWithRoles.qml
+ComboListDelegateForModelDataAttributes 2.0 ComboListDelegateForModelDataAttributes.qml
+FileSelector                            2.0 FileSelector.qml
+Group                                   2.0 Group.qml
+Line                                    2.0 Line.qml
+ModalDialog                             2.0 ModalDialog.qml
+MultiLineTextBox                        2.0 MultiLineTextBox.qml
+NumberBox                               2.0 NumberBox.qml
+PanelContainer                          2.0 PanelContainer.qml
+ProgressJauge                           2.0 ProgressJauge.qml
+RegularPolygon                          2.0 RegularPolygon.qml
+ScrollContainer                         2.0 ScrollContainer.qml
+SliderBar                               2.0 SliderBar.qml
+StatusBar                               2.0 StatusBar.qml
+Stretcher                               2.0 Stretcher.qml
+SvgIconLoader                           2.0 SvgIconLoader.qml
+SymbolLoader                            2.0 SymbolLoader.qml
+TabBar                                  2.0 TabBar.qml
+TextBox                                 2.0 TextBox.qml
+TextButton                              2.0 TextButton.qml
+TextLabel                               2.0 TextLabel.qml
+TimePicker                              2.0 TimePicker.qml
+ToolBar                                 2.0 ToolBar.qml
+ZoomAndMoveArea                         2.0 ZoomAndMoveArea.qml

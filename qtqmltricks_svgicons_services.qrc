@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/QtQmlTricks">
+        <file>icons/services/call.svg</file>
+        <file>icons/services/chat.svg</file>
+        <file>icons/services/mail.svg</file>
+        <file>icons/services/rss.svg</file>
+    </qresource>
+</RCC>

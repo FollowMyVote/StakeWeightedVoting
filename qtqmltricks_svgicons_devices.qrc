@@ -1,0 +1,26 @@
+<RCC>
+    <qresource prefix="/QtQmlTricks">
+        <file>icons/devices/wifi.svg</file>
+        <file>icons/devices/ethernet.svg</file>
+        <file>icons/devices/server.svg</file>
+        <file>icons/devices/desktop.svg</file>
+        <file>icons/devices/laptop.svg</file>
+        <file>icons/devices/smartphone.svg</file>
+        <file>icons/devices/tablet.svg</file>
+        <file>icons/devices/bluetooth.svg</file>
+        <file>icons/devices/usb.svg</file>
+        <file>icons/devices/disc.svg</file>
+        <file>icons/devices/keyboard.svg</file>
+        <file>icons/devices/printer.svg</file>
+        <file>icons/devices/speaker.svg</file>
+        <file>icons/devices/microphone.svg</file>
+        <file>icons/devices/headphones.svg</file>
+        <file>icons/devices/battery.svg</file>
+        <file>icons/devices/usb-pendrive.svg</file>
+        <file>icons/devices/gps.svg</file>
+        <file>icons/devices/camera.svg</file>
+        <file>icons/devices/webcam.svg</file>
+        <file>icons/devices/mouse.svg</file>
+        <file>icons/devices/gamepad.svg</file>
+    </qresource>
+</RCC>
