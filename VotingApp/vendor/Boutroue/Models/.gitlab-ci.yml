@@ -1,0 +1,18 @@
+{
+  "before_script": [],
+  "stages": [
+    "build",
+  ],
+  "build_on_linux_gcc_qt5.2": {
+    "stage": "build",
+    "script": [
+      "qbs build release"
+    ],
+    "tags": [
+      "linux",
+      "gcc",
+      "qt5.2",
+      "qbs",
+    ]
+  }
+}

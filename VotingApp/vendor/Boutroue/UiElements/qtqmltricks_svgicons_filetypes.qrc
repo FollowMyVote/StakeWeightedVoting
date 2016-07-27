@@ -1,0 +1,31 @@
+<RCC>
+    <qresource prefix="/QtQmlTricks">
+        <file>icons/filetypes/archive.svg</file>
+        <file>icons/filetypes/binary.svg</file>
+        <file>icons/filetypes/code.svg</file>
+        <file>icons/filetypes/database.svg</file>
+        <file>icons/filetypes/disk-image.svg</file>
+        <file>icons/filetypes/document.svg</file>
+        <file>icons/filetypes/drawing.svg</file>
+        <file>icons/filetypes/executable.svg</file>
+        <file>icons/filetypes/file.svg</file>
+        <file>icons/filetypes/folder-closed.svg</file>
+        <file>icons/filetypes/folder-documents.svg</file>
+        <file>icons/filetypes/folder-downloads.svg</file>
+        <file>icons/filetypes/folder-home.svg</file>
+        <file>icons/filetypes/folder-images.svg</file>
+        <file>icons/filetypes/folder-music.svg</file>
+        <file>icons/filetypes/folder-opened.svg</file>
+        <file>icons/filetypes/folder-videos.svg</file>
+        <file>icons/filetypes/image.svg</file>
+        <file>icons/filetypes/pdf.svg</file>
+        <file>icons/filetypes/script.svg</file>
+        <file>icons/filetypes/slideshow.svg</file>
+        <file>icons/filetypes/sound.svg</file>
+        <file>icons/filetypes/spreadsheet.svg</file>
+        <file>icons/filetypes/text.svg</file>
+        <file>icons/filetypes/video.svg</file>
+        <file>icons/filetypes/webpage.svg</file>
+        <file>icons/filetypes/xml.svg</file>
+    </qresource>
+</RCC>
