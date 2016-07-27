@@ -1,5 +1,6 @@
 import qbs
 import qbs.FileInfo
+import qbs.Probes
 
 Project {
     QtGuiApplication {
@@ -30,6 +31,7 @@ Project {
             "capnqt/QSocketWrapper.hpp",
             "capnqt/QtEventPort.cpp",
             "capnqt/QtEventPort.hpp",
+            "icons.yml",
             "main.cpp",
             "qml.qrc",
             "qml/*.qml",
@@ -46,6 +48,28 @@ Project {
             "vendor/QuickPromise/qmlpromise.cpp",
             "vendor/QuickPromise/quickpromise.qrc",
         ]
+
+        FileTagger {
+            patterns: "icons.yml"
+            fileTags: "icon-manifest"
+        }
+        Rule {
+            id: iconFetcher
+            inputs: ["icon-manifest"]
+
+            Artifact {
+                fileTags: ['qrc']
+                filePath: product.sourceDirectory + "/icons/icons.qrc"
+            }
+
+            prepare: {
+                var cmd = new Command("/usr/bin/env", ["python2", "icons.py", input.filePath])
+                cmd.workingDirectory = product.sourceDirectory
+                cmd.description = "Downloading icons for " + input.fileName
+                cmd.highlight = "filegen"
+                return cmd
+            }
+        }
 
         property bool install: true
         property string installDir: bundle.isBundle ? "Applications" : (qbs.targetOS.contains("windows") ? "" : "bin")

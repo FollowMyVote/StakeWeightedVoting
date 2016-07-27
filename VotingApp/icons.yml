@@ -1,0 +1,3 @@
+out: icons/icons.qrc
+icons:
+  - navigation/menu

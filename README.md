@@ -20,10 +20,8 @@ See [Architecture](Architecture.md) for more information on how the components i
 ## Build Instructions
 ### Dependencies:
 - [Cap'n Proto](https://capnproto.org) 0.5.3+
-- [Qt](https://qt.io) 5.6+ including QBS
- - Be sure to get Qt Creator 4 from https://www.qt.io/download-open-source/#section-6
- - V-Play still ships with Qt Creator 3, but it's too old to build this project, so use version 4 instead.
-- [V-Play](http://v-play.net) 2.7.0+
+- [Qt](https://qt.io) 5.7+ including QBS
+- Python 2 with PyYAML (to fetch icons)
 - [Graphene](https://github.com/cryptonomex/graphene) (Optional)
  - Be sure to use develop branch!
  - If building with graphene, be sure to set the `GRAPHENE_PATH` environment variable to the path graphene is installed to
@@ -37,7 +35,7 @@ To configure qbs, make sure your compiler is in PATH and run `qbs-setup-toolchai
 Binaries will be placed in a build folder created by qbs, probably named `qt5-debug/install-root` or similar, in the top level directory.
 
 ### Troubleshooting:
-If you get any errors like "import qbs.Environment not found", make sure you're using Qt Creator 4 and not the Qt Creator 3 that comes with V-Play.
+If you get any errors like "import qbs.Environment not found", make sure you're using Qt Creator 4
 
 On Mac, it may be necessary to update the PATH variable if CapnProto's binaries are not in PATH. In Qt Creator, you can update this from the Projects view, available in the left nagivation panel. If you've installed CapnProto through Homebrew, you will need to add /usr/local/bin to PATH.
 
