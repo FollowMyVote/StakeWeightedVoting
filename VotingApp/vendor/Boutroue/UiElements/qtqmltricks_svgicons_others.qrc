@@ -1,0 +1,12 @@
+<RCC>
+    <qresource prefix="/QtQmlTricks">
+        <file>icons/others/moon.svg</file>
+        <file>icons/others/pin.svg</file>
+        <file>icons/others/sun.svg</file>
+        <file>icons/others/target.svg</file>
+        <file>icons/others/user.svg</file>
+        <file>icons/others/calendar.svg</file>
+        <file>icons/others/clock.svg</file>
+        <file>icons/others/cloud.svg</file>
+    </qresource>
+</RCC>

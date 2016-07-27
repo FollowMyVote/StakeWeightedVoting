@@ -1,0 +1,9 @@
+#ifndef QTQMLTRICKSPLUGIN_H
+#define QTQMLTRICKSPLUGIN_H
+
+// THIS HEADER IS KEPT FOR COMPAT, NOW USE :
+
+#include "QtQmlTricksPlugin_UiElements.h"
+
+#endif // QTQMLTRICKSPLUGIN_H
+

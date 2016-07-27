@@ -1,0 +1,39 @@
+<RCC>
+    <qresource prefix="/">
+        <file>imports/QtQmlTricks/UiElements.2/ComboList.qml</file>
+        <file>imports/QtQmlTricks/UiElements.2/FileSelector.qml</file>
+        <file>imports/QtQmlTricks/UiElements.2/qmldir</file>
+        <file>imports/QtQmlTricks/UiElements.2/ScrollContainer.qml</file>
+        <file>imports/QtQmlTricks/UiElements.2/Style.qml</file>
+        <file>imports/QtQmlTricks/UiElements.2/TextBox.qml</file>
+        <file>imports/QtQmlTricks/UiElements.2/TextButton.qml</file>
+        <file>imports/QtQmlTricks/UiElements.2/TextLabel.qml</file>
+        <file>imports/QtQmlTricks/UiElements.2/SliderBar.qml</file>
+        <file>imports/QtQmlTricks/UiElements.2/ProgressJauge.qml</file>
+        <file>imports/QtQmlTricks/UiElements.2/CheckableBox.qml</file>
+        <file>imports/QtQmlTricks/UiElements.2/ToolBar.qml</file>
+        <file>imports/QtQmlTricks/UiElements.2/Group.qml</file>
+        <file>imports/QtQmlTricks/UiElements.2/Accordion.qml</file>
+        <file>imports/QtQmlTricks/UiElements.2/TabBar.qml</file>
+        <file>imports/QtQmlTricks/UiElements.2/NumberBox.qml</file>
+        <file>imports/QtQmlTricks/UiElements.2/Line.qml</file>
+        <file>imports/QtQmlTricks/UiElements.2/Stretcher.qml</file>
+        <file>imports/QtQmlTricks/UiElements.2/MultiLineTextBox.qml</file>
+        <file>imports/QtQmlTricks/UiElements.2/Balloon.qml</file>
+        <file>imports/QtQmlTricks/UiElements.2/RegularPolygon.qml</file>
+        <file>imports/QtQmlTricks/UiElements.2/StatusBar.qml</file>
+        <file>imports/QtQmlTricks/UiElements.2/ComboListDelegate.qml</file>
+        <file>imports/QtQmlTricks/UiElements.2/ComboListDelegateForModelWithRoles.qml</file>
+        <file>imports/QtQmlTricks/UiElements.2/ComboListDelegateForSimpleVar.qml</file>
+        <file>imports/QtQmlTricks/UiElements.2/ComboListDelegateForModelDataAttributes.qml</file>
+        <file>imports/QtQmlTricks/UiElements.2/SymbolLoader.qml</file>
+        <file>imports/QtQmlTricks/UiElements.2/AbstractSymbol.qml</file>
+        <file>imports/QtQmlTricks/UiElements.2/Calendar.qml</file>
+        <file>imports/QtQmlTricks/UiElements.2/TimePicker.qml</file>
+        <file>imports/QtQmlTricks/UiElements.2/ZoomAndMoveArea.qml</file>
+        <file>imports/QtQmlTricks/UiElements.2/ModalDialog.qml</file>
+        <file>imports/QtQmlTricks/UiElements.2/AutoRepeatableClicker.qml</file>
+        <file>imports/QtQmlTricks/UiElements.2/SvgIconLoader.qml</file>
+        <file>imports/QtQmlTricks/UiElements.2/PanelContainer.qml</file>
+    </qresource>
+</RCC>
