@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
     engine.addImportPath("qrc:/");
     registerQtQmlTricksUiElements(&engine);
-    engine.load(QUrl("qrc:/qml/main.qml"));
+    engine.load(QUrl("qml/main.qml"));
 
     return app.exec();
 }

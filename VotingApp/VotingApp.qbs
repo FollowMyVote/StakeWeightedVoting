@@ -9,9 +9,11 @@ Project {
         Depends { name: "shared" }
         Depends { name: "StubChainAdaptor" }
         Depends { name: "Qt"; submodules: ["network", "qml", "charts", "websockets"] }
-        Depends { name: "libqtqmltricks-qtquickuielements" }
+        Depends { name: "libqtqmltricks-qtquickuielements"; id: uiElements }
         Depends { name: "libqtqmltricks-qtsupermacros" }
         Depends { name: "libqtqmltricks-qtqmlmodels" }
+
+        uiElements.includeIcons: false
 
         cpp.cxxLanguageVersion: "c++14"
         cpp.cxxStandardLibrary: qbs.hostOS.contains("osx")? "libc++" : "libstdc++"
@@ -33,9 +35,8 @@ Project {
             "capnqt/QtEventPort.hpp",
             "icons.yml",
             "main.cpp",
-            "qml.qrc",
-            "qml/*.qml",
-            "qml/CustomControls/*",
+            "qml/ConnectionProgressPopup.qml",
+            "qml/main.qml",
             "DataStructures/*.cpp",
             "DataStructures/*.hpp",
             "DataStructures/README.md",

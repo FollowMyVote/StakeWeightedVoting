@@ -68,7 +68,7 @@ class VotingSystem : public QObject
     Q_PROPERTY(swv::BlockchainWalletApi* chain READ chain CONSTANT)
     Q_PROPERTY(swv::BackendApi* backend READ backend NOTIFY backendConnectedChanged)
     QML_OBJMODEL_PROPERTY(data::Coin, coins)
-    QML_OBJMODEL_PROPERTY(swv::data::Account, myAccounts)
+    QML_OBJMODEL_PROPERTY(data::Account, myAccounts)
 
     Q_DECLARE_PRIVATE(VotingSystem)
 

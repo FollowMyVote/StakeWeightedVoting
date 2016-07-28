@@ -196,9 +196,8 @@ public:
             client = kj::heap<TwoPartyClient>(*serverStream);
             backend = kj::heap<BackendApi>(client->bootstrap().castAs<Backend>(), *promiseConverter);
             emit q->backendConnectedChanged(true);
+            qDebug() << "Backend connected";
             connectionPromise->resolve();
-            connectionPromise->deleteLater();
-            QQmlEngine::setObjectOwnership(connectionPromise, QQmlEngine::JavaScriptOwnership);
         }));
     }
 
@@ -236,6 +235,8 @@ private:
 
 VotingSystem::VotingSystem(QObject *parent)
     : QObject(parent),
+      m_coins(new QQmlObjectListModel<data::Coin>(this)),
+      m_myAccounts(new QQmlObjectListModel<data::Account>(this)),
       d_ptr(new VotingSystemPrivate(this))
 {
     Q_D(VotingSystem);
@@ -282,6 +283,8 @@ data::Account* VotingSystem::currentAccount() const {
 
 QJSValue VotingSystem::connectToBackend(QString hostname, quint16 port, QString myAccountName) {
     Q_D(VotingSystem);
+
+    qDebug() << "Logging into backend as" << myAccountName;
 
     auto connectPromise = kj::heap<QmlPromise>(this);
     QJSValue returnPromise = *connectPromise;
