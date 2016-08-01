@@ -64,9 +64,9 @@ class VotingSystem : public QObject
     Q_OBJECT
     Q_PROPERTY(swv::data::Account* currentAccount READ currentAccount WRITE setCurrentAccount NOTIFY currentAccountChanged)
     Q_PROPERTY(QString lastError READ lastError NOTIFY error)
-    Q_PROPERTY(bool isBackendConnected READ backendConnected NOTIFY backendConnectedChanged)
     Q_PROPERTY(swv::BlockchainWalletApi* chain READ chain CONSTANT)
     Q_PROPERTY(swv::BackendApi* backend READ backend NOTIFY backendConnectedChanged)
+    Q_PROPERTY(bool backendIsConnected READ backendIsConnected NOTIFY backendConnectedChanged)
     QML_OBJMODEL_PROPERTY(data::Coin, coins)
     QML_OBJMODEL_PROPERTY(data::Account, myAccounts)
 
@@ -77,10 +77,11 @@ public:
     ~VotingSystem() noexcept;
 
     QString lastError() const;
-    bool backendConnected() const;
 
-    BlockchainWalletApi* chain();
-    BackendApi* backend();
+    BlockchainWalletApi* chain() const;
+    BackendApi* backend() const;
+
+    bool backendIsConnected() const { return backend(); }
 
     swv::data::Account* currentAccount() const;
 
@@ -99,7 +100,7 @@ public:
       * @brief Initialize the voting system by fetching chain state and account information from the backand and wallet
       * @return A promise which will resolve when initialization is complete
       */
-    Q_INVOKABLE QJSValue initialize();
+    Q_INVOKABLE QJSValue syncWithBlockchain();
 
     /**
      * @brief Cast the current decision for the given contest
@@ -127,8 +128,14 @@ signals:
      * the error.
      */
     void error(QString message);
-    void backendConnectedChanged(bool backendConnected);
+
+    void blockchainWalletConnected();
+    void blockchainWalletDisconnected();
     void currentAccountChanged(swv::data::Account* currentAccount);
+    void blockchainSynced();
+    void backendConnected();
+    void backendDisconnected();
+    void backendConnectedChanged(bool backendConnected);
 
 public slots:
     QJSValue configureChainAdaptor(bool useTestingBackend = false);

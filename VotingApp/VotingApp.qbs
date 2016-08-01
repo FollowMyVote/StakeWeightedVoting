@@ -9,11 +9,9 @@ Project {
         Depends { name: "shared" }
         Depends { name: "StubChainAdaptor" }
         Depends { name: "Qt"; submodules: ["network", "qml", "charts", "websockets"] }
-        Depends { name: "libqtqmltricks-qtquickuielements"; id: uiElements }
+        Depends { name: "libqtqmltricks-qtquickuielements" }
         Depends { name: "libqtqmltricks-qtsupermacros" }
         Depends { name: "libqtqmltricks-qtqmlmodels" }
-
-        uiElements.includeIcons: false
 
         cpp.cxxLanguageVersion: "c++14"
         cpp.cxxStandardLibrary: qbs.hostOS.contains("osx")? "libc++" : "libstdc++"
@@ -45,8 +43,8 @@ Project {
             "Apis/README.md",
             "vendor/QuickPromise/qptimer.h",
             "vendor/QuickPromise/qptimer.cpp",
-            "vendor/QuickPromise/qmlpromise.h",
-            "vendor/QuickPromise/qmlpromise.cpp",
+            "vendor/QuickPromise/qppromise.h",
+            "vendor/QuickPromise/qppromise.cpp",
             "vendor/QuickPromise/quickpromise.qrc",
         ]
 

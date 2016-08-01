@@ -38,7 +38,7 @@ Popup {
             value: {
                 if (waitingForWalletState.active)
                     return .3
-                if (walletInitializingState.active)
+                if (blockchainSyncingState.active)
                     return .6
                 if (backendConnectingState.active)
                     return .9
@@ -56,7 +56,7 @@ Popup {
             text: {
                 if (waitingForWalletState.active)
                     return "Waiting for Bitshares wallet"
-                if (walletInitializingState.active)
+                if (blockchainSyncingState.active)
                     return "Syncing with blockchain"
                 if (backendConnectingState.active)
                     return "Please unlock Bitshares wallet"

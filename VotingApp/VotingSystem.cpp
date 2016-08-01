@@ -101,10 +101,8 @@ public:
                 wrapper->updateFields(coin);
                 q->m_coins->append(wrapper);
 
-                QObject::connect(q, &VotingSystem::backendConnectedChanged,
+                QObject::connect(q, &VotingSystem::backendConnected,
                                  wrapper, [this, q, wrapper]() mutable {
-                    if (!q->backendConnected()) return;
-
                     auto request = backend->backend().getCoinDetailsRequest();
                     request.setCoinId(wrapper->get_coinId());
                     // Get one week of volume history
@@ -170,7 +168,7 @@ public:
         });
     }
 
-    void completeConnection(kj::Own<QmlPromise> connectionPromise, QString authenticatingAccount) {
+    void completeConnection(kj::Own<QPPromise> connectionPromise, QString authenticatingAccount) {
         Q_Q(VotingSystem);
 
         if (!currentAccount) {
@@ -195,6 +193,7 @@ public:
             serverStream = cryptoFactory->addClientTlsAdaptor(kj::heap<QSocketWrapper>(*socket));
             client = kj::heap<TwoPartyClient>(*serverStream);
             backend = kj::heap<BackendApi>(client->bootstrap().castAs<Backend>(), *promiseConverter);
+            emit q->backendConnected();
             emit q->backendConnectedChanged(true);
             qDebug() << "Backend connected";
             connectionPromise->resolve();
@@ -208,15 +207,11 @@ public:
         qDebug() << errorCode;
         if (socket)
             qDebug() << socket->errorString();
-        if (q->backendConnected())
+        if (backend)
             q->disconnected();
 
         if (errorCode == QAbstractSocket::HostNotFoundError) {
             q->setLastError(QObject::tr("Unable to find Follow My Vote server. Is the voting application up to date?"));
-            return;
-        }
-        if (!q->backendConnected()) {
-            q->setLastError(QObject::tr("Unable to connect to Follow My Vote server: %1").arg(socket->errorString()));
             return;
         }
         q->setLastError(QObject::tr("Connection to server has encountered an error: %1").arg(socket->errorString()));
@@ -262,22 +257,18 @@ QString VotingSystem::lastError() const {
     return d->lastError;
 }
 
-bool VotingSystem::backendConnected() const {
+BlockchainWalletApi* VotingSystem::chain() const {
     Q_D(const VotingSystem);
-    return bool(d->backend);
+    return const_cast<BlockchainWalletApi*>(d->chain.get());
 }
 
-BlockchainWalletApi* VotingSystem::chain() { Q_D(VotingSystem);
-    return d->chain;
-}
-
-BackendApi* VotingSystem::backend() { Q_D(VotingSystem);
-    return d->backend;
+BackendApi* VotingSystem::backend() const {
+    Q_D(const VotingSystem);
+    return const_cast<BackendApi*>(d->backend.get());
 }
 
 data::Account* VotingSystem::currentAccount() const {
     Q_D(const VotingSystem);
-
     return d->currentAccount;
 }
 
@@ -286,13 +277,13 @@ QJSValue VotingSystem::connectToBackend(QString hostname, quint16 port, QString 
 
     qDebug() << "Logging into backend as" << myAccountName;
 
-    auto connectPromise = kj::heap<QmlPromise>(this);
+    auto connectPromise = kj::heap<QPPromise>(this);
     QJSValue returnPromise = *connectPromise;
 
     // The things I do for you, Qt... This is to accommodate the fact that Qt might copy my lambda below
     struct Cargo {
-        kj::Own<QmlPromise> cargo;
-        Cargo(kj::Own<QmlPromise>&& cargo):cargo(kj::mv(cargo)){}
+        kj::Own<QPPromise> cargo;
+        Cargo(kj::Own<QPPromise>&& cargo):cargo(kj::mv(cargo)){}
         ~Cargo()noexcept {try {cargo = nullptr;} catch(...) {}}
     };
     auto transport = std::make_shared<Cargo>(kj::mv(connectPromise));
@@ -313,19 +304,19 @@ QJSValue VotingSystem::connectToBackend(QString hostname, quint16 port, QString 
     return returnPromise;
 }
 
-QJSValue VotingSystem::initialize() {
+QJSValue VotingSystem::syncWithBlockchain() {
     Q_D(VotingSystem);
 
     auto promises = kj::heapArrayBuilder<kj::Promise<void>>(2);
     promises.add(d->populateCoinList());
     promises.add(d->populateMyAccounts());
-    return d->promiseConverter->convert(kj::joinPromises(promises.finish()));
+    return d->promiseConverter->convert(kj::joinPromises(promises.finish()).then([this]{emit blockchainSynced();}));
 }
 
 QJSValue VotingSystem::configureChainAdaptor(bool useTestingBackend) {
     Q_D(VotingSystem);
 
-    QmlPromise* configuredPromise = new QmlPromise(this);
+    QPPromise* configuredPromise = new QPPromise(this);
 
     //TODO: make a real implementation of this
     if (useTestingBackend) {
@@ -333,11 +324,15 @@ QJSValue VotingSystem::configureChainAdaptor(bool useTestingBackend) {
         auto backendStub = chain->getBackendStub();
         d->chain->setChain(kj::mv(chain));
         d->backend = kj::heap<BackendApi>(backendStub, *d->promiseConverter);
+        emit backendConnected();
         emit backendConnectedChanged(true);
         configuredPromise->resolve();
     } else {
-        if (!d->bitsharesBridge)
+        if (!d->bitsharesBridge) {
             d->bitsharesBridge = kj::heap<bts::BitsharesWalletBridge>(qApp->applicationName());
+            connect(d->bitsharesBridge.get(), &bts::BitsharesWalletBridge::connectionLost,
+                    this, &VotingSystem::blockchainWalletDisconnected);
+        }
         if (!d->bitsharesBridge->isListening() && !d->bitsharesBridge->listen(QHostAddress::LocalHost, 27073)) {
             setLastError(tr("Unable to listen for Bitshares wallet: %1").arg(d->bitsharesBridge->errorString()));
             return QJSValue::NullValue;
@@ -345,9 +340,10 @@ QJSValue VotingSystem::configureChainAdaptor(bool useTestingBackend) {
         KJ_LOG(DBG, "Listening for Bitshares wallet",
                d->bitsharesBridge->serverAddress().toString().toStdString(),
                d->bitsharesBridge->serverPort());
-        d->tasks.add(d->bitsharesBridge->nextWalletClient().then([d, configuredPromise](BlockchainWallet::Client c) {
+        d->tasks.add(d->bitsharesBridge->nextWalletClient().then([this, d, configuredPromise](BlockchainWallet::Client c) {
                          KJ_LOG(DBG, "Setting blockchain");
                          d->chain->setChain(c);
+                         emit blockchainWalletConnected();
                          configuredPromise->resolve();
                      }));
         QDesktopServices::openUrl(QStringLiteral("web+bts:%1:%2")
@@ -361,7 +357,7 @@ QJSValue VotingSystem::configureChainAdaptor(bool useTestingBackend) {
 QJSValue VotingSystem::castCurrentDecision(swv::data::Contest* contest) {
     Q_D(VotingSystem);
 
-    if (!backendConnected()) {
+    if (!d->backend) {
         setLastError(tr("Unable to cast vote. Please ensure that you are online and that you have connected this app "
                         "to the blockchain."));
         return QJSValue::NullValue;
@@ -464,7 +460,7 @@ data::Account* VotingSystem::getAccount(QString name) {
 void VotingSystem::cancelCurrentDecision(data::Contest* contest) {
     Q_D(VotingSystem);
 
-    if (!backendConnected()) {
+    if (!d->backend) {
         setLastError(tr("Unable to cancel vote. Please ensure that you are online and that you have connected this "
                         "app to the blockchain."));
         return;
@@ -508,11 +504,11 @@ void VotingSystem::disconnected()
     Q_D(VotingSystem);
 
     d->backend = nullptr;
-    d->backend = nullptr;
     d->client = nullptr;
     d->serverStream = nullptr;
     d->socket->close();
 
+    emit backendDisconnected();
     emit backendConnectedChanged(false);
 }
 

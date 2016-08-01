@@ -17,7 +17,7 @@ BitsharesWalletBridge::~BitsharesWalletBridge() {}
 
 ////////////////////////////// BEGIN BlockchainWalletServer implementation
 using BWB = BitsharesWalletBridge;
-class BWB::BlockchainWalletServer : public BlockchainWallet::Server {
+class BWB::BlockchainWalletApiImpl : public BlockchainWallet::Server {
     std::unique_ptr<QWebSocket> connection;
     int64_t nextQueryId = 0;
     std::map<int64_t, kj::Own<kj::PromiseFulfiller<QJsonValue>>> pendingRequests;
@@ -26,8 +26,8 @@ class BWB::BlockchainWalletServer : public BlockchainWallet::Server {
     uint64_t contestPublisherId = 0;
 
 public:
-    BlockchainWalletServer(std::unique_ptr<QWebSocket> connection);
-    virtual ~BlockchainWalletServer() {}
+    BlockchainWalletApiImpl(std::unique_ptr<QWebSocket> connection);
+    virtual ~BlockchainWalletApiImpl() {}
 
 protected:
     void checkConnection();
@@ -50,7 +50,7 @@ protected:
     virtual ::kj::Promise<void> getSharedSecret(GetSharedSecretContext context) override;
 };
 
-BWB::BlockchainWalletServer::BlockchainWalletServer(std::unique_ptr<QWebSocket> connection)
+BWB::BlockchainWalletApiImpl::BlockchainWalletApiImpl(std::unique_ptr<QWebSocket> connection)
     : connection(kj::mv(connection)), contestPublisherIdPromise(nullptr) {
     KJ_REQUIRE(this->connection && this->connection->state() == QAbstractSocket::SocketState::ConnectedState,
                "Internal Error: Attempted to create Bitshares blockchain wallet server with no connection to a "
@@ -82,12 +82,12 @@ BWB::BlockchainWalletServer::BlockchainWalletServer(std::unique_ptr<QWebSocket> 
     // Someday we can implment encrypted communication with the BTS wallet, which would be negotiated here.
 }
 
-void BWB::BlockchainWalletServer::checkConnection() {
+void BWB::BlockchainWalletApiImpl::checkConnection() {
     if (!connection || connection->state() != QAbstractSocket::SocketState::ConnectedState)
         throw KJ_EXCEPTION(DISCONNECTED, "Connection to Bitshares wallet has failed.");
 }
 
-void BWB::BlockchainWalletServer::finishCall(QString message) {
+void BWB::BlockchainWalletApiImpl::finishCall(QString message) {
     QJsonParseError error;
     auto response = QJsonDocument::fromJson(message.toLocal8Bit(), &error).object();
 
@@ -112,7 +112,7 @@ void BWB::BlockchainWalletServer::finishCall(QString message) {
     pendingRequests.erase(itr);
 }
 
-kj::Promise<QString> BWB::BlockchainWalletServer::setFeesAndBroadcastTransaction(QJsonArray operations) {
+kj::Promise<QString> BWB::BlockchainWalletApiImpl::setFeesAndBroadcastTransaction(QJsonArray operations) {
     return beginCall("blockchain.getTransactionFees", QJsonArray() << operations).then([this](QJsonValue response) {
         KJ_LOG(DBG, "Broadcasting transaction", QJsonDocument(response.toObject()).toJson().data());
         return beginCall("wallet.broadcastTransaction", QJsonArray() << response.toArray());
@@ -122,7 +122,7 @@ kj::Promise<QString> BWB::BlockchainWalletServer::setFeesAndBroadcastTransaction
     });
 }
 
-kj::Promise<QJsonValue> BWB::BlockchainWalletServer::beginCall(QString method, QJsonArray params) {
+kj::Promise<QJsonValue> BWB::BlockchainWalletApiImpl::beginCall(QString method, QJsonArray params) {
     checkConnection();
 
 
@@ -147,7 +147,7 @@ void populateCoin(::Coin::Builder builder, QJsonObject coin) {
     builder.setPrecision(coin["precision"].toInt());
 }
 
-kj::Promise<void> BWB::BlockchainWalletServer::getCoinById(GetCoinByIdContext context) {
+kj::Promise<void> BWB::BlockchainWalletApiImpl::getCoinById(GetCoinByIdContext context) {
     KJ_LOG(DBG, __FUNCTION__);
     auto id = QStringLiteral("1.3.%1").arg(context.getParams().getId());
     return beginCall("blockchain.getObjectById", QJsonArray() << id).then([context](QJsonValue response) mutable {
@@ -155,7 +155,7 @@ kj::Promise<void> BWB::BlockchainWalletServer::getCoinById(GetCoinByIdContext co
     });
 }
 
-kj::Promise<void> BWB::BlockchainWalletServer::getCoinBySymbol(GetCoinBySymbolContext context) {
+kj::Promise<void> BWB::BlockchainWalletApiImpl::getCoinBySymbol(GetCoinBySymbolContext context) {
     KJ_LOG(DBG, __FUNCTION__);
     auto symbol = QString::fromStdString(context.getParams().getSymbol());
     return beginCall("blockchain.getAssetBySymbol",
@@ -164,7 +164,7 @@ kj::Promise<void> BWB::BlockchainWalletServer::getCoinBySymbol(GetCoinBySymbolCo
     });
 }
 
-kj::Promise<void> BWB::BlockchainWalletServer::getAllCoins(GetAllCoinsContext context) {
+kj::Promise<void> BWB::BlockchainWalletApiImpl::getAllCoins(GetAllCoinsContext context) {
     KJ_LOG(DBG, __FUNCTION__);
     return beginCall("blockchain.getAllAssets", {}).then([context](QJsonValue response) mutable {
         auto assets = response.toArray();
@@ -175,7 +175,7 @@ kj::Promise<void> BWB::BlockchainWalletServer::getAllCoins(GetAllCoinsContext co
     });
 }
 
-kj::Promise<void> BWB::BlockchainWalletServer::listMyAccounts(ListMyAccountsContext context) {
+kj::Promise<void> BWB::BlockchainWalletApiImpl::listMyAccounts(ListMyAccountsContext context) {
     KJ_LOG(DBG, __FUNCTION__);
     return beginCall("wallet.getMyAccounts", {}).then([this, context](QJsonValue response) mutable {
         auto accounts = response.toArray();
@@ -187,7 +187,7 @@ kj::Promise<void> BWB::BlockchainWalletServer::listMyAccounts(ListMyAccountsCont
     });
 }
 
-kj::Promise<void> BWB::BlockchainWalletServer::getBalance(GetBalanceContext context) {
+kj::Promise<void> BWB::BlockchainWalletApiImpl::getBalance(GetBalanceContext context) {
     KJ_LOG(DBG, __FUNCTION__);
     auto balanceId = context.getParams().getId();
     auto accountId = QStringLiteral("1.2.%1").arg(balanceId.getAccountInstance());
@@ -207,7 +207,7 @@ kj::Promise<void> BWB::BlockchainWalletServer::getBalance(GetBalanceContext cont
     });
 }
 
-kj::Promise<void> BWB::BlockchainWalletServer::getBalancesBelongingTo(GetBalancesBelongingToContext context) {
+kj::Promise<void> BWB::BlockchainWalletApiImpl::getBalancesBelongingTo(GetBalancesBelongingToContext context) {
     KJ_LOG(DBG, __FUNCTION__);
     auto owner = QString::fromStdString(context.getParams().getOwner());
     auto accountPromise = beginCall("blockchain.getAccountByName", QJsonArray() << owner);
@@ -231,7 +231,7 @@ kj::Promise<void> BWB::BlockchainWalletServer::getBalancesBelongingTo(GetBalance
     });
 }
 
-kj::Promise<void> BWB::BlockchainWalletServer::getContestById(GetContestByIdContext context) {
+kj::Promise<void> BWB::BlockchainWalletApiImpl::getContestById(GetContestByIdContext context) {
     KJ_LOG(DBG, __FUNCTION__);
     auto operationInstance = context.getParams().getId().getOperationId();
     auto operationId = QStringLiteral("1.11.%1").arg(operationInstance);
@@ -278,7 +278,7 @@ kj::Promise<void> BWB::BlockchainWalletServer::getContestById(GetContestByIdCont
     });
 }
 
-kj::Promise<void> BWB::BlockchainWalletServer::getDatagramByBalance(GetDatagramByBalanceContext context) {
+kj::Promise<void> BWB::BlockchainWalletApiImpl::getDatagramByBalance(GetDatagramByBalanceContext context) {
     KJ_LOG(DBG, __FUNCTION__, context.getParams());
 
     // Unfortunately, there's no good way to do this with a standard Bitshares wallet. Adding explicit support for FMV
@@ -325,7 +325,7 @@ kj::Promise<void> BWB::BlockchainWalletServer::getDatagramByBalance(GetDatagramB
     });
 }
 
-kj::Promise<void> BWB::BlockchainWalletServer::publishDatagram(PublishDatagramContext context) {
+kj::Promise<void> BWB::BlockchainWalletApiImpl::publishDatagram(PublishDatagramContext context) {
     KJ_LOG(DBG, __FUNCTION__, context.getParams());
 
     auto publisherId = QStringLiteral("1.2.%1").arg(context.getParams().getPublishingBalance().getAccountInstance());
@@ -347,7 +347,7 @@ kj::Promise<void> BWB::BlockchainWalletServer::publishDatagram(PublishDatagramCo
     return setFeesAndBroadcastTransaction(QJsonArray() << customOp).then([](auto){});
 }
 
-kj::Promise<void> BWB::BlockchainWalletServer::transfer(TransferContext context) {
+kj::Promise<void> BWB::BlockchainWalletApiImpl::transfer(TransferContext context) {
     KJ_LOG(DBG, __FUNCTION__, context.getParams());
 
     auto senderNameOrId = QString::fromStdString(context.getParams().getSendingAccount());
@@ -400,7 +400,7 @@ kj::Promise<void> BWB::BlockchainWalletServer::transfer(TransferContext context)
     }).then([](auto){});
 }
 
-::kj::Promise<void> BWB::BlockchainWalletServer::getSharedSecret(GetSharedSecretContext context) {
+::kj::Promise<void> BWB::BlockchainWalletApiImpl::getSharedSecret(GetSharedSecretContext context) {
     KJ_LOG(DBG, __FUNCTION__, context.getParams());
 
     auto myNameOrId = QString::fromStdString(context.getParams().getMyAccountNameOrId());
@@ -416,7 +416,9 @@ kj::Promise<void> BWB::BlockchainWalletServer::transfer(TransferContext context)
 
 kj::Promise<BlockchainWallet::Client> BitsharesWalletBridge::nextWalletClient() {
     if (hasPendingConnections()) {
-        auto server = kj::heap<BlockchainWalletServer>(std::unique_ptr<QWebSocket>(nextPendingConnection()));
+        auto socket = std::unique_ptr<QWebSocket>(nextPendingConnection());
+        connect(socket.get(), &QWebSocket::disconnected, this, &BitsharesWalletBridge::connectionLost);
+        auto server = kj::heap<BlockchainWalletApiImpl>(kj::mv(socket));
         return BlockchainWallet::Client(kj::mv(server));
     }
 
@@ -428,9 +430,11 @@ kj::Promise<BlockchainWallet::Client> BitsharesWalletBridge::nextWalletClient() 
         contexts.erase(contextId);
         disconnect(context.connection);
         KJ_LOG(DBG, "Fulfilling promise for a BlockchainWallet client");
-        std::unique_ptr<QWebSocket> peer(nextPendingConnection());
-        qDebug() << "Connection from" << peer->peerName() << "at" << peer->peerAddress() << ":" << peer->peerPort();
-        context.fulfiller->fulfill(kj::heap<BlockchainWalletServer>(kj::mv(peer)));
+        std::unique_ptr<QWebSocket> socket(nextPendingConnection());
+        connect(socket.get(), &QWebSocket::disconnected, this, &BitsharesWalletBridge::connectionLost);
+        qDebug() << "Connection from" << socket->peerName() << "at"
+                 << socket->peerAddress() << ":" << socket->peerPort();
+        context.fulfiller->fulfill(kj::heap<BlockchainWalletApiImpl>(kj::mv(socket)));
     });
     KJ_LOG(DBG, "Promising a BlockchainWallet client");
     return kj::mv(paf.promise);

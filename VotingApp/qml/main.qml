@@ -47,10 +47,6 @@ ApplicationWindow {
     }
     VotingSystem {
         id: _votingSystem
-
-        signal walletConnected
-        signal synced
-        signal connectedToBackend
     }
     StateMachine {
         id: globalStateMachine
@@ -65,40 +61,56 @@ ApplicationWindow {
             State {
                 id: waitingForWalletState
 
-                onEntered: votingSystem.configureChainAdaptor(false).then(votingSystem.walletConnected)
+                onEntered: votingSystem.configureChainAdaptor(false)
                 SignalTransition {
-                    targetState: walletInitializingState
-                    signal: votingSystem.walletConnected
+                    targetState: blockchainSyncingState
+                    signal: votingSystem.blockchainWalletConnected
                 }
             }
             State {
-                id: walletInitializingState
+                id: blockchainSyncingState
 
-                onEntered: votingSystem.initialize().then(votingSystem.synced)
+                onEntered: votingSystem.syncWithBlockchain()
                 SignalTransition {
-                    guard: votingSystem.backendConnected
+                    guard: votingSystem.backendIsConnected
                     targetState: connectedState
-                    signal: votingSystem.synced
+                    signal: votingSystem.blockchainSynced
                 }
                 SignalTransition {
-                    guard: !votingSystem.backendConnected
+                    guard: !votingSystem.backendIsConnected
                     targetState: backendConnectingState
-                    signal: votingSystem.synced
+                    signal: votingSystem.blockchainSynced
+                }
+                SignalTransition {
+                    targetState: waitingForWalletState
+                    signal: votingSystem.blockchainWalletDisconnected
                 }
             }
             State {
                 id: backendConnectingState
 
-                onEntered: votingSystem.connectToBackend("localhost", 17073, votingSystem.currentAccount.name).then(
-                              votingSystem.connectedToBackend)
+                onEntered: votingSystem.connectToBackend("localhost", 17073, votingSystem.currentAccount.name)
                 SignalTransition {
                     id: backendConnectingTransition
                     targetState: connectedState
-                    signal: votingSystem.connectedToBackend
+                    signal: votingSystem.backendConnected
+                }
+                SignalTransition {
+                    targetState: waitingForWalletState
+                    signal: votingSystem.blockchainWalletDisconnected
                 }
             }
             State {
                 id: connectedState
+
+                SignalTransition {
+                    targetState: waitingForWalletState
+                    signal: votingSystem.blockchainWalletDisconnected
+                }
+                SignalTransition {
+                    targetState: backendConnectingState
+                    signal: votingSystem.backendDisconnected
+                }
             }
         }
         StateMachine {

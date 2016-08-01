@@ -39,7 +39,7 @@
 #include "Apis/PurchaseContestRequestApi.hpp"
 #include "Apis/PurchaseApi.hpp"
 #include "VotingSystem.hpp"
-#include "qmlpromise.h"
+#include "qppromise.h"
 
 #include <capnqt/QtEventPort.hpp>
 

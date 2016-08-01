@@ -16,9 +16,9 @@ class BitsharesWalletBridge : public QWebSocketServer {
 
     /// This private class implements the BlockchainWallet::Server that @ref nextWalletClient uses to create its
     /// BlockchainWallet::Client objects
-    class BlockchainWalletServer;
+    class BlockchainWalletApiImpl;
 
-    struct ClientContext{
+    struct ClientContext {
         QMetaObject::Connection connection;
         kj::Own<kj::PromiseFulfiller<BlockchainWallet::Client>> fulfiller;
     };
@@ -34,6 +34,9 @@ public:
      * @return A BlockchainWallet::Client which wraps the next pending connection
      */
     kj::Promise<BlockchainWallet::Client> nextWalletClient();
+
+signals:
+    void connectionLost();
 };
 
 } } // namespace swv::bts

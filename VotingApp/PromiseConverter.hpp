@@ -19,7 +19,7 @@
 #ifndef PROMISEWRAPPER_HPP
 #define PROMISEWRAPPER_HPP
 
-#include "qmlpromise.h"
+#include "qppromise.h"
 
 #include <kj/async.h>
 #include <kj/debug.h>
@@ -78,7 +78,7 @@ private:
 
 template<typename T, typename Func>
 QJSValue PromiseConverter::convert(kj::Promise<T> promise, Func TConverter) {
-    auto convertedPromise = kj::heap<QmlPromise>(promiseParent);
+    auto convertedPromise = kj::heap<QPPromise>(promiseParent);
 
     auto responsePromise = promise.then(
         [convertedPromise = convertedPromise.get(), TConverter](T&& results) {
