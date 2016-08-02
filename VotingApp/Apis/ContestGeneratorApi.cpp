@@ -17,16 +17,14 @@ ContestGeneratorApi::ContestGeneratorApi(ContestGenerator::Client generator,
 ContestGeneratorApi::~ContestGeneratorApi() noexcept
 {}
 
-QJSValue ContestGeneratorApi::getContest()
-{
+QJSValue ContestGeneratorApi::getContest() {
     return converter.convert(generator.getContestRequest().send(),
                               [](capnp::Response<ContestGenerator::GetContestResults> response) -> QVariant {
         return {convertListedContest(response.getNextContest())};
     });
 }
 
-QJSValue ContestGeneratorApi::getContests(int count)
-{
+QJSValue ContestGeneratorApi::getContests(int count) {
     KJ_LOG(DBG, "Requesting contests", count);
     auto request = generator.getContestsRequest();
     request.setCount(count);

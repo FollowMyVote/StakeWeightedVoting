@@ -41,8 +41,7 @@ namespace swv {
  * handler, the exception will be propagated to the TaskSet provided to the constructor. Either way, the returned
  * Promise will be set to Rejected.
  */
-class PromiseConverter : public QObject
-{
+class PromiseConverter : public QObject {
     Q_OBJECT
     QObject* promiseParent;
 public:

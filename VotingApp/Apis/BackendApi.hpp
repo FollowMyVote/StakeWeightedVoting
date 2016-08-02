@@ -42,8 +42,7 @@ class ContestResultsApi;
  * disconnections or other failure conditions of the client. The PromiseWrapper passed to this class's constructor will
  * receive any errors from the backend.
  */
-class BackendApi : public QObject
-{
+class BackendApi : public QObject {
     Q_OBJECT
     Q_PROPERTY(swv::ContestCreatorApi* contestCreator READ contestCreator CONSTANT)
 

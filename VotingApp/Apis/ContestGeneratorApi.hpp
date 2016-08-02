@@ -7,8 +7,7 @@
 
 namespace swv {
 
-class ContestGeneratorApi : public QObject
-{
+class ContestGeneratorApi : public QObject {
     Q_OBJECT
 
     ContestGenerator::Client generator;

@@ -49,8 +49,7 @@ class Balance;
  *
  * The BlockchainWalletApi is also responsible for managing decisions on contests, including their persistence.
  */
-class BlockchainWalletApi : public QObject
-{
+class BlockchainWalletApi : public QObject {
     Q_OBJECT
 
 public:

@@ -232,7 +232,7 @@ kj::Promise<void> BWB::BlockchainWalletApiImpl::getBalancesBelongingTo(GetBalanc
 }
 
 kj::Promise<void> BWB::BlockchainWalletApiImpl::getContestById(GetContestByIdContext context) {
-    KJ_LOG(DBG, __FUNCTION__);
+    KJ_LOG(DBG, __FUNCTION__, context.getParams());
     auto operationInstance = context.getParams().getId().getOperationId();
     auto operationId = QStringLiteral("1.11.%1").arg(operationInstance);
 
