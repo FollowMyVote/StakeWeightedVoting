@@ -87,9 +87,11 @@ QJSValue PromiseConverter::convert(kj::Promise<T> promise, Func TConverter) {
             convertedPromise->reject({QString::fromStdString(exception.getDescription())});
             KJ_LOG(WARNING, "Exception in PromiseConverter", exception);
         });
+
+    QJSValue result = *convertedPromise;
     tasks.add(responsePromise.attach(kj::mv(convertedPromise)));
 
-    return *convertedPromise;
+    return result;
 }
 
 } // namespace swv
