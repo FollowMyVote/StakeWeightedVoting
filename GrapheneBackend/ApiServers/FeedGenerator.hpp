@@ -26,6 +26,7 @@
 #include <graphene/chain/database.hpp>
 
 #include <kj/vector.h>
+#include <kj/debug.h>
 
 namespace swv {
 
@@ -107,23 +108,31 @@ FeedGenerator<Index>::~FeedGenerator(){}
 template<typename Index>
 ::kj::Promise<void> FeedGenerator<Index>::getContest(ContestGenerator::Server::GetContestContext context) {
     if (currentContest == nullptr)
-        return kj::READY_NOW;
+        return KJ_EXCEPTION(FAILED, "No more contests available");
 
     auto itr = index.iterator_to(*currentContest);
     if (itr == index.end()) {
         currentContest = nullptr;
-        return kj::READY_NOW;
+        // I don't think this should ever happen. If it does, log it.
+        KJ_LOG(WARNING, "Got index.end() when finding iterator to currentContest");
+        return KJ_EXCEPTION(FAILED, "No more contests available");
     }
     // Skip past all ineligible contests
+    // TODO: the isActive check should be optional, in a filter
     while (!itr->isActive(db) || filter(*itr) != Accept) {
         // If a filter broke, or we've checked all contests, kill the generator
         if (filter(*itr) == Break || ++itr == index.end()) {
             currentContest = nullptr;
-            return kj::READY_NOW;
+            return KJ_EXCEPTION(FAILED, "No more contests available");
         }
     }
     currentContest = &*itr;
     populateContest(context.initResults().initNextContest());
+
+    if (++itr == index.end())
+        currentContest = nullptr;
+    else
+        currentContest = &*itr;
 
     return kj::READY_NOW;
 }

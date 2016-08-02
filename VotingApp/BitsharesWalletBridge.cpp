@@ -52,9 +52,11 @@ protected:
 
 BWB::BlockchainWalletApiImpl::BlockchainWalletApiImpl(std::unique_ptr<QWebSocket> connection)
     : connection(kj::mv(connection)), contestPublisherIdPromise(nullptr) {
-    KJ_REQUIRE(this->connection && this->connection->state() == QAbstractSocket::SocketState::ConnectedState,
-               "Internal Error: Attempted to create Bitshares blockchain wallet server with no connection to a "
-               "Bitshares wallet");
+    KJ_REQUIRE(!!this->connection, "Internal Error: Attempted to create Bitshares blockchain wallet server with null "
+                                   "connection to a Bitshares wallet");
+    KJ_REQUIRE(this->connection->state() == QAbstractSocket::SocketState::ConnectedState,
+               "Internal Error: Attempted to create Bitshares blockchain wallet server with bad connection to a "
+               "Bitshares wallet", this->connection->state());
     connect(this->connection.get(), &QWebSocket::textMessageReceived, [this](QString message) {
         finishCall(message);
     });
@@ -415,8 +417,13 @@ kj::Promise<void> BWB::BlockchainWalletApiImpl::transfer(TransferContext context
 ////////////////////////////// END BlockchainWalletServer implementation
 
 kj::Promise<BlockchainWallet::Client> BitsharesWalletBridge::nextWalletClient() {
-    if (hasPendingConnections()) {
+    while (hasPendingConnections()) {
         auto socket = std::unique_ptr<QWebSocket>(nextPendingConnection());
+        if (socket->state() != QAbstractSocket::ConnectedState) {
+            KJ_LOG(WARNING, "Discarding already-closed socket to wallet", socket->state());
+            continue;
+        }
+
         connect(socket.get(), &QWebSocket::disconnected, this, &BitsharesWalletBridge::connectionLost);
         auto server = kj::heap<BlockchainWalletApiImpl>(kj::mv(socket));
         return BlockchainWallet::Client(kj::mv(server));

@@ -41,6 +41,10 @@ ApplicationWindow {
             ListView {
                 id: contestListView
                 anchors.fill: parent
+                anchors.topMargin: 8
+                anchors.leftMargin: 8
+                anchors.rightMargin: 8
+                spacing: 8
                 model: ListModel {
                     id: contestListModel
                 }
@@ -49,13 +53,74 @@ ApplicationWindow {
                     layer.effect: DropShadow {
                         transparentBorder: true
                     }
+                    height: 120
+                    width: parent.width
+                }
+                footer: Item {
+                    width: parent.width
+                    height: 60
+
+                    Label {
+                        text: qsTr("No more contests")
+                        anchors.centerIn: parent
+                        visible: feedOutOfContestsState.active
+                    }
+                    Button {
+                        // This button should never actually appear on screen, but in case I've got a bug in my contest
+                        // preloading code, I put it here anyways
+                        anchors.fill: parent
+                        text: qsTr("Load more contests")
+                        onClicked: contestListView.needMoreContests()
+                        visible: feedNormalState.active
+                    }
+                    BusyIndicator {
+                        anchors.centerIn: parent
+                        running: connectedState.active &&
+                                 (feedPopulatingState.active || feedPreloadingContestsState.active)
+                    }
+
                 }
 
                 property var generator
 
                 signal populated
+                signal needMoreContests
                 signal outOfContests
 
+                onContentYChanged: {
+                    if (!feedNormalState.active)
+                        return
+                    var verticalPixelsRemainingToScroll = (contentHeight - height) - contentY
+                    if (verticalPixelsRemainingToScroll < height / 2)
+                        needMoreContests()
+                }
+                onNeedMoreContests: {
+                    generator.getContests(3).then(function(contestDescriptions) {
+                        return Q.all(contestDescriptions.map(loadContestFromChain))
+                    }).then(function(contests) {
+                        contests.map(contestListModel.append)
+                        populated()
+                        if (contests.length < 3)
+                            outOfContests()
+                    })
+                }
+
+                function loadContestFromChain(contestDescription) {
+                    return votingSystem.chain.getContest(contestDescription.contestId).then(function(contest) {
+                        contest.votingStake = contestDescription.votingStake
+                        contest.tracksLiveResults = contestDescription.tracksLiveResults
+                        return contest
+                    })
+                }
+                function fetchContest() {
+                    return generator.getContest().then(loadContestFromChain).then(function(contest) {
+                        contestListModel.append(contest)
+                    }, function(error) {
+                        contestListView.outOfContests()
+                        // Reject the resulting promise
+                        throw false
+                    })
+                }
                 function populateContests() {
                     if (!generator) {
                         generator = votingSystem.backend.getFeedGenerator()
@@ -63,27 +128,10 @@ ApplicationWindow {
                     }
 
                     console.log("Populating contest list, %1/%2".arg(contentHeight).arg(height))
-                    if (contentHeight < height) {
-                        generator.getContest().then(function(contestDescription) {
-                            if (!contestDescription)
-                                throw "Out of contests"
-
-                            return votingSystem.chain.getContest(contestDescription.contestId).then(function(contest) {
-                                console.log("Got contest", JSON.stringify(contest))
-                                contest.votingStake = contestDescription.votingStake
-                                contest.tracksLiveResults = contestDescription.tracksLiveResults
-                                return contest
-                            })
-                        }).then(contestListModel.append, function(error) {
-                            console.log("Error fetching contest", JSON.stringify(error))
-                        }).then(function(contest) {
-                            contestListModel.append(contest)
-                            contestListView.populateContests()
-                        }, function(error) {
-                            if (error === "Out of contests")
-                                contestListView.outOfContests()
-                        })
-                    } else contestListView.populated()
+                    if (contentHeight < height)
+                        fetchContest().then(contestListView.populateContests)
+                    else
+                        contestListView.populated()
                 }
             }
         }
@@ -192,6 +240,18 @@ ApplicationWindow {
                     SignalTransition {
                         signal: contestListView.outOfContests
                         targetState: feedOutOfContestsState
+                    }
+                    SignalTransition {
+                        signal: contestListView.needMoreContests
+                        targetState: feedPreloadingContestsState
+                    }
+                }
+                State {
+                    id: feedPreloadingContestsState
+
+                    SignalTransition {
+                        signal: contestListView.populated
+                        targetState: feedNormalState
                     }
                 }
                 State {

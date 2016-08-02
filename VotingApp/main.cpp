@@ -96,6 +96,7 @@ int main(int argc, char *argv[])
     qmlRegisterType<QSortFilterProxyModel>();
 
     QQmlApplicationEngine engine;
+    QPPromise::setEngine(&engine);
     engine.addImportPath("qrc:/");
     registerQtQmlTricksUiElements(&engine);
     engine.load(QUrl("qml/main.qml"));
