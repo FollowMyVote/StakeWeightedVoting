@@ -1,3 +1,5 @@
 out: icons/icons.qrc
 icons:
   - navigation/menu
+  - action/favorite
+  - action/favorite_border

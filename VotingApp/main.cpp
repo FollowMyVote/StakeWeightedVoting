@@ -19,6 +19,7 @@
 #include <QApplication>
 #include <QQmlApplicationEngine>
 #include <QtQml>
+#include <QQuickStyle>
 #include <QDebug>
 
 #include <capnp/rpc-twoparty.h>
@@ -94,6 +95,8 @@ int main(int argc, char *argv[])
     qmlRegisterType<swv::VotingSystem>("FollowMyVote.StakeWeightedVoting", 1, 0, "VotingSystem");
     qmlRegisterType<QQmlObjectListModelBase>();
     qmlRegisterType<QSortFilterProxyModel>();
+
+    QQuickStyle::setStyle("Material");
 
     QQmlApplicationEngine engine;
     QPPromise::setEngine(&engine);

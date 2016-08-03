@@ -48,12 +48,13 @@ ApplicationWindow {
                 model: ListModel {
                     id: contestListModel
                 }
-                delegate: Rectangle {
-                    layer.enabled: true
-                    layer.effect: DropShadow {
-                        transparentBorder: true
+                delegate: ContestDelegate {
+                    layer {
+                        enabled: true
+                        effect: DropShadow {
+                            transparentBorder: true
+                        }
                     }
-                    height: 120
                     width: parent.width
                 }
                 footer: Item {
