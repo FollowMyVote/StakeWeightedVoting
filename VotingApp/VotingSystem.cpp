@@ -482,14 +482,13 @@ void VotingSystem::cancelCurrentDecision(data::Contest* contest) {
     }));
 }
 
-void VotingSystem::setCurrentAccount(data::Account* currentAccount) {
+void VotingSystem::setCurrentAccount(data::Account* account) {
     Q_D(VotingSystem);
-
-    if (d->currentAccount == currentAccount)
+    if (d->currentAccount == account)
         return;
 
-    d->currentAccount = currentAccount;
-    emit currentAccountChanged(currentAccount);
+    d->currentAccount = account;
+    emit currentAccountChanged(account);
 }
 
 void VotingSystem::setLastError(QString message) {

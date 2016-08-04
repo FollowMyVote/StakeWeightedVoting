@@ -149,7 +149,8 @@ public slots:
      */
     void cancelCurrentDecision(swv::data::Contest* contest);
 
-    void setCurrentAccount(swv::data::Account* currentAccount);
+    void setCurrentAccount(QString accountName) { setCurrentAccount(getAccount(accountName)); }
+    void setCurrentAccount(swv::data::Account* account);
 
 protected slots:
     void setLastError(QString message);

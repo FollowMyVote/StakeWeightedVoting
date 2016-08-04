@@ -1,5 +1,6 @@
 import QtQuick 2.7
 import QtQuick.Controls 2.0
+import QtQuick.Controls.Material 2.0
 import QtQuick.Layouts 1.1
 import QtQml 2.2
 import QtQml.StateMachine 1.0
@@ -11,6 +12,8 @@ import QuickPromise 1.0
 
 Rectangle {
     height: contestMainColumn.height + 8
+
+    property var contest
 
     Column {
         id: contestMainColumn
@@ -26,11 +29,11 @@ Rectangle {
 
                 Label {
                     id: contestCoinLabel
-                    text: votingSystem.getCoin(coin).name
+                    text: votingSystem.getCoin(contest.coin).name
                 }
                 Label {
                     id: contestStartTimeLabel
-                    text: startTime.toLocaleString(Qt.locale(), Locale.ShortFormat)
+                    text: contest.startTime.toLocaleString(Qt.locale(), Locale.ShortFormat)
                 }
             }
             Item { height: 1; Layout.fillWidth: true }
@@ -42,6 +45,7 @@ Rectangle {
                 contentItem: UI.SvgIconLoader {
                     icon: favoriteButton.favorited? "qrc:/icons/action/favorite.svg"
                                                   : "qrc:/icons/action/favorite_border.svg"
+                    color: Material.accent
                 }
                 background: Item {}
                 onClicked: favorited = !favorited
@@ -49,33 +53,46 @@ Rectangle {
         }
         Label {
             UI.ExtraAnchors.horizontalFill: contestMainColumn
-            text: name
+            text: contest.name
             font.weight: Font.Bold
             font.pixelSize: 20
             wrapMode: Label.WrapAtWordBoundaryOrAnywhere
         }
         Label {
             UI.ExtraAnchors.horizontalFill: contestMainColumn
-            text: description
+            text: contest.description
             wrapMode: Label.WrapAtWordBoundaryOrAnywhere
         }
         UI.GridContainer {
             UI.ExtraAnchors.horizontalFill: contestMainColumn
             rowSpacing: 4
-            colSpacing: 4
-            cols: Math.min(Math.floor(width / 200), contestants.count)
+            colSpacing: 8
+            cols: Math.min(Math.floor(width / 300), contest.contestants.length)
 
             Repeater {
-                model: contestants
+                model: contest.contestants
                 Button {
-                    text: name + "\n" + description
-                    highlighted: !!currentDecision.opinions[index.toString()]
+                    text: modelData.name + "\n" + modelData.description
+                    highlighted: !!contest.currentDecision.opinions[index.toString()]
                     onClicked: {
                         var opinions = {}
                         opinions[index.toString()] = !highlighted
-                        currentDecision.opinions = opinions
+                        contest.currentDecision.opinions = opinions
                     }
                 }
+            }
+        }
+        Row {
+            anchors.right: parent.right
+            spacing: 8
+
+            Button {
+                text: qsTr("Undo Changes")
+                onClicked: votingSystem.cancelCurrentDecision(contest)
+            }
+            Button {
+                text: qsTr("Cast Vote")
+                onClicked: votingSystem.castCurrentDecision(contest)
             }
         }
     }

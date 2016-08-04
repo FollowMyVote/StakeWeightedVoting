@@ -23,6 +23,29 @@ ApplicationWindow {
         id: navigationDrawer
         width: 300
         height: window.height
+
+        Menu {
+            id: accountSelectorPopup
+            Column {
+                Repeater {
+                    model: votingSystem.myAccounts
+                    delegate: MenuItem {
+                        text: qsTr(model.name)
+                        highlighted: model.name === votingSystem.currentAccount.name
+                        onTriggered: {
+                            accountSelectorPopup.close()
+                            votingSystem.setCurrentAccount(model.name)
+                        }
+                    }
+                }
+            }
+        }
+        MenuItem {
+            text: qsTr("Current Account:\n%1").arg(votingSystem.currentAccount? votingSystem.currentAccount.name
+                                                                              : qsTr("No Account"))
+            UI.ExtraAnchors.horizontalFill: parent
+            onTriggered: accountSelectorPopup.open()
+        }
     }
     StackView {
         id: mainStack
@@ -58,6 +81,7 @@ ApplicationWindow {
                         }
                     }
                     width: parent.width
+                    contest: model.contest
                 }
                 footer: Item {
                     width: parent.width
@@ -112,7 +136,7 @@ ApplicationWindow {
                     return votingSystem.chain.getContest(contestDescription.contestId).then(function(contest) {
                         contest.votingStake = contestDescription.votingStake
                         contest.tracksLiveResults = contestDescription.tracksLiveResults
-                        return contest
+                        return {contest: contest}
                     })
                 }
                 function fetchContest() {
@@ -123,6 +147,12 @@ ApplicationWindow {
                         // Reject the resulting promise
                         throw false
                     })
+                }
+                function repopulateContests() {
+                    generator = null
+                    contestListModel.clear()
+                    // Delay this for a moment so the ListView has a chance to clear
+                    Q.setTimeout(populateContests, 10)
                 }
                 function populateContests() {
                     if (!generator) {
@@ -225,8 +255,14 @@ ApplicationWindow {
                 id: feedState
                 initialState: feedPopulatingState
 
+                SignalTransition {
+                    signal: votingSystem.currentAccountChanged
+                    targetState: feedPopulatingState
+                }
+
                 State {
                     id: feedPopulatingState
+                    onEntered: contestListView.repopulateContests()
 
                     SignalTransition {
                         signal: contestListView.populated
