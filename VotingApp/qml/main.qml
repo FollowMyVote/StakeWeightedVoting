@@ -1,5 +1,6 @@
 import QtQuick 2.7
 import QtQuick.Controls 2.0
+import QtQuick.Controls.Material 2.0
 import QtQuick.Layouts 1.1
 import QtQml.StateMachine 1.0
 import QtGraphicalEffects 1.0
@@ -33,6 +34,7 @@ ApplicationWindow {
                     contentItem: UI.SvgIconLoader {
                         id: img
                         icon: "qrc:/icons/navigation/menu.svg"
+                        color: Material.foreground
                     }
                     onClicked: navigationDrawer.open()
                 }

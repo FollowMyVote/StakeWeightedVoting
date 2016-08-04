@@ -69,6 +69,12 @@ Rectangle {
                 model: contestants
                 Button {
                     text: name + "\n" + description
+                    highlighted: !!currentDecision.opinions[index.toString()]
+                    onClicked: {
+                        var opinions = {}
+                        opinions[index.toString()] = !highlighted
+                        currentDecision.opinions = opinions
+                    }
                 }
             }
         }
