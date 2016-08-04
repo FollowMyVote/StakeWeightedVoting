@@ -2,6 +2,8 @@
 
 #include "Converters.hpp"
 
+#include <ids.capnp.h>
+
 #include <kj/debug.h>
 
 namespace swv {
@@ -37,6 +39,15 @@ QJSValue ContestGeneratorApi::getContests(int count) {
             contests.append(convertListedContest(contest));
         return {QVariant(contests)};
     });
+}
+
+void ContestGeneratorApi::logEngagement(QString contestId, Engagement::Type engagementType) {
+    auto blob = QByteArray::fromHex(contestId.toLocal8Bit());
+    BlobMessageReader message(convertBlob(blob));
+    auto request = generator.logEngagementRequest();
+    request.setContestId(message->getRoot<::ContestId>());
+    request.setEngagementType(static_cast<ContestGenerator::EngagementType>(engagementType));
+    converter.adopt(request.send().then([](auto){}));
 }
 
 }

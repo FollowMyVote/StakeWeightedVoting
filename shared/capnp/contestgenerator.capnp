@@ -29,7 +29,7 @@ interface ContestGenerator {
     getContests @1 (count :Int32) -> (nextContests :List(ListedContest));
     # Retrieve count more contests; may return less than count if no more contests are available
 
-    logEngagement @2 (contest :Data, engagementType :EngagementType);
+    logEngagement @2 (contestId :ContestId, engagementType :EngagementType);
     # Notify the server of engagement with a particular contest
 
     enum EngagementType {
@@ -37,6 +37,8 @@ interface ContestGenerator {
         # User expanded the contest to see more detail
         voted @1;
         # User voted on the specified contest
+        liked @2;
+        # User liked or starred or favorited or however you want to say it on the specified contest
     }
 
     struct ListedContest {

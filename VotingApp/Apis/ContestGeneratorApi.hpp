@@ -5,7 +5,14 @@
 
 #include "PromiseConverter.hpp"
 
+#include <QQmlEnumClassHelper.h>
+
 namespace swv {
+
+QML_ENUM_CLASS(Engagement,
+               expanded = (int)ContestGenerator::EngagementType::EXPANDED,
+               voted = (int)ContestGenerator::EngagementType::VOTED,
+               liked = (int)ContestGenerator::EngagementType::LIKED)
 
 class ContestGeneratorApi : public QObject {
     Q_OBJECT
@@ -18,6 +25,8 @@ public:
 
     Q_INVOKABLE QJSValue getContest();
     Q_INVOKABLE QJSValue getContests(int count);
+
+    Q_INVOKABLE void logEngagement(QString contestId, Engagement::Type engagementType);
 };
 
 }
