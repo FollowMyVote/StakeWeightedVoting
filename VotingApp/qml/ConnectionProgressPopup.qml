@@ -11,9 +11,7 @@ Popup {
     x: window.width / 2 - width / 2
     y: window.height / 2 - height / 2
     z: 3
-
     background: Rectangle {}
-
     enter: Transition {
         PropertyAnimation {
             targets: [contentItem, background]
@@ -36,13 +34,13 @@ Popup {
             id: progressBar
             indeterminate: value === 0
             value: {
-                if (waitingForWalletState.active)
+                if (globalStateMachine.connectionStateMachine.waitingForWalletState.active)
                     return .3
-                if (blockchainSyncingState.active)
+                if (globalStateMachine.connectionStateMachine.blockchainSyncingState.active)
                     return .6
-                if (backendConnectingState.active)
+                if (globalStateMachine.connectionStateMachine.backendConnectingState.active)
                     return .9
-                if (connectedState.active)
+                if (globalStateMachine.connectionStateMachine.connectedState.active)
                     return 1
                 return 0
             }
@@ -54,13 +52,13 @@ Popup {
             id: progressLabel
             anchors.horizontalCenter: parent.horizontalCenter
             text: {
-                if (waitingForWalletState.active)
+                if (globalStateMachine.connectionStateMachine.waitingForWalletState.active)
                     return "Waiting for Bitshares wallet"
-                if (blockchainSyncingState.active)
+                if (globalStateMachine.connectionStateMachine.blockchainSyncingState.active)
                     return "Syncing with blockchain"
-                if (backendConnectingState.active)
+                if (globalStateMachine.connectionStateMachine.backendConnectingState.active)
                     return "Please unlock Bitshares wallet"
-                if (connectedState.active)
+                if (globalStateMachine.connectionStateMachine.connectedState.active)
                     return "Finishing up"
                 return "Loading"
             }

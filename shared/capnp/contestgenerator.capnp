@@ -49,5 +49,4 @@ interface ContestGenerator {
         tracksLiveResults @2 :Bool;
         # Whether the backend provides live results for this contest or not
     }
-
 }

@@ -84,7 +84,10 @@ QJSValue PromiseConverter::convert(kj::Promise<T> promise, Func TConverter) {
             convertedPromise->resolve(TConverter(kj::mv(results)));
         }, [convertedPromise = convertedPromise.get()](kj::Exception&& exception) {
             convertedPromise->reject({QString::fromStdString(exception.getDescription())});
-            KJ_LOG(WARNING, "Exception in PromiseConverter", exception);
+            // If the exception isn't one I recognize as normal, log it
+            if (exception.getDescription() != "remote exception: No more contests available") {
+                KJ_LOG(WARNING, "Exception in PromiseConverter", exception);
+            }
         });
 
     QJSValue result = *convertedPromise;
