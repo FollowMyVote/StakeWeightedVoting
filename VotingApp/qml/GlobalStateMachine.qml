@@ -14,6 +14,7 @@ StateMachine {
     childMode: State.ParallelStates
 
     property Page feedPage
+    property Page contestDetailPage
     property VotingSystem votingSystem
 
     property alias connectionStateMachine: connectionStateMachine
@@ -99,6 +100,7 @@ StateMachine {
         initialState: feedPageState
 
         property alias feedPageState: feedPageState
+        property alias contestDetailPageState: contestDetailPageState
 
         State {
             id: feedPageState
@@ -108,6 +110,7 @@ StateMachine {
             property alias feedNormalState: feedNormalState
             property alias feedPreloadingContestsState: feedPreloadingContestsState
             property alias feedOutOfContestsState: feedOutOfContestsState
+            property alias feedPageHistoryState: feedPageHistoryState
 
             SignalTransition {
                 signal: votingSystem.currentAccountChanged
@@ -150,6 +153,40 @@ StateMachine {
             State {
                 id: feedOutOfContestsState
                 onEntered: console.log("No more contests in feed")
+            }
+            HistoryState {
+                id: feedPageHistoryState
+            }
+        }
+        State {
+            id: contestDetailPageState
+            initialState: contestDetailLoadingState
+
+            property alias contestDetailLoadingState: contestDetailLoadingState
+            property alias contestDetailNormalState: contestDetailNormalState
+
+            State {
+                id: contestDetailLoadingState
+
+                SignalTransition {
+                    signal: contestDetailPage.loaded
+                    targetState: contestDetailNormalState
+                    guard: !!contestDetailPage
+                }
+                SignalTransition {
+                    signal: contestDetailPage.closed
+                    targetState: feedPageHistoryState
+                    guard: !!contestDetailPage
+                }
+            }
+            State {
+                id: contestDetailNormalState
+
+                SignalTransition {
+                    signal: contestDetailPage.closed
+                    targetState: feedPageHistoryState
+                    guard: !!contestDetailPage
+                }
             }
         }
     }

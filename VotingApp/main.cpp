@@ -39,6 +39,7 @@
 #include "Apis/ContestGeneratorApi.hpp"
 #include "Apis/PurchaseContestRequestApi.hpp"
 #include "Apis/PurchaseApi.hpp"
+#include "Apis/ContestResultsApi.hpp"
 #include "VotingSystem.hpp"
 #include "qppromise.h"
 
@@ -79,6 +80,7 @@ int main(int argc, char *argv[])
     REGISTER_API(ContestCreator);
     REGISTER_API(PurchaseContestRequest);
     REGISTER_API(Purchase);
+    REGISTER_API(ContestResults);
 #undef REGISTER_API
 
     // Register enum wrappers

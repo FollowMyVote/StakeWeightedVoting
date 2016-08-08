@@ -28,6 +28,7 @@ class PromiseConverter;
 class ContestGeneratorApi;
 class ContestCreatorApi;
 class ContestResultsApi;
+namespace data { class Contest; }
 
 /**
  * @brief The BackendWrapper class provides a QML-friendly wrapper for the backend API
@@ -60,7 +61,7 @@ public:
     Q_INVOKABLE swv::ContestGeneratorApi* getVotedContests();
 
     /// @brief Get the results API for a specified contest
-    Q_INVOKABLE swv::ContestResultsApi* getContestResults(QString contestId);
+    Q_INVOKABLE swv::ContestResultsApi* getContestResults(swv::data::Contest* contest);
 
     swv::ContestCreatorApi* contestCreator();
 

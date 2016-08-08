@@ -12,13 +12,16 @@
 namespace swv {
 using QtCharts::QBarSeries;
 
+namespace data { class Contest; }
+
 class ContestResultsApi : public QObject {
     Q_OBJECT
-    Q_PROPERTY(const QBarSeries* results READ results NOTIFY resultsChanged)
+    Q_PROPERTY(QBarSeries* results READ results WRITE setResults NOTIFY resultsChanged)
 
     Backend::ContestResults::Client resultsApi;
+    const data::Contest& contest;
 
-    QBarSeries m_results;
+    QBarSeries* m_results = new QBarSeries(this);
 
     class ErrorHandler : public kj::TaskSet::ErrorHandler {
     public:
@@ -42,12 +45,11 @@ class ContestResultsApi : public QObject {
     void updateBarSeries(capnp::List<Backend::ContestResults::TalliedOpinion>::Reader talliedOpinions);
 
 public:
-    ContestResultsApi(Backend::ContestResults::Client resultsApi);
+    ContestResultsApi(Backend::ContestResults::Client resultsApi, const data::Contest& contest);
     virtual ~ContestResultsApi() noexcept;
 
-    const QBarSeries* results() const {
-        return &m_results;
-    }
+    QBarSeries* results() { return m_results; }
+    void setResults(QBarSeries* results);
 
 signals:
     void resultsChanged(const QBarSeries* results);
