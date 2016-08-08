@@ -14,6 +14,7 @@ Rectangle {
     height: contestMainColumn.height + 8
 
     property var contest
+    property VotingSystem votingSystem
 
     Column {
         id: contestMainColumn
@@ -41,6 +42,7 @@ Rectangle {
                 id: favoriteButton
                 implicitHeight: contestHeaderLeftColumn.height
                 implicitWidth: height
+                Layout.preferredWidth: implicitWidth
                 property bool favorited: false
                 contentItem: UI.SvgIconLoader {
                     icon: favoriteButton.favorited? "qrc:/icons/action/favorite.svg"

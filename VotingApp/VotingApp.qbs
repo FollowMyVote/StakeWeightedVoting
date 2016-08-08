@@ -37,6 +37,7 @@ Project {
             "main.cpp",
             "qml/ConnectionProgressPopup.qml",
             "qml/ContestDelegate.qml",
+            "qml/ContestDetailPage.qml",
             "qml/FeedPage.qml",
             "qml/GlobalStateMachine.qml",
             "qml/NavigationDrawer.qml",

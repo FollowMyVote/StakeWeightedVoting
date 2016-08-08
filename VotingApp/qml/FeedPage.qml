@@ -10,6 +10,7 @@ import FollowMyVote.StakeWeightedVoting 1.0
 import QuickPromise 1.0
 
 Page {
+    id: feedPage
     property NavigationDrawer navigationDrawer
     property VotingSystem votingSystem
     property State feedPageState
@@ -20,6 +21,7 @@ Page {
     signal populated
     signal needMoreContests
     signal outOfContests
+    signal contestOpened(Contest contest)
 
     onNeedMoreContests: {
         contestListView.generator.getContests(3).then(function(contestDescriptions) {
@@ -54,6 +56,7 @@ Page {
             id: contestListModel
         }
         delegate: ContestDelegate {
+            id: contestDelegate
             layer {
                 enabled: true
                 effect: DropShadow {
@@ -62,6 +65,13 @@ Page {
             }
             width: parent.width
             contest: model.contest
+            votingSystem: feedPage.votingSystem
+
+            MouseArea {
+                anchors.fill: parent
+                z: -1
+                onClicked: contestOpened(contestDelegate.contest)
+            }
         }
         footer: Item {
             width: parent.width

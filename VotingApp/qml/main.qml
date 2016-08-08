@@ -33,6 +33,9 @@ ApplicationWindow {
             votingSystem: _votingSystem
             feedPageState: globalStateMachine.appStateMachine.feedPageState
             connectionStateMachine: globalStateMachine.connectionStateMachine
+
+            onContestOpened: mainStack.push(Qt.resolvedUrl("ContestDetailPage.qml"),
+                                            {contest: contest, votingSystem: _votingSystem})
         }
     }
 
