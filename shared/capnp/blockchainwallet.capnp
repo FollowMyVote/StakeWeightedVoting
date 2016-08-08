@@ -35,6 +35,9 @@ interface BlockchainWallet {
     getAllCoins @2 () -> (coins :List(Coin));
     # Get all coins known to the blockchain
 
+    unlockWallet @11 () -> ();
+    # Request user unlock wallet. Returns immediately; wallet may or may not actually be unlocked
+
     listMyAccounts @3 () -> (accountNames :List(Text));
     # Get a list of accounts owned by this wallet
 

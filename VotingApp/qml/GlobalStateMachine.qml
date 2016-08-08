@@ -40,7 +40,13 @@ StateMachine {
         State {
             id: blockchainSyncingState
 
-            onEntered: votingSystem.syncWithBlockchain()
+            onEntered: {
+                if (!votingSystem.backendIsConnected)
+                    // We know we'll be prompting the user to unlock the wallet in a moment, so go ahead and open the
+                    // prompt now
+                    votingSystem.chain.unlockWallet()
+                votingSystem.syncWithBlockchain()
+            }
             SignalTransition {
                 guard: votingSystem.backendIsConnected
                 targetState: connectedState

@@ -116,6 +116,14 @@ public:
     kj::Promise<data::Decision*> _getDecision(QString owner, QString contestId);
 
     /**
+     * @brief Request wallet be unlocked
+     *
+     * This will prompt the user to unlock their wallet, if it is locked. If already unlocked, it will have no effect.
+     * There is no return value and no way to tell whether the wallet was actually unlocked or not.
+     */
+    Q_INVOKABLE void unlockWallet();
+
+    /**
      * @brief Transfer amount from sender to recipient
      * @param sender Account name of sender
      * @param recipient Account name/address of recipient

@@ -31,7 +31,7 @@ public:
 
 protected:
     void checkConnection();
-    kj::Promise<QJsonValue> beginCall(QString method, QJsonArray params);
+    kj::Promise<QJsonValue> beginCall(QString method, QJsonArray params, bool asNotification = false);
     void finishCall(QString message);
 
     kj::Promise<QString> setFeesAndBroadcastTransaction(QJsonArray operations);
@@ -40,6 +40,7 @@ protected:
     virtual ::kj::Promise<void> getCoinById(GetCoinByIdContext context) override;
     virtual ::kj::Promise<void> getCoinBySymbol(GetCoinBySymbolContext context) override;
     virtual ::kj::Promise<void> getAllCoins(GetAllCoinsContext context) override;
+    virtual ::kj::Promise<void> unlockWallet(UnlockWalletContext) override;
     virtual ::kj::Promise<void> listMyAccounts(ListMyAccountsContext context) override;
     virtual ::kj::Promise<void> getBalance(GetBalanceContext context) override;
     virtual ::kj::Promise<void> getBalancesBelongingTo(GetBalancesBelongingToContext context) override;
@@ -124,9 +125,8 @@ kj::Promise<QString> BWB::BlockchainWalletApiImpl::setFeesAndBroadcastTransactio
     });
 }
 
-kj::Promise<QJsonValue> BWB::BlockchainWalletApiImpl::beginCall(QString method, QJsonArray params) {
+kj::Promise<QJsonValue> BWB::BlockchainWalletApiImpl::beginCall(QString method, QJsonArray params, bool asNotification) {
     checkConnection();
-
 
     QJsonObject call {
         {"jsonrpc", "2.0"},
@@ -134,9 +134,13 @@ kj::Promise<QJsonValue> BWB::BlockchainWalletApiImpl::beginCall(QString method, 
         {"params",  params},
         {"id",      qint64(nextQueryId)}
     };
+    if (asNotification)
+        call.remove("id");
     connection->sendTextMessage(QJsonDocument(call).toJson(QJsonDocument::JsonFormat::Compact));
+    if (asNotification)
+        return QJsonValue();
 
-    // Create a new PendingRequest, consisting of
+    // Create a new PendingRequest, consisting of query ID and fulfiller
     auto paf = kj::newPromiseAndFulfiller<QJsonValue>();
     pendingRequests.emplace(std::make_pair(nextQueryId++, kj::mv(paf.fulfiller)));
     return kj::mv(paf.promise);
@@ -175,6 +179,11 @@ kj::Promise<void> BWB::BlockchainWalletApiImpl::getAllCoins(GetAllCoinsContext c
         for (const auto& asset : assets)
             populateCoin(coins[index++], asset.toObject());
     });
+}
+
+kj::Promise<void> BWB::BlockchainWalletApiImpl::unlockWallet(UnlockWalletContext) {
+    KJ_LOG(DBG, __FUNCTION__);
+    return beginCall("wallet.unlockWallet", {}, true).then([](auto){});
 }
 
 kj::Promise<void> BWB::BlockchainWalletApiImpl::listMyAccounts(ListMyAccountsContext context) {

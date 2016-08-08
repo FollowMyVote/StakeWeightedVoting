@@ -160,6 +160,10 @@ kj::Promise<data::Decision*> BlockchainWalletApi::_getDecision(QString owner, QS
     return kj::mv(promise);
 }
 
+void BlockchainWalletApi::unlockWallet() {
+    promiseConverter.adopt(m_chain.unlockWalletRequest().send().then([](auto){}));
+}
+
 QJSValue BlockchainWalletApi::getBalance(QByteArray id) {
     auto request = m_chain.getBalanceRequest();
     BlobMessageReader reader(convertBlob(id));
