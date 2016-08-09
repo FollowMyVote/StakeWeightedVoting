@@ -54,9 +54,10 @@ void BackendPlugin::plugin_startup() {
         auto itr = index.find(clientName);
         KJ_REQUIRE(itr != index.end(), "Could not find client's account", clientName);
 
-        auto privateKey = *graphene::utilities::wif_to_key(
+        auto privateKey = graphene::utilities::wif_to_key(
                               vdb->configuration().reader().getAuthenticatingKeyWif());
-        auto secret = fc::digest(privateKey.get_shared_secret(itr->options.memo_key));
+        KJ_REQUIRE(!!privateKey, "Authenticating key is not set!");
+        auto secret = fc::digest(privateKey->get_shared_secret(itr->options.memo_key));
         return std::vector<uint8_t>(reinterpret_cast<uint8_t*>(secret.data()),
                                     reinterpret_cast<uint8_t*>(secret.data() + secret.data_size()));
     }, *CONTEST_PUBLISHING_ACCOUNT);

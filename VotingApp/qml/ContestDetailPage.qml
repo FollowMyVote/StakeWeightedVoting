@@ -16,6 +16,7 @@ Page {
     property alias contest: contestDelegate.contest
     property VotingSystem votingSystem
 
+    // TODO: Calling getContestResults causes the server to crash. Best be fixing that!
     property var resultsApi: votingSystem.backend.getContestResults(contest)
     Binding {
         target: resultsApi
