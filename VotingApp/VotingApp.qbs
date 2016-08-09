@@ -38,6 +38,7 @@ Project {
             "qml/ConnectionProgressPopup.qml",
             "qml/ContestDelegate.qml",
             "qml/ContestDetailPage.qml",
+            "qml/CreateContestPage.qml",
             "qml/FeedPage.qml",
             "qml/GlobalStateMachine.qml",
             "qml/NavigationDrawer.qml",

@@ -14,6 +14,8 @@ Drawer {
 
     property var votingSystem
 
+    signal createContestOpened
+
     Menu {
         id: accountSelectorPopup
         Column {
@@ -30,10 +32,20 @@ Drawer {
             }
         }
     }
-    MenuItem {
-        text: qsTr("Current Account:\n%1").arg(votingSystem.currentAccount? votingSystem.currentAccount.name
-                                                                          : qsTr("No Account"))
-        UI.ExtraAnchors.horizontalFill: parent
-        onTriggered: accountSelectorPopup.open()
+
+    Column {
+        anchors.fill: parent
+
+        MenuItem {
+            text: qsTr("Current Account:\n%1").arg(votingSystem.currentAccount? votingSystem.currentAccount.name
+                                                                              : qsTr("No Account"))
+            UI.ExtraAnchors.horizontalFill: parent
+            onTriggered: accountSelectorPopup.open()
+        }
+        MenuItem {
+            text: qsTr("Create Contest")
+            UI.ExtraAnchors.horizontalFill: parent
+            onTriggered: createContestOpened()
+        }
     }
 }

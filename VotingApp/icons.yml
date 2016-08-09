@@ -2,5 +2,6 @@ out: icons/icons.qrc
 icons:
   - navigation/menu
   - navigation/arrow_back
+  - action/delete_forever
   - action/favorite
   - action/favorite_border

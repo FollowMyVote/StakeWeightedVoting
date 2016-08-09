@@ -22,6 +22,13 @@ ApplicationWindow {
         height: window.height
         width: 300
         votingSystem: _votingSystem
+
+        onCreateContestOpened: {
+            mainStack.push(Qt.resolvedUrl("CreateContestPage.qml"),
+                           {votingSystem: _votingSystem,
+                            contestCreatorApi: _votingSystem.backend.contestCreator})
+            close()
+        }
     }
     StackView {
         id: mainStack
@@ -55,5 +62,6 @@ ApplicationWindow {
         running: true
         feedPage: _feedPage
         votingSystem: _votingSystem
+        navigationDrawer: _navigationDrawer
     }
 }

@@ -13,8 +13,10 @@ StateMachine {
     id: globalStateMachine
     childMode: State.ParallelStates
 
-    property Page feedPage
-    property Page contestDetailPage
+    property FeedPage feedPage
+    property ContestDetailPage contestDetailPage
+    property CreateContestPage createContestPage
+    property NavigationDrawer navigationDrawer
     property VotingSystem votingSystem
 
     property alias connectionStateMachine: connectionStateMachine
@@ -101,6 +103,7 @@ StateMachine {
 
         property alias feedPageState: feedPageState
         property alias contestDetailPageState: contestDetailPageState
+        property alias createContestPageState: createContestPageState
 
         State {
             id: feedPageState
@@ -115,6 +118,14 @@ StateMachine {
             SignalTransition {
                 signal: votingSystem.currentAccountChanged
                 targetState: feedPopulatingState
+            }
+            SignalTransition {
+                signal: feedPage.contestOpened
+                targetState: contestDetailPageState
+            }
+            SignalTransition {
+                signal: navigationDrawer.createContestOpened
+                targetState: createContestPageState
             }
 
             State {
@@ -186,6 +197,45 @@ StateMachine {
                     signal: contestDetailPage.closed
                     targetState: feedPageHistoryState
                     guard: !!contestDetailPage
+                }
+            }
+        }
+        State {
+            id: createContestPageState
+            initialState: fillContestFormState
+
+            property alias fillContestFormState: fillContestFormState
+
+            State {
+                id: fillContestFormState
+
+                SignalTransition {
+                    signal: createContestPage.contestFormComplete
+                    targetState: checkoutState
+                }
+                SignalTransition {
+                    signal: createContestPage.createContestCanceled
+                    targetState: feedPageHistoryState
+                }
+            }
+            State {
+                id: checkoutState
+
+                SignalTransition {
+                    signal: createContestPage.paymentSent
+                    targetState: waitingForConfirmation
+                }
+                SignalTransition {
+                    signal: createContestPage.checkoutCanceled
+                    targetState: fillContestFormState
+                }
+            }
+            State {
+                id: waitingForConfirmation
+
+                SignalTransition {
+                    signal: createContestPage.paymentConfirmed
+                    targetState: feedPageHistoryState
                 }
             }
         }
