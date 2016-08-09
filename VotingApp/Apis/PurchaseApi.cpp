@@ -9,7 +9,7 @@ void PurchaseApi::setComplete(bool success) {
     KJ_LOG(DBG, "Purchase complete", success);
     if (success == m_complete) return;
     m_complete = success;
-    emit completeChanged(success);
+    emit isCompleteChanged(success);
 }
 
 PurchaseApi::PurchaseApi(Purchase::Client&& api, PromiseConverter& converter, QObject *parent)

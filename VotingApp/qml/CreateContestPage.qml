@@ -21,7 +21,7 @@ Page {
     }
 
     property VotingSystem votingSystem
-    property var contestCreatorApi
+    property ContestCreator contestCreatorApi
 
     signal createContestCanceled
     signal contestFormComplete
@@ -30,6 +30,19 @@ Page {
     signal paymentConfirmed
 
     onCreateContestCanceled: StackView.view.pop()
+    onContestFormComplete: beginCheckout()
+
+    function beginCheckout() {
+        var purchaseRequest = new PurchaseContestRequest(contestCreatorApi.getPurchaseContestRequest())
+        purchaseRequest.name = contestNameField.text
+        purchaseRequest.description = contestDescriptionField.text
+        purchaseRequest.weightCoin = votingSystem.coins.get(coinSelector.currentIndex).id
+
+        for (var i = 0; i < contestantModel.count; ++i)
+            purchaseRequest.contestants.append(contestantModel.get(i))
+
+        // TODO: Submit request, pass to checkout dialog (and write checkout dialog, lol)
+    }
 
     ColumnLayout {
         anchors.fill: parent

@@ -17,7 +17,7 @@ namespace swv {
 class PurchaseApi : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(bool complete READ complete NOTIFY completeChanged)
+    Q_PROPERTY(bool isComplete READ isComplete NOTIFY isCompleteChanged)
 
     Purchase::Client api;
     PromiseConverter& converter;
@@ -29,9 +29,8 @@ public:
     PurchaseApi(Purchase::Client&& api, PromiseConverter& converter, QObject *parent = 0);
     virtual ~PurchaseApi() noexcept;
 
-    bool complete() const {
-        return m_complete;
-    }
+    bool isComplete() const { return m_complete; }
+
     Q_INVOKABLE QJSValue prices(QStringList promoCodes);
 
 public slots:
@@ -42,7 +41,7 @@ public slots:
     void paymentSent(qint16 selectedPrice);
 
 signals:
-    void completeChanged(bool complete);
+    void isCompleteChanged(bool isComplete);
 };
 
 } // namespace swv

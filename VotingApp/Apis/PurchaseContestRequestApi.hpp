@@ -79,8 +79,6 @@ public:
 
 public slots:
     /// @brief Submit the request to the server. This consumes the request.
-    /// @return A map with two entries: "purchaseApi" (a purchase API wrapper) and "surchargePromise" (a @ref Promise
-    /// for the surcharge list, which is itself a QVariantList of objects with "description" and "charge" fields)
     swv::PurchaseApi* submit();
 
     void setName(QString name);
