@@ -21,7 +21,7 @@ Page {
     }
 
     property VotingSystem votingSystem
-    property ContestCreator contestCreatorApi
+    property var contestCreatorApi
 
     signal createContestCanceled
     signal contestFormComplete
@@ -33,15 +33,15 @@ Page {
     onContestFormComplete: beginCheckout()
 
     function beginCheckout() {
-        var purchaseRequest = new PurchaseContestRequest(contestCreatorApi.getPurchaseContestRequest())
+        var purchaseRequest = contestCreatorApi.getPurchaseContestRequest()
         purchaseRequest.name = contestNameField.text
         purchaseRequest.description = contestDescriptionField.text
-        purchaseRequest.weightCoin = votingSystem.coins.get(coinSelector.currentIndex).id
+        purchaseRequest.weightCoin = votingSystem.coins.get(coinSelector.currentIndex).coinId
 
         for (var i = 0; i < contestantModel.count; ++i)
             purchaseRequest.contestants.append(contestantModel.get(i))
 
-        // TODO: Submit request, pass to checkout dialog (and write checkout dialog, lol)
+        checkoutDialogComponent.createObject(createContestPage, {purchaseApi: purchaseRequest.submit()}).open()
     }
 
     ColumnLayout {
@@ -130,6 +130,114 @@ Page {
             Button {
                 text: qsTr("Checkout")
                 onClicked: contestFormComplete()
+            }
+        }
+    }
+
+    Component {
+        id: checkoutDialogComponent
+
+        ShadowedPopup {
+            id: checkoutDialog
+            x: createContestPage.width / 2 - width / 2
+            y: createContestPage.height / 2 - height / 2
+            dim: true
+            width: 600
+            height: 400
+            acceptButton.text: qsTr("Purchase")
+            cancelButton.text: qsTr("Cancel Checkout")
+
+            property var purchaseApi
+
+            acceptButton.onClicked: {
+                // TODO: submit payment
+                paymentSent()
+                // TODO: get confirmation
+            }
+            cancelButton.onClicked: {
+                checkoutCanceled()
+                close()
+            }
+            onOpened: {
+                purchaseApi.purchaseFailed.connect(function() {
+                    // TODO: show error in GUI
+                    console.log("Purchase failed")
+                    close()
+                })
+                // Fetch prices
+                purchaseApi.prices([]).then(setPrices, function(reason) {
+                    // TODO: actually show the error in GUI
+                    // The only reason this promise should fail is if the contest submission itself failed
+                    console.log("Contest submission failed:", reason.split(';')[1])
+                    close()
+                })
+            }
+
+            function setPrices(totalsAndAdjustments) {
+                priceSelector.model = totalsAndAdjustments.totals.map(function(total) {
+                    var coin = votingSystem.getCoin(total.coinId)
+                    total.text = (total.amount / Math.pow(10, coin.precision)).toString() + " " + coin.name
+                    return total
+                })
+                adjustmentsRepeater.model = totalsAndAdjustments.adjustments.map(function(adjustment) {
+                    var coin = votingSystem.getCoin("VOTE")
+                    adjustment.text = adjustment.reason + ": " +
+                            (adjustment.amount / Math.pow(10, coin.precision)).toString() + " " + coin.name
+                    return adjustment
+                })
+            }
+
+            ColumnLayout {
+                anchors.centerIn: parent
+                spacing: 4
+
+                RowLayout {
+                    Layout.preferredWidth: 450
+                    spacing: 4
+
+                    TextField {
+                        id: promoCodeField
+                        Layout.fillWidth: true
+                        placeholderText: qsTr("Promo code")
+                    }
+                    Button {
+                        text: qsTr("Apply")
+                        onClicked: {
+                            var codes = promoCodeField.text.split(',').map(function(s) { return s.trim() })
+                            checkoutDialog.purchaseApi.prices(codes).then(checkoutDialog.setPrices)
+                        }
+                    }
+                }
+                Column {
+                    visible: adjustmentsRepeater.count
+                    Label {
+                        text: qsTr("Fees and Credits:")
+                    }
+                    Repeater {
+                        id: adjustmentsRepeater
+                        delegate: Label {
+                            text: modelData.text
+                        }
+                    }
+                }
+                Row {
+                    spacing: 4
+                    Label {
+                        text: qsTr("Price:")
+                        anchors.baseline: priceSelector.baseline
+                    }
+                    ComboBox {
+                        id: priceSelector
+                        enabled: !!model && model.length > 1
+                        textRole: "text"
+
+                        Label {
+                            anchors.centerIn: priceSelector
+                            text: "Loading..."
+                            visible: !priceSelector.model || priceSelector.model.length < 1
+                        }
+                    }
+                }
             }
         }
     }

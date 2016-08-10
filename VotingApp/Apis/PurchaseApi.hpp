@@ -42,6 +42,7 @@ public slots:
 
 signals:
     void isCompleteChanged(bool isComplete);
+    void purchaseFailed();
 };
 
 } // namespace swv
