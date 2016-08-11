@@ -10,6 +10,7 @@ void PurchaseApi::setComplete(bool success) {
     KJ_LOG(DBG, "Purchase complete", success);
     m_complete = success;
     emit isCompleteChanged(success);
+    emit purchaseConfirmed();
 }
 
 PurchaseApi::PurchaseApi(Purchase::Client&& api, PromiseConverter& converter, QObject *parent)
@@ -19,9 +20,10 @@ PurchaseApi::PurchaseApi(Purchase::Client&& api, PromiseConverter& converter, QO
     class CompleteNotifier : public Notifier<capnp::Text>::Server {
         PurchaseApi& wrapper;
         virtual ::kj::Promise<void> notify(NotifyContext context) {
-            if (context.getParams().getNotification() != "true")
+            if (context.getParams().getNotification() != "true") {
                 KJ_LOG(ERROR, "Purchase failed...");
-            emit wrapper.purchaseFailed();
+                emit wrapper.purchaseFailed();
+            }
             wrapper.setComplete(true);
             return kj::READY_NOW;
         }

@@ -120,7 +120,7 @@ kj::Promise<QString> BWB::BlockchainWalletApiImpl::setFeesAndBroadcastTransactio
         KJ_LOG(DBG, "Broadcasting transaction", QJsonDocument(response.toObject()).toJson().data());
         return beginCall("wallet.broadcastTransaction", QJsonArray() << response.toArray());
     }).then([](QJsonValue response) {
-        qDebug() << response;
+        KJ_DBG(response.toString().toStdString());
         return response.toString();
     });
 }

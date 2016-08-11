@@ -100,6 +100,8 @@ StateMachine {
     StateMachine {
         id: appStateMachine
         initialState: feedPageState
+        onEntered: console.log("Entered feedpage")
+        onExited: console.log("Exited feedpage")
 
         property alias feedPageState: feedPageState
         property alias contestDetailPageState: contestDetailPageState
@@ -143,6 +145,8 @@ StateMachine {
             }
             State {
                 id: feedNormalState
+                onEntered: console.log("Entered fns")
+                onExited: console.log("Exited fns")
 
                 SignalTransition {
                     signal: feedPage.needMoreContests
@@ -151,6 +155,10 @@ StateMachine {
                 SignalTransition {
                     signal: feedPage.outOfContests
                     targetState: feedOutOfContestsState
+                }
+                SignalTransition {
+                    signal: feedPage.repopulating
+                    targetState: feedPopulatingState
                 }
             }
             State {
@@ -164,11 +172,18 @@ StateMachine {
             State {
                 id: feedOutOfContestsState
                 onEntered: console.log("No more contests in feed")
-            }
-            HistoryState {
-                id: feedPageHistoryState
+                onExited: console.log("Exited foocs")
+
+                SignalTransition {
+                    signal: feedPage.repopulating
+                    targetState: feedPopulatingState
+                }
             }
         }
+            HistoryState {
+                id: feedPageHistoryState
+                historyType: HistoryState.DeepHistory
+            }
         State {
             id: contestDetailPageState
             initialState: contestDetailLoadingState
@@ -222,8 +237,8 @@ StateMachine {
                 id: checkoutState
 
                 SignalTransition {
-                    signal: createContestPage.paymentSent
-                    targetState: waitingForConfirmation
+                    signal: createContestPage.paymentAuthorizing
+                    targetState: paymentAuthorizingState
                 }
                 SignalTransition {
                     signal: createContestPage.checkoutCanceled
@@ -231,11 +246,35 @@ StateMachine {
                 }
             }
             State {
-                id: waitingForConfirmation
+                id: paymentAuthorizingState
+
+                SignalTransition {
+                    signal: createContestPage.paymentSent
+                    targetState: waitingForConfirmationState
+                }
+                SignalTransition {
+                    signal: createContestPage.paymentCanceled
+                    targetState: checkoutState
+                }
+                SignalTransition {
+                    signal: createContestPage.checkoutCanceled
+                    targetState: fillContestFormState
+                }
+            }
+            State {
+                id: waitingForConfirmationState
 
                 SignalTransition {
                     signal: createContestPage.paymentConfirmed
+                    targetState: feedPopulatingState
+                }
+                SignalTransition {
+                    signal: createContestPage.confirmationFailed
                     targetState: feedPageHistoryState
+                }
+                SignalTransition {
+                    signal: createContestPage.checkoutCanceled
+                    targetState: fillContestFormState
                 }
             }
         }

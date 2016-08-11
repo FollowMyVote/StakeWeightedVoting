@@ -19,15 +19,16 @@ Page {
     property alias contestListView: contestListView
 
     signal populated
+    signal repopulating
     signal needMoreContests
     signal outOfContests
     signal contestOpened(Contest contest)
 
     onNeedMoreContests: {
         contestListView.generator.getContests(3).then(function(contestDescriptions) {
-            return Q.all(contestDescriptions.map(loadContestFromChain))
+            return Q.all(contestDescriptions.map(function(c) { return contestListView.loadContestFromChain(c) }))
         }).then(function(contests) {
-            contests.map(contestListModel.append)
+            contests.map(function(c) { contestListModel.append(c) })
             populated()
             if (contests.length < 3)
                 outOfContests()
@@ -35,13 +36,21 @@ Page {
     }
 
     header: ToolBar {
-        ToolButton {
-            contentItem: UI.SvgIconLoader {
-                id: img
-                icon: "qrc:/icons/navigation/menu.svg"
-                color: Material.foreground
+        Row {
+            ToolButton {
+                contentItem: UI.SvgIconLoader {
+                    icon: "qrc:/icons/navigation/menu.svg"
+                    color: Material.foreground
+                }
+                onClicked: navigationDrawer.open()
             }
-            onClicked: navigationDrawer.open()
+            ToolButton {
+                contentItem: UI.SvgIconLoader {
+                    icon: "qrc:/icons/navigation/refresh.svg"
+                    color: Material.foreground
+                }
+                onClicked: repopulating()
+            }
         }
     }
 
@@ -108,6 +117,7 @@ Page {
         }
 
         function loadContestFromChain(contestDescription) {
+            console.log("Fetching data for", JSON.stringify(contestDescription))
             return votingSystem.chain.getContest(contestDescription.contestId).then(function(contest) {
                 contest.votingStake = contestDescription.votingStake
                 contest.tracksLiveResults = contestDescription.tracksLiveResults
@@ -116,6 +126,7 @@ Page {
         }
         function fetchContest() {
             return generator.getContest().then(loadContestFromChain).then(function(contest) {
+                console.log(JSON.stringify(contest))
                 contestListModel.append(contest)
             }, function(error) {
                 outOfContests()
@@ -126,6 +137,7 @@ Page {
             })
         }
         function repopulateContests() {
+            console.log("Repopulating contest feed")
             generator = null
             contestListModel.clear()
             // Delay this for a moment so the ListView has a chance to clear

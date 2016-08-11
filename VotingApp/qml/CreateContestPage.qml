@@ -26,11 +26,20 @@ Page {
     signal createContestCanceled
     signal contestFormComplete
     signal checkoutCanceled
+    signal paymentAuthorizing
+    signal paymentCanceled
     signal paymentSent
     signal paymentConfirmed
+    signal confirmationFailed
 
     onCreateContestCanceled: StackView.view.pop()
     onContestFormComplete: beginCheckout()
+    onPaymentConfirmed: {
+        StackView.view.pop()
+    }
+    onConfirmationFailed: {
+        StackView.view.pop()
+    }
 
     function beginCheckout() {
         var purchaseRequest = contestCreatorApi.getPurchaseContestRequest()
@@ -145,22 +154,41 @@ Page {
             width: 600
             height: 400
             acceptButton.text: qsTr("Purchase")
+            acceptButton.enabled: !waiting
             cancelButton.text: qsTr("Cancel Checkout")
 
             property var purchaseApi
+            property bool waiting: false
+            property bool paymentSent: false
 
             acceptButton.onClicked: {
-                // TODO: submit payment
-                paymentSent()
-                // TODO: get confirmation
+                var total = priceSelector.model[priceSelector.currentIndex]
+                var payPromise = votingSystem.chain.transfer(votingSystem.currentAccount.name, total.payAddress,
+                                                             total.amount, total.coinId, total.memo)
+                payPromise.then(function(trxid) {
+                    createContestPage.paymentSent()
+                    checkoutDialog.paymentSent = true
+                    purchaseApi.paymentSent(priceSelector.currentIndex)
+                }, function(error) {
+                    waiting = false
+                    //TODO: Show error?
+                    console.log("Payment failed:", JSON.stringify(error))
+                    paymentCanceled()
+                })
+                waiting = true
             }
             cancelButton.onClicked: {
                 checkoutCanceled()
                 close()
             }
             onOpened: {
+                purchaseApi.purchaseConfirmed.connect(function() {
+                    createContestPage.paymentConfirmed()
+                    close()
+                })
                 purchaseApi.purchaseFailed.connect(function() {
                     // TODO: show error in GUI
+                    createContestPage.confirmationFailed()
                     console.log("Purchase failed")
                     close()
                 })
@@ -190,6 +218,7 @@ Page {
             ColumnLayout {
                 anchors.centerIn: parent
                 spacing: 4
+                enabled: !checkoutDialog.waiting
 
                 RowLayout {
                     Layout.preferredWidth: 450
@@ -237,6 +266,27 @@ Page {
                             visible: !priceSelector.model || priceSelector.model.length < 1
                         }
                     }
+                }
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                visible: checkoutDialog.waiting
+                color: Qt.rgba(255,255,255,127)
+
+                BusyIndicator {
+                    id: waitingForWalletIndicator
+                    anchors.centerIn: parent
+                }
+                Label {
+                    anchors.top: waitingForWalletIndicator.bottom
+                    UI.ExtraAnchors.horizontalFill: parent
+                    anchors.margins: 8
+                    text: checkoutDialog.paymentSent?
+                              qsTr("Payment sent. Your contest is being created...")
+                            : qsTr("Please confirm payment, including any applicable transaction fees, in your wallet.")
+                    wrapMode: Label.WrapAtWordBoundaryOrAnywhere
+                    horizontalAlignment: Label.AlignHCenter
                 }
             }
         }

@@ -77,7 +77,7 @@ class PurchaseServer : public ::Purchase::Server {
 public:
     PurchaseServer(VoteDatabase& vdb, int64_t votePrice, bool oversized,
                    ContestCreator::ContestCreationRequest::Reader request);
-    virtual ~PurchaseServer(){}
+    virtual ~PurchaseServer(){KJ_DBG("PurchaseServer destroyed");}
 
 protected:
     void processPayment(const gch::transfer_operation& paymentTransfer);
