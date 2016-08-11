@@ -265,6 +265,9 @@ kj::Promise<void> BWB::BlockchainWalletApiImpl::getContestById(GetContestByIdCon
         KJ_REQUIRE(decodedOp["payer"].toString().replace("1.2.", QString::null).toULongLong() == contestPublisherId,
                    "Could not authenticate contest referenced by contest ID");
 
+        // Go ahead and fire off a call to get the block (we need it for the timestamp)
+        auto blockPromise = beginCall("blockchain.getBlockByHeight", QJsonArray() << response.toObject()["block_num"]);
+
         // Custom op should contain a serialized datagram in base64 encoding. See buildPublishOperation() in
         // GrapheneBackend/ContestCreatorServer.cpp to see how this operation was created.
         auto operationData = QByteArray::fromHex(decodedOp["data"].toString().toLocal8Bit());
@@ -286,6 +289,13 @@ kj::Promise<void> BWB::BlockchainWalletApiImpl::getContestById(GetContestByIdCon
         // Deserialize the contest from the datagram and set it in the results
         BlobMessageReader contestMessage(datagramReader.getContent());
         result.setValue(contestMessage->getRoot<::Contest>());
+
+        return blockPromise;
+    }).then([context](QJsonValue block) mutable {
+        auto contest = context.getResults().getContest().getValue();
+        auto timestamp = static_cast<uint64_t>(QDateTime::fromString(block.toObject()["timestamp"].toString(),
+                                               Qt::ISODate).toMSecsSinceEpoch());
+        contest.setStartTime(std::max(contest.getStartTime(), timestamp));
     });
 }
 
