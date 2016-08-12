@@ -24,9 +24,10 @@ ApplicationWindow {
         votingSystem: _votingSystem
 
         onCreateContestOpened: {
-            mainStack.push(Qt.resolvedUrl("CreateContestPage.qml"),
-                           {votingSystem: _votingSystem,
-                            contestCreatorApi: _votingSystem.backend.contestCreator})
+            var createContestPage = mainStack.push(Qt.resolvedUrl("CreateContestPage.qml"),
+                                                   {votingSystem: _votingSystem,
+                                                    contestCreatorApi: _votingSystem.backend.contestCreator})
+            globalStateMachine.createContestPage = createContestPage
             close()
         }
     }

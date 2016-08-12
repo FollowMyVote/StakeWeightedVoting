@@ -100,8 +100,6 @@ StateMachine {
     StateMachine {
         id: appStateMachine
         initialState: feedPageState
-        onEntered: console.log("Entered feedpage")
-        onExited: console.log("Exited feedpage")
 
         property alias feedPageState: feedPageState
         property alias contestDetailPageState: contestDetailPageState
@@ -110,6 +108,8 @@ StateMachine {
         State {
             id: feedPageState
             initialState: feedPopulatingState
+            onEntered: console.log("Entered feedpage")
+            onExited: console.log("Exited feedpage")
 
             property alias feedPopulatingState: feedPopulatingState
             property alias feedNormalState: feedNormalState
@@ -179,11 +179,11 @@ StateMachine {
                     targetState: feedPopulatingState
                 }
             }
-        }
             HistoryState {
                 id: feedPageHistoryState
                 historyType: HistoryState.DeepHistory
             }
+        }
         State {
             id: contestDetailPageState
             initialState: contestDetailLoadingState
@@ -197,12 +197,10 @@ StateMachine {
                 SignalTransition {
                     signal: contestDetailPage.loaded
                     targetState: contestDetailNormalState
-                    guard: !!contestDetailPage
                 }
                 SignalTransition {
                     signal: contestDetailPage.closed
-                    targetState: feedPageHistoryState
-                    guard: !!contestDetailPage
+                    targetState: feedPageState
                 }
             }
             State {
@@ -210,8 +208,7 @@ StateMachine {
 
                 SignalTransition {
                     signal: contestDetailPage.closed
-                    targetState: feedPageHistoryState
-                    guard: !!contestDetailPage
+                    targetState: feedPageState
                 }
             }
         }

@@ -3,50 +3,48 @@
 #include "DataStructures/Contest.hpp"
 
 #include <QBarSet>
-
+#include <QDebug>
 
 namespace swv {
 
 void ContestResultsApi::updateBarSeries(capnp::List<Backend::ContestResults::TalliedOpinion>::Reader talliedOpinions) {
-    std::map<QString, int64_t> intermediateResults;
+    std::vector<std::pair<QString, int64_t>> writeInResults;
+    std::vector<int64_t> contestantResults(contest.get_contestants().size());
 
-    // Convert talliedOpinions to a more accessible format, which refers to all contestants by name
     for (auto tally : talliedOpinions) {
-        auto contestant = tally.getContestant().isContestant()?
-                              contest.get_contestants()[tally.getContestant().getContestant()].toString()
-                            : convertText(tally.getContestant().getWriteIn());
-        intermediateResults[contestant] = tally.getTally();
+        if (tally.getContestant().isContestant())
+            contestantResults[tally.getContestant().getContestant()] = tally.getTally();
+        else
+            writeInResults.emplace_back(convertText(tally.getContestant().getWriteIn()), tally.getTally());
     }
 
-    // Update all the tallies already in the results, removing them from intermediateResults as we go
-    for (auto set : results()->barSets()) {
-        if (set->count() != 1) {
-            // Either set is empty, or has multiple values. This ensures the set is empty, then adds a single value.
-            set->remove(0, set->count());
-            set->append(0);
-        }
+    // Sort write-ins in decreasing order of votes
+    std::sort(writeInResults.begin(), writeInResults.end(), [](auto a, auto b) { return a.second > b.second; });
 
-        if (intermediateResults.count(set->label())) {
-            set->replace(0, intermediateResults[set->label()]);
-            intermediateResults.erase(set->label());
-        }
+    auto barSet = new QtCharts::QBarSet("Contestant Tallies", m_results);
+    qreal maxVotes = 0;
+    for (auto result : contestantResults) {
+        barSet->append(result);
+        maxVotes = std::max<qreal>(maxVotes, result);
     }
-    // Add any tallies that were not in the results yet
-    for (auto result : intermediateResults) {
-        auto set = new QtCharts::QBarSet(result.first, m_results);
-        set->append(result.second);
-        m_results->append(set);
+    for (auto writeIn : writeInResults) {
+        barSet->append(writeIn.second);
+        maxVotes = std::max<qreal>(maxVotes, writeIn.second);
     }
+    m_results->clear();
+    m_results->append(barSet);
 
-    // Sort the candidates by votes
-    auto sets = m_results->barSets();
-    std::sort(sets.begin(), sets.end(), [](const QtCharts::QBarSet* a, const QtCharts::QBarSet* b) {
-        // Sort by vote tally, from greatest to least
-        if (!qFuzzyCompare(1 + a->at(0), 1 + b->at(0)))
-            return a->at(0) > b->at(0);
-        // Break ties with contestant name, from least to greatest
-        return a->label() < b->label();
-    });
+    m_yAxis->setMin(0);
+    m_yAxis->setMax(maxVotes * 1.05);
+    m_yAxis->applyNiceNumbers();
+
+    auto contestants = contest.get_contestants();
+    QStringList contestantNames;
+    std::transform(contestants.begin(), contestants.end(), std::back_inserter(contestantNames),
+                   [](const QVariant& v) { return v.toMap()["name"].toString(); });
+    std::transform(writeInResults.begin(), writeInResults.end(), std::back_inserter(contestantNames),
+                   [](auto pair) { return pair.first; });
+    m_xAxis->setCategories(kj::mv(contestantNames));
 }
 
 ContestResultsApi::ContestResultsApi(Backend::ContestResults::Client resultsApi, const data::Contest& contest)

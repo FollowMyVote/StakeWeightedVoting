@@ -6,22 +6,26 @@
 
 #include <QObject>
 #include <QBarSeries>
+#include <QValueAxis>
+#include <QBarCategoryAxis>
 
 #include <kj/debug.h>
 
 namespace swv {
-using QtCharts::QBarSeries;
-
 namespace data { class Contest; }
 
 class ContestResultsApi : public QObject {
     Q_OBJECT
-    Q_PROPERTY(QBarSeries* results READ results WRITE setResults NOTIFY resultsChanged)
+    Q_PROPERTY(QtCharts::QBarSeries* results READ results WRITE setResults NOTIFY resultsChanged)
+    Q_PROPERTY(QtCharts::QBarCategoryAxis* xAxis READ xAxis CONSTANT)
+    Q_PROPERTY(QtCharts::QValueAxis* yAxis READ yAxis CONSTANT)
 
     Backend::ContestResults::Client resultsApi;
     const data::Contest& contest;
 
-    QBarSeries* m_results = new QBarSeries(this);
+    QtCharts::QBarSeries* m_results = new QtCharts::QBarSeries(this);
+    QtCharts::QBarCategoryAxis* m_xAxis = new QtCharts::QBarCategoryAxis(this);
+    QtCharts::QValueAxis* m_yAxis = new QtCharts::QValueAxis(this);
 
     class ErrorHandler : public kj::TaskSet::ErrorHandler {
     public:
@@ -48,11 +52,14 @@ public:
     ContestResultsApi(Backend::ContestResults::Client resultsApi, const data::Contest& contest);
     virtual ~ContestResultsApi() noexcept;
 
-    QBarSeries* results() { return m_results; }
-    void setResults(QBarSeries* results);
+    QtCharts::QBarSeries* results() { return m_results; }
+    void setResults(QtCharts::QBarSeries* results);
+
+    QtCharts::QBarCategoryAxis* xAxis() const { return m_xAxis; }
+    QtCharts::QValueAxis* yAxis() const { return m_yAxis; }
 
 signals:
-    void resultsChanged(const QBarSeries* results);
+    void resultsChanged(const QtCharts::QBarSeries* results);
 };
 
 } // namespace swv

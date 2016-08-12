@@ -16,7 +16,6 @@ Page {
     property alias contest: contestDelegate.contest
     property VotingSystem votingSystem
 
-    // TODO: Calling getContestResults causes the server to crash. Best be fixing that!
     property var resultsApi: votingSystem.backend.getContestResults(contest)
     Binding {
         target: resultsApi
@@ -52,11 +51,12 @@ Page {
             }
             ChartView {
                 UI.ExtraAnchors.horizontalFill: parent
-                anchors.top: contestDelegate.bottom
                 height: 400
 
                 BarSeries {
                     id: resultSeries
+                    axisX: resultsApi.xAxis
+                    axisY: resultsApi.yAxis
                 }
             }
         }
