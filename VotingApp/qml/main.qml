@@ -2,7 +2,6 @@ import QtQuick 2.7
 import QtQuick.Controls 2.0
 import QtQuick.Controls.Material 2.0
 import QtQuick.Layouts 1.1
-import QtQml.StateMachine 1.0
 import QtGraphicalEffects 1.0
 import Qt.labs.settings 1.0
 import QtQmlTricks.UiElements 2.0 as UI
@@ -14,7 +13,8 @@ ApplicationWindow {
     visible: true
 
     ConnectionProgressPopup {
-        visible: !globalStateMachine.connectionStateMachine.connectedState.active
+        id: connectionProgressPopup
+        visible: true
     }
 
     NavigationDrawer {
@@ -24,10 +24,8 @@ ApplicationWindow {
         votingSystem: _votingSystem
 
         onCreateContestOpened: {
-            var createContestPage = mainStack.push(Qt.resolvedUrl("CreateContestPage.qml"),
-                                                   {votingSystem: _votingSystem,
-                                                    contestCreatorApi: _votingSystem.backend.contestCreator})
-            globalStateMachine.createContestPage = createContestPage
+            mainStack.push(Qt.resolvedUrl("CreateContestPage.qml"),
+                           {votingSystem: _votingSystem, contestCreatorApi: _votingSystem.backend.contestCreator})
             close()
         }
     }
@@ -39,12 +37,10 @@ ApplicationWindow {
             id: _feedPage
             navigationDrawer: _navigationDrawer
             votingSystem: _votingSystem
-            feedPageState: globalStateMachine.appStateMachine.feedPageState
-            connectionStateMachine: globalStateMachine.connectionStateMachine
 
             onContestOpened: {
-                globalStateMachine.contestDetailPage = mainStack.push(Qt.resolvedUrl("ContestDetailPage.qml"),
-                                                                      {contest: contest, votingSystem: _votingSystem})
+                mainStack.push(Qt.resolvedUrl("ContestDetailPage.qml"),
+                               {contest: contest, votingSystem: _votingSystem})
             }
         }
     }
@@ -57,12 +53,62 @@ ApplicationWindow {
     }
     VotingSystem {
         id: _votingSystem
-    }
-    GlobalStateMachine {
-        id: globalStateMachine
-        running: true
-        feedPage: _feedPage
-        votingSystem: _votingSystem
-        navigationDrawer: _navigationDrawer
+
+        // Normal startup routine:
+        Component.onCompleted: {
+            connectionProgressPopup.text = qsTr("Waiting for Bitshares wallet")
+            connectionProgressPopup.progress = .3
+            connectToBlockchainWallet(false)
+        }
+        onBlockchainWalletConnected: {
+            connectionProgressPopup.progress = .6
+            console.log("*** Blockchain connected")
+            if (!backendIsConnected)
+                // Unlock the wallet now, as we'll need unlocked it to connect to the backend
+                _votingSystem.chain.unlockWallet()
+            if (!currentAccount) {
+                console.log("*** Syncing with blockchain")
+                connectionProgressPopup.text = qsTr("Syncing with blockchain")
+                syncWithBlockchain()
+            } else if (!backendIsConnected) {
+                console.log("*** Connecting to backend as", currentAccount.name)
+                connectionProgressPopup.text = qsTr("Connecting to Follow My Vote")
+                connectToBackend("localhost", 17073, currentAccount.name)
+            } else {
+                connectionProgressPopup.progress = 1
+                connectionProgressPopup.text = "Finishing up"
+                connectionProgressPopup.visible = false
+            }
+        }
+        onBlockchainSynced: {
+            connectionProgressPopup.progress = .9
+            console.log("*** Blockchain synced")
+            if (!backendIsConnected) {
+                console.log("*** Connecting to backend as", currentAccount.name)
+                connectionProgressPopup.text = qsTr("Connecting to Follow My Vote")
+                connectToBackend("localhost", 17073, currentAccount.name)
+            }
+        }
+        onBackendConnected: {
+            connectionProgressPopup.progress = 1
+            connectionProgressPopup.text = qsTr("Finishing up")
+            connectionProgressPopup.visible = false
+            console.log("*** Backend connected")
+            _feedPage.contestListView.populateContests()
+        }
+
+        // Failure recovery:
+        onBlockchainWalletDisconnected: {
+            console.log("*** Blockchain disconnected; attempting to reconnect")
+            connectionProgressPopup.progress = .45
+            connectionProgressPopup.text = qsTr("Reconnecting to Bitshares wallet")
+            connectToBlockchainWallet(false)
+        }
+        onBackendDisconnected: {
+            console.log("*** Backend disconnected; attempting to reconnect")
+            connectionProgressPopup.progress = .45
+            connectionProgressPopup.text = qsTr("Reconnecting to Follow My Vote")
+            connectToBackend("localhost", 17073, currentAccount.name)
+        }
     }
 }

@@ -3,7 +3,6 @@ import QtQuick.Controls 2.0
 import QtQuick.Controls.Material 2.0
 import QtQuick.Layouts 1.1
 import QtQml 2.2
-import QtQml.StateMachine 1.0
 import QtGraphicalEffects 1.0
 import Qt.labs.settings 1.0
 import QtQmlTricks.UiElements 2.0 as UI
@@ -15,6 +14,15 @@ Rectangle {
 
     property var contest
     property VotingSystem votingSystem
+
+    Component.onCompleted: {
+        if (!contest || !contest.name) {
+            for (var prop in model)
+                console.log(prop, model[prop])
+            for (var prop in model.model)
+                console.log(prop, model.model[prop])
+        }
+    }
 
     Column {
         id: contestMainColumn

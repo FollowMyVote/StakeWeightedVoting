@@ -29,21 +29,13 @@ Popup {
         }
     }
 
+    property alias progress: progressBar.value
+    property alias text: progressLabel.text
+
     ColumnLayout {
         ProgressBar {
             id: progressBar
             indeterminate: value === 0
-            value: {
-                if (globalStateMachine.connectionStateMachine.waitingForWalletState.active)
-                    return .3
-                if (globalStateMachine.connectionStateMachine.blockchainSyncingState.active)
-                    return .6
-                if (globalStateMachine.connectionStateMachine.backendConnectingState.active)
-                    return .9
-                if (globalStateMachine.connectionStateMachine.connectedState.active)
-                    return 1
-                return 0
-            }
             Behavior on value {
                 NumberAnimation { easing.type: Easing.InOutQuad }
             }
@@ -51,17 +43,6 @@ Popup {
         Label {
             id: progressLabel
             anchors.horizontalCenter: parent.horizontalCenter
-            text: {
-                if (globalStateMachine.connectionStateMachine.waitingForWalletState.active)
-                    return "Waiting for Bitshares wallet"
-                if (globalStateMachine.connectionStateMachine.blockchainSyncingState.active)
-                    return "Syncing with blockchain"
-                if (globalStateMachine.connectionStateMachine.backendConnectingState.active)
-                    return "Please unlock Bitshares wallet"
-                if (globalStateMachine.connectionStateMachine.connectedState.active)
-                    return "Finishing up"
-                return "Loading"
-            }
         }
     }
 }

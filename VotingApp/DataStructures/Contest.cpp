@@ -38,6 +38,8 @@ Contest::Contest(QString id, ::Contest::Reader r, QObject* parent)
     m_startTime = QDateTime::fromMSecsSinceEpoch(r.getStartTime());
 }
 
+Contest::~Contest() { qDebug() << "Destroyed Contest" << m_name; }
+
 void Contest::setCurrentDecision(Decision* newDecision)
 {
     if (newDecision == nullptr) {

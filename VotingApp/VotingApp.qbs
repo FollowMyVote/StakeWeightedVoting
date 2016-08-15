@@ -40,7 +40,6 @@ Project {
             "qml/ContestDetailPage.qml",
             "qml/CreateContestPage.qml",
             "qml/FeedPage.qml",
-            "qml/GlobalStateMachine.qml",
             "qml/NavigationDrawer.qml",
             "qml/ShadowedPopup.qml",
             "qml/main.qml",

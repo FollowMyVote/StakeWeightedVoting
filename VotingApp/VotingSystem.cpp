@@ -313,7 +313,7 @@ QJSValue VotingSystem::syncWithBlockchain() {
     return d->promiseConverter->convert(kj::joinPromises(promises.finish()).then([this]{emit blockchainSynced();}));
 }
 
-QJSValue VotingSystem::configureChainAdaptor(bool useTestingBackend) {
+QJSValue VotingSystem::connectToBlockchainWallet(bool useTestingBackend) {
     Q_D(VotingSystem);
 
     QPPromise* configuredPromise = new QPPromise(this);

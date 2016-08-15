@@ -54,6 +54,7 @@ private:
 
 public:
     Contest(QString id = "00", ::Contest::Reader r = {}, QObject* parent = nullptr);
+    virtual ~Contest();
 
     Decision* currentDecision() {
         return m_currentDecision;
