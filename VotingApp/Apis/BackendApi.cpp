@@ -22,6 +22,7 @@
 #include "Apis/ContestGeneratorApi.hpp"
 #include "Apis/PurchaseContestRequestApi.hpp"
 #include "Apis/ContestCreatorApi.hpp"
+#include <DataStructures/Contest.hpp>
 #include "Converters.hpp"
 
 #include <kj/debug.h>
@@ -77,13 +78,16 @@ ContestGeneratorApi*BackendApi::getVotedContests() {
     return new ContestGeneratorApi(request.send().getGenerator(), promiseConverter);
 }
 
-ContestResultsApi* BackendApi::getContestResults(QString contestId) {
+ContestResultsApi* BackendApi::getContestResults(swv::data::Contest* contest) {
+    if (contest == nullptr)
+        return nullptr;
+
     auto request = m_backend.getContestResultsRequest();
-    auto blob = QByteArray::fromHex(contestId.toLocal8Bit());
+    auto blob = QByteArray::fromHex(contest->get_id().toLocal8Bit());
     BlobMessageReader reader(convertBlob(blob));
     request.setContestId(reader->getRoot<::ContestId>());
 
-    return new ContestResultsApi(request.send().getResults());
+    return new ContestResultsApi(request.send().getResults(), *contest);
 }
 
 ContestCreatorApi* BackendApi::contestCreator() {

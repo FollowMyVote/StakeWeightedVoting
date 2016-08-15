@@ -19,6 +19,7 @@
 #include <QApplication>
 #include <QQmlApplicationEngine>
 #include <QtQml>
+#include <QQuickStyle>
 #include <QDebug>
 
 #include <capnp/rpc-twoparty.h>
@@ -38,14 +39,13 @@
 #include "Apis/ContestGeneratorApi.hpp"
 #include "Apis/PurchaseContestRequestApi.hpp"
 #include "Apis/PurchaseApi.hpp"
+#include "Apis/ContestResultsApi.hpp"
 #include "VotingSystem.hpp"
-#include "qmlpromise.h"
+#include "qppromise.h"
 
 #include <capnqt/QtEventPort.hpp>
 
 #include <QtQmlTricksPlugin.h>
-
-#include <VPApplication>
 
 int main(int argc, char *argv[])
 {
@@ -53,9 +53,6 @@ int main(int argc, char *argv[])
     app.setApplicationName(QObject::tr("Stake Weighted Voting"));
     app.setOrganizationName(QStringLiteral("Follow My Vote"));
     app.setOrganizationDomain(QStringLiteral("followmyvote.com"));
-
-    VPApplication vplay;
-    vplay.setPreservePlatformFonts(true);
 
     QtEventPort eventPort;
     kj::EventLoop loop(eventPort);
@@ -83,6 +80,7 @@ int main(int argc, char *argv[])
     REGISTER_API(ContestCreator);
     REGISTER_API(PurchaseContestRequest);
     REGISTER_API(Purchase);
+    REGISTER_API(ContestResults);
 #undef REGISTER_API
 
     // Register enum wrappers
@@ -100,12 +98,13 @@ int main(int argc, char *argv[])
     qmlRegisterType<QQmlObjectListModelBase>();
     qmlRegisterType<QSortFilterProxyModel>();
 
+    QQuickStyle::setStyle("Material");
+
     QQmlApplicationEngine engine;
+    QPPromise::setEngine(&engine);
     engine.addImportPath("qrc:/");
     registerQtQmlTricksUiElements(&engine);
-    vplay.initialize(&engine);
-    vplay.setMainQmlFileName(QStringLiteral("qrc:/qml/main.qml"));
-    engine.load(QUrl(vplay.mainQmlFileName()));
+    engine.load(QUrl("qml/main.qml"));
 
     return app.exec();
 }

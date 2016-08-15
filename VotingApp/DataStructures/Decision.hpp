@@ -19,11 +19,11 @@
 #ifndef DECISION_HPP
 #define DECISION_HPP
 
-#include "vendor/QQmlVarPropertyHelpers.h"
-
 #include <decision.capnp.h>
 
 #include <capnp/message.h>
+
+#include <QQmlVarPropertyHelpers.h>
 
 #include <QObject>
 #include <QVariantMap>

@@ -9,6 +9,7 @@ ContestResultsServer::ContestResultsServer(VoteDatabase& vdb, gch::operation_his
     : vdb(vdb), contestId(contestId) {}
 
 ::kj::Promise<void> ContestResultsServer::results(Backend::ContestResults::Server::ResultsContext context) {
+    KJ_LOG(DBG, __FUNCTION__, context.getParams());
     const auto& contest = getContest();
     auto results = context.initResults().initResults(contest.contestantResults.size() + contest.writeInResults.size());
     populateResults(results, contest);
@@ -17,6 +18,7 @@ ContestResultsServer::ContestResultsServer(VoteDatabase& vdb, gch::operation_his
 }
 
 ::kj::Promise<void> ContestResultsServer::subscribe(Backend::ContestResults::Server::SubscribeContext context) {
+    KJ_LOG(DBG, __FUNCTION__, context.getParams());
     // TODO: Consider using database::changed_objects signal instead of a secondary index and vdb.contestResultsUpdated
     notifiers.emplace_back(context.getParams().getNotifier());
     subscriptions.emplace_back(vdb.contestResultsUpdated.connect(
@@ -29,6 +31,8 @@ ContestResultsServer::ContestResultsServer(VoteDatabase& vdb, gch::operation_his
                                        }
                                    }
                                }));
+
+    return kj::READY_NOW;
 }
 
 const Contest& ContestResultsServer::getContest() {

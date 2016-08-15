@@ -1,192 +1,291 @@
-import QtQuick 2.5
+import QtQuick 2.7
+import QtQuick.Controls 2.0
+import QtQuick.Controls.Material 2.0
 import QtQuick.Layouts 1.1
-import Qt.labs.controls 1.0
-import QtQml 2.2
-
-import VPlayApps 1.0
-
-import QtQmlTricks.UiElements 2.0
-
+import QtGraphicalEffects 1.0
+import Qt.labs.settings 1.0
+import QtQmlTricks.UiElements 2.0 as UI
 import FollowMyVote.StakeWeightedVoting 1.0
+import QuickPromise 1.0
 
 Page {
     id: createContestPage
-    backgroundColor: "white"
+    header: ToolBar {
+        ToolButton {
+            contentItem: UI.SvgIconLoader {
+                icon: "qrc:/icons/navigation/arrow_back.svg"
+            }
+            onClicked: createContestCanceled()
+        }
+    }
 
     property VotingSystem votingSystem
-    property var contestCreator
-    property var dialog
+    property var contestCreatorApi
 
-    function showError(message) {
-        var errorString = message
-        // Ignore errors that come within 1 second of the last error
-        if (new Date().getTime() - internal.lastErrorTime < 1000)
-            return
+    signal createContestCanceled
+    signal contestFormComplete
+    signal checkoutCanceled
+    signal paymentAuthorizing
+    signal paymentCanceled
+    signal paymentSent
+    signal paymentConfirmed
+    signal confirmationFailed
 
-        message = message.split(';')
-        if (message.length > 1)
-            message = message[1]
-        else
-            message = errorString
-
-        if (dialog) {
-            dialog.close()
-            dialog.destroy()
-            dialog = null
-        }
-        NativeDialog.confirm("Error purchasing contest", message, function(){}, false)
-        internal.lastErrorTime = new Date().getTime()
+    onCreateContestCanceled: StackView.view.pop()
+    onContestFormComplete: beginCheckout()
+    onPaymentConfirmed: {
+        StackView.view.pop()
+    }
+    onConfirmationFailed: {
+        StackView.view.pop()
     }
 
-    QtObject {
-        id: internal
-        property var lastErrorTime
-    }
-    Connections {
-        target: contestCreator
-        onError: showError(errorString)
+    function beginCheckout() {
+        var purchaseRequest = contestCreatorApi.getPurchaseContestRequest()
+        purchaseRequest.name = contestNameField.text
+        purchaseRequest.description = contestDescriptionField.text
+        purchaseRequest.weightCoin = votingSystem.coins.get(coinSelector.currentIndex).coinId
+
+        for (var i = 0; i < contestantModel.count; ++i)
+            purchaseRequest.contestants.append(contestantModel.get(i))
+
+        checkoutDialogComponent.createObject(createContestPage, {purchaseApi: purchaseRequest.submit()}).open()
     }
 
-    SwipeView {
-        id: swiper
+    ColumnLayout {
         anchors.fill: parent
+        anchors.margins: 8
 
-        BasicContestForm {
-            id: basicForm
-            contestLimits: contestCreator.contestLimits
-            coinsModel: votingSystem.coins
-            onCompleted: swiper.currentIndex++
+        TextField {
+            id: contestNameField
+            placeholderText: qsTr("Contest Name")
+            Layout.fillWidth: true
+            maximumLength: contestCreatorApi.contestLimits[ContestLimits.NameLength]
         }
-        SponsorshipForm {
-            onBack: swiper.currentIndex--
-
-            onCompleted: {
-                try {
-                    var purchaseRequest = contestCreator.getPurchaseContestRequest()
-                    purchaseRequest.contestType = ContestType.OneOfN
-                    purchaseRequest.tallyAlgorithm = TallyAlgorithm.Plurality
-                    purchaseRequest.name = basicForm.contestName
-                    purchaseRequest.description = basicForm.contestDescription
-                    for (var i = 0; i < basicForm.contestantModel.count; i++)
-                        purchaseRequest.contestants.append(basicForm.contestantModel.get(i))
-                    purchaseRequest.expiration = basicForm.contestExpiration
-                    purchaseRequest.weightCoin = basicForm.weightCoinId
-                    purchaseRequest.sponsorshipEnabled = sponsorshipEnabled
-                    if (purchaseRequest.sponsorshipEnabled) {
-                        purchaseRequest.sponsorMaxVotes = maxVotes? maxVotes : 0
-                        purchaseRequest.sponsorMaxRevotes = maxRevotes? maxRevotes : 0
-                        purchaseRequest.sponsorIncentive = incentive? incentive * 10000 : 0
-                        purchaseRequest.sponsorEndDate = endTime
+        TextField {
+            id: contestDescriptionField
+            placeholderText: qsTr("Contest Description")
+            Layout.fillWidth: true
+            maximumLength: contestCreatorApi.contestLimits[ContestLimits.DescriptionHardLength]
+        }
+        Row {
+            spacing: 4
+            Label {
+                text: qsTr("Coin:")
+                anchors.baseline: coinSelector.baseline
+            }
+            ComboBox {
+                id: coinSelector
+                model: votingSystem.coins
+                textRole: "name"
+            }
+        }
+        ListView {
+            Layout.fillHeight: true
+            Layout.fillWidth: true
+            model: ListModel {
+                id: contestantModel
+            }
+            delegate: Row {
+                Column {
+                    Label {
+                        text: model.name
+                        font.bold: true
+                        width: 300
+                        wrapMode: Text.WrapAtWordBoundaryOrAnywhere
                     }
-
-                    var purchaseApi = purchaseRequest.submit()
-                    dialog = purchaseDialog.createObject(createContestPage, {"purchaseApi": purchaseApi})
-                    dialog.accepted.connect(function() {
-                        var transferPromise = votingSystem.chain.transfer(votingSystem.currentAccount.name,
-                                                                          dialog.selectedPrice.payAddress,
-                                                                          dialog.selectedPrice.amount,
-                                                                          dialog.selectedPrice.coinId,
-                                                                          dialog.selectedPrice.memo);
-                        transferPromise.then(function() {
-                            dialog.purchaseApi.paymentSent(dialog.selectedPriceIndex)
-                            dialog.close()
-                            createContestPage.navigationStack.pop()
-                            dialog.destroy()
-                            dialog = null
-                        }, showError)
-                    })
-                    dialog.canceled.connect(function() {
-                        dialog.close()
-                        dialog.destroy()
-                        dialog = null
-                    })
-                } catch (exception) {
-                    NativeDialog.confirm(qsTr("Error creating contest"),
-                                         qsTr("An error occurred when processing your request: %1").arg(exception),
-                                         function(){}, false)
-                    dialog.close()
-                    dialog.destroy()
-                    dialog = null
+                    Label {
+                        text: model.description
+                        width: 300
+                        wrapMode: Text.WrapAtWordBoundaryOrAnywhere
+                    }
+                }
+                ToolButton {
+                    contentItem: UI.SvgIconLoader {
+                        icon: "qrc:/icons/action/delete_forever.svg"
+                    }
+                    onClicked: contestantModel.remove(index)
                 }
             }
         }
-    }
-    PageControl {
-        anchors.top: parent.top
-        anchors.horizontalCenter: parent.horizontalCenter
-        pages: swiper.count
-        currentPage: swiper.currentIndex
-        indicatorSize: window.dp(8)
+        RowLayout {
+            spacing: 4
+            TextField {
+                id: contestantNameField
+                Layout.fillWidth: true
+                placeholderText: qsTr("Contestant Name")
+                maximumLength: contestCreatorApi.contestLimits[ContestLimits.ContestantNameLength]
+            }
+            TextField {
+                id: contestantDescriptionField
+                Layout.fillWidth: true
+                placeholderText: qsTr("Contestant Description")
+                maximumLength: contestCreatorApi.contestLimits[ContestLimits.ContestantDescriptionHardLength]
+            }
+            Button {
+                text: qsTr("Add Contestant")
+                onClicked: contestantModel.append({name: contestantNameField.text,
+                                                   description: contestantDescriptionField.text})
+            }
+        }
+        RowLayout {
+            spacing: 4
+            Item { height: 1; Layout.fillWidth: true }
+            Button {
+                text: qsTr("Cancel")
+                onClicked: createContestCanceled()
+            }
+            Button {
+                text: qsTr("Checkout")
+                onClicked: contestFormComplete()
+            }
+        }
     }
 
     Component {
-        id: purchaseDialog
+        id: checkoutDialogComponent
 
-        Dialog {
+        ShadowedPopup {
+            id: checkoutDialog
+            x: createContestPage.width / 2 - width / 2
+            y: createContestPage.height / 2 - height / 2
+            dim: true
+            width: 600
+            height: 400
+            acceptButton.text: qsTr("Purchase")
+            acceptButton.enabled: !waiting
+            cancelButton.text: qsTr("Cancel Checkout")
+
             property var purchaseApi
-            property var selectedPriceIndex: priceList.currentIdx
-            property var selectedPrice: priceList.currentKey
+            property bool waiting: false
+            property bool paymentSent: false
 
-            contentWidth: window.width * .8
-            contentHeight: window.height * .6
-
-            function updatePrices(totalsAndAdjustments) {
-                priceList.model = totalsAndAdjustments.totals
-                priceList.currentIdx = 0
-                adjustmentRepeater.model = totalsAndAdjustments.adjustments
+            acceptButton.onClicked: {
+                var total = priceSelector.model[priceSelector.currentIndex]
+                var payPromise = votingSystem.chain.transfer(votingSystem.currentAccount.name, total.payAddress,
+                                                             total.amount, total.coinId, total.memo)
+                payPromise.then(function(trxid) {
+                    createContestPage.paymentSent()
+                    checkoutDialog.paymentSent = true
+                    purchaseApi.paymentSent(priceSelector.currentIndex)
+                }, function(error) {
+                    waiting = false
+                    //TODO: Show error?
+                    console.log("Payment failed:", JSON.stringify(error))
+                    paymentCanceled()
+                })
+                waiting = true
             }
-            Component.onCompleted: purchaseApi.prices([]).then(function(totalsAndAdjustments) {
-                updatePrices(totalsAndAdjustments)
-                open()
-            })
-
-            MouseArea {
-                anchors.fill: parent
-                onClicked: mouse.accepted = true
+            cancelButton.onClicked: {
+                checkoutCanceled()
+                close()
             }
-            Column {
-                anchors.fill: parent
-                spacing: window.dp(8)
+            onOpened: {
+                purchaseApi.purchaseConfirmed.connect(function() {
+                    createContestPage.paymentConfirmed()
+                    close()
+                })
+                purchaseApi.purchaseFailed.connect(function() {
+                    // TODO: show error in GUI
+                    createContestPage.confirmationFailed()
+                    console.log("Purchase failed")
+                    close()
+                })
+                // Fetch prices
+                purchaseApi.prices([]).then(setPrices, function(reason) {
+                    // TODO: actually show the error in GUI
+                    // The only reason this promise should fail is if the contest submission itself failed
+                    console.log("Contest submission failed:", reason.split(';')[1])
+                    close()
+                })
+            }
+
+            function setPrices(totalsAndAdjustments) {
+                priceSelector.model = totalsAndAdjustments.totals.map(function(total) {
+                    var coin = votingSystem.getCoin(total.coinId)
+                    total.text = (total.amount / Math.pow(10, coin.precision)).toString() + " " + coin.name
+                    return total
+                })
+                adjustmentsRepeater.model = totalsAndAdjustments.adjustments.map(function(adjustment) {
+                    var coin = votingSystem.getCoin("VOTE")
+                    adjustment.text = adjustment.reason + ": " +
+                            (adjustment.amount / Math.pow(10, coin.precision)).toString() + " " + coin.name
+                    return adjustment
+                })
+            }
+
+            ColumnLayout {
+                anchors.centerIn: parent
+                spacing: 4
+                enabled: !checkoutDialog.waiting
 
                 RowLayout {
-                    spacing: window.dp(8)
-                    width: parent.width
+                    Layout.preferredWidth: 450
+                    spacing: 4
 
-                    AppText {
-                        text: qsTr('Promo code')
-                    }
-                    AppTextField {
+                    TextField {
                         id: promoCodeField
-                        onAccepted: promoCodeApplyButton.clicked()
                         Layout.fillWidth: true
+                        placeholderText: qsTr("Promo code")
                     }
-                    AppButton {
-                        id: promoCodeApplyButton
+                    Button {
                         text: qsTr("Apply")
-                        onClicked: purchaseApi.prices([promoCodeField.text]).then(updatePrices)
-                    }
-                }
-                Row {
-                    spacing: window.dp(8)
-                    AppText {
-                        text: qsTr("Pay with")
-                    }
-                    ComboList {
-                        id: priceList
-                        delegate: ComboListDelegateForSimpleVar {
-                            property var coin: votingSystem.getCoin(modelData? modelData.coinId : 0)
-                            value: (modelData? modelData.amount : 0) / Math.pow(10, coin.precision) + " " + coin.name
+                        onClicked: {
+                            var codes = promoCodeField.text.split(',').map(function(s) { return s.trim() })
+                            checkoutDialog.purchaseApi.prices(codes).then(checkoutDialog.setPrices)
                         }
                     }
                 }
-                AppText {
-                    text: qsTr("Price adjustments:")
-                }
-                Repeater {
-                    id: adjustmentRepeater
-                    delegate: AppText {
-                        text: modelData.reason + ": " + (modelData.amount / 10000) + " VOTE"
+                Column {
+                    visible: adjustmentsRepeater.count
+                    Label {
+                        text: qsTr("Fees and Credits:")
                     }
+                    Repeater {
+                        id: adjustmentsRepeater
+                        delegate: Label {
+                            text: modelData.text
+                        }
+                    }
+                }
+                Row {
+                    spacing: 4
+                    Label {
+                        text: qsTr("Price:")
+                        anchors.baseline: priceSelector.baseline
+                    }
+                    ComboBox {
+                        id: priceSelector
+                        enabled: !!model && model.length > 1
+                        textRole: "text"
+
+                        Label {
+                            anchors.centerIn: priceSelector
+                            text: "Loading..."
+                            visible: !priceSelector.model || priceSelector.model.length < 1
+                        }
+                    }
+                }
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                visible: checkoutDialog.waiting
+                color: Qt.rgba(255,255,255,127)
+
+                BusyIndicator {
+                    id: waitingForWalletIndicator
+                    anchors.centerIn: parent
+                }
+                Label {
+                    anchors.top: waitingForWalletIndicator.bottom
+                    UI.ExtraAnchors.horizontalFill: parent
+                    anchors.margins: 8
+                    text: checkoutDialog.paymentSent?
+                              qsTr("Payment sent. Your contest is being created...")
+                            : qsTr("Please confirm payment, including any applicable transaction fees, in your wallet.")
+                    wrapMode: Label.WrapAtWordBoundaryOrAnywhere
+                    horizontalAlignment: Label.AlignHCenter
                 }
             }
         }

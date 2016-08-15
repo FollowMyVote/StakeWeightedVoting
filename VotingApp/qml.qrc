@@ -2,6 +2,5 @@
     <qresource prefix="/">
         <file>qml</file>
         <file>qml/res</file>
-	<file>qml/CustomControls</file>
     </qresource>
 </RCC>

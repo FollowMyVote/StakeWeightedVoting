@@ -24,8 +24,8 @@ const contestPublishingAccount :Text = "follow-my-vote";
 struct Contest {
     name @0 :Text;
     description @1 :Text;
-    type @2 :Type;
-    tallyAlgorithm @3 :TallyAlgorithm;
+    type @2 :Type = oneOfN;
+    tallyAlgorithm @3 :TallyAlgorithm = plurality;
     tags @4 :Map(Text, Text);
     # Map of key to value
     contestants @5 :Map(Text, Text);

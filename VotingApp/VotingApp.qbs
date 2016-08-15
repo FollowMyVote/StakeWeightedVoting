@@ -1,5 +1,6 @@
 import qbs
 import qbs.FileInfo
+import qbs.Probes
 
 Project {
     QtGuiApplication {
@@ -7,20 +8,16 @@ Project {
 
         Depends { name: "shared" }
         Depends { name: "StubChainAdaptor" }
-        Depends { name: "Qt"; submodules: ["network", "qml", "charts"] }
+        Depends { name: "Qt"; submodules: ["network", "qml", "charts", "websockets", "quickcontrols2"] }
         Depends { name: "libqtqmltricks-qtquickuielements" }
         Depends { name: "libqtqmltricks-qtsupermacros" }
         Depends { name: "libqtqmltricks-qtqmlmodels" }
-        Depends { name: "VPlay" }
-        // 'original' is a keyword: https://doc.qt.io/qbs/module-item.html#special-property-values
-        VPlay.sdkPath: original? original : Qt.core.incPath + "/.."
 
-        qmlImportPaths: [VPlay.sdkPath + "/qml"]
+        qmlImportPaths: ["vendor/QuickPromise"]
+
         cpp.cxxLanguageVersion: "c++14"
         cpp.cxxStandardLibrary: qbs.hostOS.contains("osx")? "libc++" : "libstdc++"
-        cpp.includePaths: [".", "vendor/QuickPromise", VPlay.includePath]
-        cpp.libraryPaths: VPlay.sdkPath + "/lib"
-        cpp.staticLibraries: VPlay.staticLibrary
+        cpp.includePaths: [".", "vendor/QuickPromise"]
 
         files: [
             "BitsharesWalletBridge.cpp",
@@ -36,10 +33,16 @@ Project {
             "capnqt/QSocketWrapper.hpp",
             "capnqt/QtEventPort.cpp",
             "capnqt/QtEventPort.hpp",
+            "icons.yml",
             "main.cpp",
-            "qml.qrc",
-            "qml/*.qml",
-            "qml/CustomControls/*",
+            "qml/ConnectionProgressPopup.qml",
+            "qml/ContestDelegate.qml",
+            "qml/ContestDetailPage.qml",
+            "qml/CreateContestPage.qml",
+            "qml/FeedPage.qml",
+            "qml/NavigationDrawer.qml",
+            "qml/ShadowedPopup.qml",
+            "qml/main.qml",
             "DataStructures/*.cpp",
             "DataStructures/*.hpp",
             "DataStructures/README.md",
@@ -48,10 +51,32 @@ Project {
             "Apis/README.md",
             "vendor/QuickPromise/qptimer.h",
             "vendor/QuickPromise/qptimer.cpp",
-            "vendor/QuickPromise/qmlpromise.h",
-            "vendor/QuickPromise/qmlpromise.cpp",
+            "vendor/QuickPromise/qppromise.h",
+            "vendor/QuickPromise/qppromise.cpp",
             "vendor/QuickPromise/quickpromise.qrc",
         ]
+
+        FileTagger {
+            patterns: "icons.yml"
+            fileTags: "icon-manifest"
+        }
+        Rule {
+            id: iconFetcher
+            inputs: ["icon-manifest"]
+
+            Artifact {
+                fileTags: ['qrc']
+                filePath: product.sourceDirectory + "/icons/icons.qrc"
+            }
+
+            prepare: {
+                var cmd = new Command("/usr/bin/env", ["python2", "icons.py", input.filePath])
+                cmd.workingDirectory = product.sourceDirectory
+                cmd.description = "Downloading icons for " + input.fileName
+                cmd.highlight = "filegen"
+                return cmd
+            }
+        }
 
         property bool install: true
         property string installDir: bundle.isBundle ? "Applications" : (qbs.targetOS.contains("windows") ? "" : "bin")

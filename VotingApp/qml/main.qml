@@ -1,267 +1,114 @@
-/*
- * Copyright 2015 Follow My Vote, Inc.
- * This file is part of The Follow My Vote Stake-Weighted Voting Application ("SWV").
- *
- * SWV is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * SWV is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with SWV.  If not, see <http://www.gnu.org/licenses/>.
- */
-
-import QtQuick 2.5
+import QtQuick 2.7
+import QtQuick.Controls 2.0
+import QtQuick.Controls.Material 2.0
 import QtQuick.Layouts 1.1
-import QtQuick.Controls 1.4
+import QtGraphicalEffects 1.0
 import Qt.labs.settings 1.0
-import "CustomControls"
-
-import VPlayApps 1.0
-
+import QtQmlTricks.UiElements 2.0 as UI
 import FollowMyVote.StakeWeightedVoting 1.0
+import QuickPromise 1.0
 
-App {
+ApplicationWindow {
     id: window
-    title: Qt.application.name
     visible: true
-    minimumWidth: dp(400)
 
-    onInitTheme: {
-        Theme.platform = "android"
-        Theme.colors.backgroundColor = "#e5e5e5"
+    ConnectionProgressPopup {
+        id: connectionProgressPopup
+        visible: true
     }
 
-    function showError(errorMessage) {
-        NativeDialog.confirm(qsTr("Error"), qsTr("An error has occurred:\n%1").arg(errorMessage), function(){}, false)
-    }
+    NavigationDrawer {
+        id: _navigationDrawer
+        height: window.height
+        width: 300
+        votingSystem: _votingSystem
 
-    Action {
-        shortcut: "Ctrl+Q"
-        onTriggered: Qt.quit()
+        onCreateContestOpened: {
+            mainStack.push(Qt.resolvedUrl("CreateContestPage.qml"),
+                           {votingSystem: _votingSystem, contestCreatorApi: _votingSystem.backend.contestCreator})
+            close()
+        }
+    }
+    StackView {
+        id: mainStack
+        anchors.fill: parent
+
+        initialItem: FeedPage {
+            id: _feedPage
+            navigationDrawer: _navigationDrawer
+            votingSystem: _votingSystem
+
+            onContestOpened: {
+                mainStack.push(Qt.resolvedUrl("ContestDetailPage.qml"),
+                               {contest: contest, votingSystem: _votingSystem})
+            }
+        }
     }
 
     Settings {
-        id: appSettings
-        property alias windowX: window.x
-        property alias windowY: window.y
-        property alias windowHeight: window.height
-        property alias windowWidth: window.width
+        property alias x: window.x
+        property alias y: window.y
+        property alias width: window.width
+        property alias height: window.height
     }
     VotingSystem {
-       id: _votingSystem
+        id: _votingSystem
 
-       signal connected
-
-       Component.onCompleted: {
-           configureChainAdaptor(false).then(function() {
-               loadingOverlay.state = "WALLET_LOADING"
-               initialize().then(function() {
-                   loadingOverlay.state = "WALLET_UNLOCKING"
-               })
-           })
-       }
-       onError: {
-           console.log("Error from Voting System: %1".arg(message))
-           showError(message.split(";").slice(-1))
-       }
-       onCurrentAccountChanged: {
-           console.log("Current account set to " + currentAccount.name)
-           connectToBackend("127.0.0.1", 17073, currentAccount.name).then(function() {
-               loadingOverlay.state = "LOADED"
-               connected()
-           })
-       }
-    }
-
-    Navigation {
-        id: mainNavigation
-
-        NavigationItem {
-            title: qsTr("My Feed")
-            icon: IconType.newspapero
-
-            NavigationStack {
-                 splitView: false
-                 ContestListPage {
-                    id: feedPage
-                    title: qsTr("My Feed")
-                    votingSystem: _votingSystem
-                    getContestGeneratorFunction: function() {
-                        if (votingSystem.isBackendConnected)
-                            return votingSystem.backend.getFeedGenerator()
-                    }
-                    Component.onCompleted: {
-                        if (votingSystem.isBackendConnected) loadContests()
-                        else votingSystem.connected.connect(loadContests)
-                    }
-                }
+        // Normal startup routine:
+        Component.onCompleted: {
+            connectionProgressPopup.text = qsTr("Waiting for Bitshares wallet")
+            connectionProgressPopup.progress = .3
+            connectToBlockchainWallet(false)
+        }
+        onBlockchainWalletConnected: {
+            connectionProgressPopup.progress = .6
+            console.log("*** Blockchain connected")
+            if (!backendIsConnected)
+                // Unlock the wallet now, as we'll need unlocked it to connect to the backend
+                _votingSystem.chain.unlockWallet()
+            if (!currentAccount) {
+                console.log("*** Syncing with blockchain")
+                connectionProgressPopup.text = qsTr("Syncing with blockchain")
+                syncWithBlockchain()
+            } else if (!backendIsConnected) {
+                console.log("*** Connecting to backend as", currentAccount.name)
+                connectionProgressPopup.text = qsTr("Connecting to Follow My Vote")
+                connectToBackend("localhost", 17073, currentAccount.name)
+            } else {
+                connectionProgressPopup.progress = 1
+                connectionProgressPopup.text = "Finishing up"
+                connectionProgressPopup.visible = false
             }
         }
-        NavigationItem {
-            title: qsTr("My Polls")
-            icon: IconType.user
-
-            NavigationStack {
-                 splitView: false
-                 ContestListPage {
-                    id: myContestsPage
-                    title: qsTr("My Polls")
-                    votingSystem: _votingSystem
-                    getContestGeneratorFunction: function() {
-                        if (votingSystem.isBackendConnected && votingSystem.currentAccount)
-                            return votingSystem.backend.getContestsByCreator(votingSystem.currentAccount.name)
-                    }
-                    listView.headerPositioning: ListView.PullBackHeader
-                    listView.header: CreateContestPlaceholder {
-                        votingSystem: _votingSystem
-                    }
-                }
+        onBlockchainSynced: {
+            connectionProgressPopup.progress = .9
+            console.log("*** Blockchain synced")
+            if (!backendIsConnected) {
+                console.log("*** Connecting to backend as", currentAccount.name)
+                connectionProgressPopup.text = qsTr("Connecting to Follow My Vote")
+                connectToBackend("localhost", 17073, currentAccount.name)
             }
         }
-        NavigationItem {
-            title: qsTr("Voted Contests")
-            icon: IconType.check
-
-            NavigationStack {
-                 splitView: false
-                 ContestListPage {
-                    id: votedContestsPage
-                    title: qsTr("Voted Contests")
-                    votingSystem: _votingSystem
-                    getContestGeneratorFunction: function() {
-                        if (votingSystem.isBackendConnected)
-                            return votingSystem.backend.getVotedContests()
-                    }
-                    listView.headerPositioning: ListView.PullBackHeader
-
-                }
-            }
-        }
-        NavigationItem {
-            title: "Coin List"
-            icon: IconType.money
-
-            NavigationStack {
-                splitView: false
-                CoinListPage {
-                    id: coinListPage
-                    votingSystem: _votingSystem
-                }
-            }
+        onBackendConnected: {
+            connectionProgressPopup.progress = 1
+            connectionProgressPopup.text = qsTr("Finishing up")
+            connectionProgressPopup.visible = false
+            console.log("*** Backend connected")
+            _feedPage.contestListView.populateContests()
         }
 
-        NavigationItem {
-            title: "Settings"
-            icon: IconType.cog
-
-            NavigationStack {
-                 splitView: false
-                 SettingsPage {
-                    votingSystem: _votingSystem
-                }
-            }
+        // Failure recovery:
+        onBlockchainWalletDisconnected: {
+            console.log("*** Blockchain disconnected; attempting to reconnect")
+            connectionProgressPopup.progress = .45
+            connectionProgressPopup.text = qsTr("Reconnecting to Bitshares wallet")
+            connectToBlockchainWallet(false)
         }
-    }
-
-    Rectangle {
-        id: loadingOverlay
-        anchors.fill: parent
-        color: "grey"
-        enabled: !!opacity
-        state: "WALLET_CONNECTING"
-
-        property alias text: loadingText.text
-
-        MouseArea {
-            anchors.fill: parent
-            onClicked: { return true }
-            acceptedButtons: Qt.AllButtons
-            preventStealing: true
+        onBackendDisconnected: {
+            console.log("*** Backend disconnected; attempting to reconnect")
+            connectionProgressPopup.progress = .45
+            connectionProgressPopup.text = qsTr("Reconnecting to Follow My Vote")
+            connectToBackend("localhost", 17073, currentAccount.name)
         }
-        AppText {
-            id: loadingText
-            anchors.fill: parent
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-            wrapMode: Text.WrapAtWordBoundaryOrAnywhere
-        }
-
-        states: [
-            State {
-                name: "LOADING"
-                PropertyChanges {
-                    target: loadingOverlay
-                    opacity: .4
-                }
-            },
-            State {
-                name: "WALLET_CONNECTING"
-                extend: "LOADING"
-                PropertyChanges {
-                    target: loadingOverlay
-                    text: "Connecting to Wallet..."
-                }
-            },
-            State {
-                name: "WALLET_LOADING"
-                extend: "LOADING"
-                PropertyChanges {
-                    target: loadingOverlay
-                    text: "Wallet is Initializing..."
-                }
-            },
-            State {
-                name: "WALLET_UNLOCKING"
-                extend: "LOADING"
-                PropertyChanges {
-                    target: loadingOverlay
-                    text: "Connected to Wallet\nPlease unlock wallet"
-                }
-            },
-            State {
-                name: "BACKEND_CONNECTING"
-                extend: "LOADING"
-                PropertyChanges {
-                    target: loadingOverlay
-                    text: "Loading..."
-                }
-            },
-            State {
-                name: "LOADED"
-                PropertyChanges {
-                    target: loadingOverlay
-                    opacity: 0
-                }
-            }
-        ]
-        transitions: [
-            Transition {
-                from: "*"
-                to: "*"
-                PropertyAnimation {
-                    property: "opacity"
-                    duration: 500
-                }
-                SequentialAnimation {
-                    NumberAnimation {
-                        target: loadingText
-                        property: "opacity"
-                        from: 1; to: 0
-                    }
-                    PropertyAction { target: loadingOverlay; property: "text" }
-                    NumberAnimation {
-                        target: loadingText
-                        property: "opacity"
-                        from: 0; to: 1
-                    }
-                }
-            }
-        ]
     }
 }

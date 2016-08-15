@@ -160,6 +160,10 @@ kj::Promise<data::Decision*> BlockchainWalletApi::_getDecision(QString owner, QS
     return kj::mv(promise);
 }
 
+void BlockchainWalletApi::unlockWallet() {
+    promiseConverter.adopt(m_chain.unlockWalletRequest().send().then([](auto){}));
+}
+
 QJSValue BlockchainWalletApi::getBalance(QByteArray id) {
     auto request = m_chain.getBalanceRequest();
     BlobMessageReader reader(convertBlob(id));
@@ -180,8 +184,9 @@ QJSValue BlockchainWalletApi::getBalancesBelongingTo(QString owner) {
 }
 
 QJSValue BlockchainWalletApi::getContest(QString contestId) {
+    // The blockchain wallet API implementation will check that the contest was published by Follow My Vote for us; we
+    // don't need to check it again here.
     auto promise = getContestImpl(contestId).then([this, contestId](auto results) {
-        //TODO: Check signature
         auto contest = new data::Contest(contestId, results.getContest().getValue());
         QQmlEngine::setObjectOwnership(contest, QQmlEngine::JavaScriptOwnership);
         auto decision = new data::Decision({}, contest);

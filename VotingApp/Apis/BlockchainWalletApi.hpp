@@ -26,7 +26,7 @@
 #include "DataStructures/Coin.hpp"
 #include "DataStructures/Contest.hpp"
 
-#include "vendor/QQmlObjectListModel.h"
+#include <QQmlObjectListModel.h>
 
 #include <QObject>
 #include <QtQml>
@@ -36,7 +36,7 @@
 #include <memory>
 
 class BlockchainAdaptorInterface;
-class QmlPromise;
+class QPPromise;
 
 namespace swv {
 class PromiseConverter;
@@ -45,16 +45,11 @@ class Balance;
 }
 
 /**
- * @brief The ChainAdaptorWrapper class wraps a BlockchainAdaptorInterface in a more QML-friendly interface
+ * @brief The BlockchainWalletApi class wraps a BlockchainWallet client in a more QML-friendly interface
  *
- * Because BlockchainAdaptorInterface is designed to be mostly Qt-independent, it (and its implementors) is not friendly
- * to QML (i.e. it returns types that QML can't inspect or manipulate). This class wraps the interface and provides an
- * interface which exposes QML-friendly wrappers and types to manipulate the Cap'n Proto backend types.
- *
- * The ChainAdaptorWrapper is also responsible for managing decisions on contests, including their persistence.
+ * The BlockchainWalletApi is also responsible for managing decisions on contests, including their persistence.
  */
-class BlockchainWalletApi : public QObject
-{
+class BlockchainWalletApi : public QObject {
     Q_OBJECT
 
 public:
@@ -70,9 +65,7 @@ public:
      * @brief Get the BlockchainWallet
      * @return Client for the BlockchainWallet, does not confer ownership
      */
-    BlockchainWallet::Client chain() {
-        return m_chain;
-    }
+    BlockchainWallet::Client chain() { return m_chain; }
 
     /**
      * @brief Get a balance by ID
@@ -123,6 +116,14 @@ public:
     kj::Promise<data::Decision*> _getDecision(QString owner, QString contestId);
 
     /**
+     * @brief Request wallet be unlocked
+     *
+     * This will prompt the user to unlock their wallet, if it is locked. If already unlocked, it will have no effect.
+     * There is no return value and no way to tell whether the wallet was actually unlocked or not.
+     */
+    Q_INVOKABLE void unlockWallet();
+
+    /**
      * @brief Transfer amount from sender to recipient
      * @param sender Account name of sender
      * @param recipient Account name/address of recipient
@@ -134,6 +135,9 @@ public:
     Q_INVOKABLE QJSValue transfer(QString sender, QString recipient, qint64 amount, quint64 coinId, QString memo);
 
 signals:
+    void connected();
+    void disconnected();
+
     void error(QString message);
 
     /// This signal will be emitted when an event occurs which causes a contest which had previously been counted

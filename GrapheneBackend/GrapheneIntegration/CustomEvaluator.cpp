@@ -161,7 +161,8 @@ void processContest(gch::database& db, ::Datagram::ContestKey::Creator::Reader k
         c.contestants = convertMap(contest.getContestants());
         c.coin = gch::asset_id_type(contest.getCoin());
         c.creationTime = db.head_block_time();
-        c.startTime = fc::time_point(fc::milliseconds(contest.getStartTime()));
+        c.startTime = std::max(fc::time_point(fc::milliseconds(contest.getStartTime())),
+                               fc::time_point(db.head_block_time()));
         c.endTime = fc::time_point(fc::milliseconds(contest.getEndTime()));
     });
     KJ_LOG(DBG, "Created new contest", db.get_index_type<ContestIndex>().indices().size());

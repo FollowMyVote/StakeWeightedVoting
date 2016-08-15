@@ -88,7 +88,7 @@ void Decision::updateWriteIns(Map<capnp::Text, capnp::Text>::Reader writeIns) {
 void Decision::serializeOpinions(::Decision::Builder b) {
     auto opinions = canonicalizeOpinions(m_opinions);
 
-    // Now we actually allocate space for and set the opinions
+    // Now we allocate space for and set the opinions
     auto opinionList = b.initOpinions(opinions.size());
     unsigned currentIndex = 0;
     while (!opinions.empty()) {

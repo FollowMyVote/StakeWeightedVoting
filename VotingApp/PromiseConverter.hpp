@@ -19,7 +19,7 @@
 #ifndef PROMISEWRAPPER_HPP
 #define PROMISEWRAPPER_HPP
 
-#include "qmlpromise.h"
+#include "qppromise.h"
 
 #include <kj/async.h>
 #include <kj/debug.h>
@@ -41,8 +41,7 @@ namespace swv {
  * handler, the exception will be propagated to the TaskSet provided to the constructor. Either way, the returned
  * Promise will be set to Rejected.
  */
-class PromiseConverter : public QObject
-{
+class PromiseConverter : public QObject {
     Q_OBJECT
     QObject* promiseParent;
 public:
@@ -78,18 +77,23 @@ private:
 
 template<typename T, typename Func>
 QJSValue PromiseConverter::convert(kj::Promise<T> promise, Func TConverter) {
-    auto convertedPromise = kj::heap<QmlPromise>(promiseParent);
+    auto convertedPromise = kj::heap<QPPromise>(promiseParent);
 
     auto responsePromise = promise.then(
         [convertedPromise = convertedPromise.get(), TConverter](T&& results) {
             convertedPromise->resolve(TConverter(kj::mv(results)));
         }, [convertedPromise = convertedPromise.get()](kj::Exception&& exception) {
             convertedPromise->reject({QString::fromStdString(exception.getDescription())});
-            KJ_LOG(WARNING, "Exception in PromiseConverter", exception);
+            // If the exception isn't one I recognize as normal, log it
+            if (exception.getDescription() != "remote exception: No more contests available") {
+                KJ_LOG(WARNING, "Exception in PromiseConverter", exception);
+            }
         });
+
+    QJSValue result = *convertedPromise;
     tasks.add(responsePromise.attach(kj::mv(convertedPromise)));
 
-    return *convertedPromise;
+    return result;
 }
 
 } // namespace swv

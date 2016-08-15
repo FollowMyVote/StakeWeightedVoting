@@ -19,11 +19,11 @@
 #ifndef CONTEST_HPP
 #define CONTEST_HPP
 
-#include "vendor/QQmlVarPropertyHelpers.h"
-
 #include "Decision.hpp"
 
 #include <contest.capnp.h>
+
+#include <QQmlVarPropertyHelpers.h>
 
 #include <QObject>
 #include <QDateTime>
@@ -54,6 +54,7 @@ private:
 
 public:
     Contest(QString id = "00", ::Contest::Reader r = {}, QObject* parent = nullptr);
+    virtual ~Contest();
 
     Decision* currentDecision() {
         return m_currentDecision;

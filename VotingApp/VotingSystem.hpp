@@ -22,7 +22,7 @@
 #include "DataStructures/Account.hpp"
 #include "DataStructures/Coin.hpp"
 
-#include "vendor/QQmlObjectListModel.h"
+#include <QQmlObjectListModel.h>
 
 #include <QObject>
 #include <QJSValue>
@@ -64,11 +64,11 @@ class VotingSystem : public QObject
     Q_OBJECT
     Q_PROPERTY(swv::data::Account* currentAccount READ currentAccount WRITE setCurrentAccount NOTIFY currentAccountChanged)
     Q_PROPERTY(QString lastError READ lastError NOTIFY error)
-    Q_PROPERTY(bool isBackendConnected READ backendConnected NOTIFY backendConnectedChanged)
     Q_PROPERTY(swv::BlockchainWalletApi* chain READ chain CONSTANT)
     Q_PROPERTY(swv::BackendApi* backend READ backend NOTIFY backendConnectedChanged)
-    QML_SORTABLE_OBJMODEL_PROPERTY(data::Coin, coins)
-    QML_OBJMODEL_PROPERTY(swv::data::Account, myAccounts)
+    Q_PROPERTY(bool backendIsConnected READ backendIsConnected NOTIFY backendConnectedChanged)
+    QML_OBJMODEL_PROPERTY(data::Coin, coins)
+    QML_OBJMODEL_PROPERTY(data::Account, myAccounts)
 
     Q_DECLARE_PRIVATE(VotingSystem)
 
@@ -77,13 +77,25 @@ public:
     ~VotingSystem() noexcept;
 
     QString lastError() const;
-    bool backendConnected() const;
 
-    BlockchainWalletApi* chain();
-    BackendApi* backend();
+    BlockchainWalletApi* chain() const;
+    BackendApi* backend() const;
+
+    bool backendIsConnected() const { return backend(); }
 
     swv::data::Account* currentAccount() const;
 
+    /**
+     * @brief Attempt to establish connection with the blockchain wallet
+     * @param useTestingBackend If true, uses StubChainAdaptor and associated testing backend rather than a real
+     * blockchain. Automatically connects backend and wallet both. Pass true here only for testing.
+     * @return A promise which resolves when the wallet is connected
+     *
+     * Attempts to connect to the blockchain wallet by opening a websocket server and launching a web+bts:// URL
+     * containing the host and port the wallet should connect to and serve an API on. This may silently fail, if no
+     * wallet is configured to accept web+bts scheme links, in which case the returned promise will never settle.
+     */
+    Q_INVOKABLE QJSValue connectToBlockchainWallet(bool useTestingBackend = false);
     /**
      * @brief Connect to the backend at the specified network endpoint
      * @param hostname Host name or IP of the Follow My Vote server
@@ -99,7 +111,7 @@ public:
       * @brief Initialize the voting system by fetching chain state and account information from the backand and wallet
       * @return A promise which will resolve when initialization is complete
       */
-    Q_INVOKABLE QJSValue initialize();
+    Q_INVOKABLE QJSValue syncWithBlockchain();
 
     /**
      * @brief Cast the current decision for the given contest
@@ -127,11 +139,20 @@ signals:
      * the error.
      */
     void error(QString message);
-    void backendConnectedChanged(bool backendConnected);
+
+    /// The following signals are ordered roughly in order of emission at startup, though disconnected signals may be
+    /// emitted at any time after the connected signals
+    /// @{
+    void blockchainWalletConnected();
+    void blockchainWalletDisconnected();
     void currentAccountChanged(swv::data::Account* currentAccount);
+    void blockchainSynced();
+    void backendConnected();
+    void backendDisconnected();
+    void backendConnectedChanged(bool backendConnected);
+    /// @}
 
 public slots:
-    QJSValue configureChainAdaptor(bool useTestingBackend = false);
 
     /**
      * @brief Cancel changes to the decision on the given contest
@@ -142,7 +163,8 @@ public slots:
      */
     void cancelCurrentDecision(swv::data::Contest* contest);
 
-    void setCurrentAccount(swv::data::Account* currentAccount);
+    void setCurrentAccount(QString accountName) { setCurrentAccount(getAccount(accountName)); }
+    void setCurrentAccount(swv::data::Account* account);
 
 protected slots:
     void setLastError(QString message);
