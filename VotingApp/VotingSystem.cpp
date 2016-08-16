@@ -346,7 +346,7 @@ QJSValue VotingSystem::connectToBlockchainWallet(bool useTestingBackend) {
                          emit blockchainWalletConnected();
                          configuredPromise->resolve();
                      }));
-        QDesktopServices::openUrl(QStringLiteral("web+bts:%1:%2")
+        QDesktopServices::openUrl(QStringLiteral("web+bts:%1/%2")
                                   .arg(d->bitsharesBridge->serverAddress().toString())
                                   .arg(d->bitsharesBridge->serverPort()));
     }
@@ -487,6 +487,8 @@ void VotingSystem::setCurrentAccount(data::Account* account) {
     if (d->currentAccount == account)
         return;
 
+    if (account != nullptr)
+        qDebug() << "Setting current account to" << account->get_name();
     d->currentAccount = account;
     emit currentAccountChanged(account);
 }
