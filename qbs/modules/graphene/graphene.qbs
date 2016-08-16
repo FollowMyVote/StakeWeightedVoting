@@ -6,6 +6,7 @@ Module {
     Depends { name: "cpp" }
     property string graphenePath: Environment.getEnv("GRAPHENE_PATH")
     property bool found: File.exists(graphenePath+"/lib/libgraphene_app.a")
+    property bool debug: File.exists(graphenePath+"/lib/libfc_debug.a")
     cpp.includePaths: graphenePath+"/include"
     cpp.libraryPaths: [graphenePath+"/lib", graphenePath+"/lib/cryptonomex"]
     cpp.staticLibraries: [
@@ -29,7 +30,7 @@ Module {
         "graphene_debug_witness",
         "graphene_account_history",
         "graphene_market_history",
-        "fc_debug",
+        debug? "fc_debug" : "fc",
         "secp256k1",
         "z"
     ]
