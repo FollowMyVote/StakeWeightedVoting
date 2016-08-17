@@ -8,10 +8,14 @@ namespace swv {
 ContestResultsServer::ContestResultsServer(VoteDatabase& vdb, gch::operation_history_id_type contestId)
     : vdb(vdb), contestId(contestId) {}
 
+inline unsigned int resultCount(const Contest& c) {
+    return c.contestantResults.size() + c.writeInResults.size();
+}
+
 ::kj::Promise<void> ContestResultsServer::results(Backend::ContestResults::Server::ResultsContext context) {
     KJ_LOG(DBG, __FUNCTION__, context.getParams());
     const auto& contest = getContest();
-    auto results = context.initResults().initResults(contest.contestantResults.size() + contest.writeInResults.size());
+    auto results = context.initResults().initResults(resultCount(contest));
     populateResults(results, contest);
 
     return kj::READY_NOW;
@@ -23,12 +27,17 @@ ContestResultsServer::ContestResultsServer(VoteDatabase& vdb, gch::operation_his
     notifiers.emplace_back(context.getParams().getNotifier());
     subscriptions.emplace_back(vdb.contestResultsUpdated.connect(
                              [this] (gch::operation_history_id_type contestId) mutable -> void {
-                                   if (contestId == this->contestId) {
-                                       for (auto& notifier : notifiers) {
-                                           auto request = notifier.notifyRequest();
-                                           populateResults(request.getNotification(), getContest());
-                                           request.send();
+                                   try {
+                                       if (contestId == this->contestId) {
+                                           for (auto& notifier : notifiers) {
+                                               auto request = notifier.notifyRequest();
+                                               const auto& contest = getContest();
+                                               populateResults(request.initNotification(resultCount(contest)), contest);
+                                               request.send();
+                                           }
                                        }
+                                   } catch (kj::Exception& e) {
+                                       KJ_LOG(ERROR, "Exception in results notifier", e);
                                    }
                                }));
 

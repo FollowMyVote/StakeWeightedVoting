@@ -65,8 +65,9 @@ void processDecision(gch::database& db, const gch::account_balance_object& balan
         // We use DASSERTs here because we're sanity-checking internal data, which should be guaranteed valid. If it's
         // not, there's a bug somewhere in the code that created it (likely in the call stack of CustomEvaluator, since
         // that's what creates and maintains this data)
-        KJ_DASSERT(decisionItr->opinions.size() == 1);
-        KJ_DASSERT(contest.coin == decisionItr->voter(db).asset_type);
+        KJ_DASSERT(decisionItr->opinions.size() == 1, decisionItr->opinions.size());
+        KJ_DASSERT(contest.coin == decisionItr->voter(db).asset_type,
+                   contest.coin.instance.value, decisionItr->voter(db).asset_type.instance.value);
         // There is an old decision currently in effect. Untally it
         db.modify(contest, [&](Contest& c) {
             auto opinion = *decisionItr->opinions.begin();
@@ -75,7 +76,7 @@ void processDecision(gch::database& db, const gch::account_balance_object& balan
                 auto resultItr = c.contestantResults.find(opinion.first);
                 KJ_DASSERT(resultItr != c.contestantResults.end());
                 resultItr->second -= decisionItr->voter(db).balance.value;
-                KJ_DASSERT(resultItr->second >= 0);
+                KJ_DASSERT(resultItr->second >= 0, resultItr->first, resultItr->second);
             } else {
                 // Vote is for a write-in candidate
                 KJ_DASSERT(opinion.first - c.contestants.size() < decisionItr->writeIns.size());
