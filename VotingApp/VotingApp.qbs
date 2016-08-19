@@ -5,11 +5,10 @@ import qbs.Probes
 Project {
     QtGuiApplication {
         name: "VotingApp"
-        condition: Qt.qml.present
 
         Depends { name: "shared" }
         Depends { name: "StubChainAdaptor" }
-        Depends { name: "Qt"; submodules: ["network", "qml", "charts", "websockets", "quickcontrols2"]; required: false }
+        Depends { name: "Qt"; submodules: ["network", "qml", "charts", "websockets", "quickcontrols2"] }
         Depends { name: "libqtqmltricks-qtquickuielements" }
         Depends { name: "libqtqmltricks-qtsupermacros" }
         Depends { name: "libqtqmltricks-qtqmlmodels" }
