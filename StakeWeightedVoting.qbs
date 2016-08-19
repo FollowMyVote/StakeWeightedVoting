@@ -1,6 +1,15 @@
 import qbs
 
 Project {
+    id: project
+
+    property bool ignoreApp: false
+
     qbsSearchPaths: "qbs"
-    references: ["shared", "StubBackend", "StubChainAdaptor", "VotingApp", "GrapheneBackend"]
+    references: {
+        var baseList = ["shared", "GrapheneBackend"]
+        if (!ignoreApp)
+            baseList = baseList.concat(["StubChainAdaptor", "VotingApp"])
+        return baseList
+    }
 }
