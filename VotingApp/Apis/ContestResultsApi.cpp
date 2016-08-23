@@ -8,6 +8,9 @@
 namespace swv {
 
 void ContestResultsApi::updateBarSeries(capnp::List<Backend::ContestResults::TalliedOpinion>::Reader talliedOpinions) {
+    if (m_results == nullptr)
+        return;
+
     std::vector<std::pair<QString, int64_t>> writeInResults;
     std::vector<int64_t> contestantResults(contest.get_contestants().size());
 
@@ -66,19 +69,22 @@ ContestResultsApi::ContestResultsApi(Backend::ContestResults::Client resultsApi,
 ContestResultsApi::~ContestResultsApi() noexcept {}
 
 void ContestResultsApi::setResults(QtCharts::QBarSeries* results) {
-    if (results == m_results || results == nullptr)
+    if (results == m_results)
         return;
 
-    results->clear();
-    auto sets = m_results->barSets();
+    if (results) {
+        results->clear();
+        auto sets = m_results->barSets();
 
-    // Move all bar sets from old series to new series
-    for (auto set : sets) {
-        m_results->take(set);
-        results->append(set);
+        // Move all bar sets from old series to new series
+        for (auto set : sets) {
+            m_results->take(set);
+            results->append(set);
+        }
+
+        m_results->deleteLater();
     }
 
-    m_results->deleteLater();
     m_results = results;
     emit resultsChanged(results);
 }

@@ -24,6 +24,13 @@ Page {
 
     signal loaded
     signal closed
+    onClosed: {
+        if (resultsApi)
+            // Schedule the resultsApi for deletion in about 200ms; this page should be gone by then
+            // The delay isn't necessary, but it squelches some warnings in the console
+            resultsApi.destroy(200)
+        contestDetailPage.StackView.view.pop()
+    }
 
     header: ToolBar {
         ToolButton {
@@ -31,7 +38,7 @@ Page {
                 icon: "qrc:/icons/navigation/arrow_back.svg"
                 color: Material.foreground
             }
-            onClicked: contestDetailPage.StackView.view.pop()
+            onClicked: contestDetailPage.closed()
         }
     }
 
