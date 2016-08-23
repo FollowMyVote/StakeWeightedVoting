@@ -22,11 +22,13 @@ See [Architecture](Architecture.md) for more information on how the components i
 - [Cap'n Proto](https://capnproto.org) 0.5.3+
 - [Qt](https://qt.io) 5.7+ including QBS
 - Python 2 with PyYAML (to fetch icons)
-- [Graphene](https://github.com/cryptonomex/graphene) (Optional)
+- [Graphene](https://github.com/followmyvote/graphene) (Optional)
  - Be sure to use develop branch!
  - If building with graphene, be sure to set the `GRAPHENE_PATH` environment variable to the path graphene is installed to
- 
-A video showing how to set up the development environment is available [here](https://youtu.be/lvTyZ0GAT-k)
+
+These video tutorials show how to build and test this project:
+ - [Graphene blockchain testnet setup](https://youtu.be/7ETrFkZ9LM0)
+ - [Stake-weighted voting system setup](https://youtu.be/IkXC0-Mp3vg)
 
 Once the dependencies are installed, building the application is as simple as running `qbs` in the top-level directory. If this doesn't work, probably qbs is not configured yet or Cap'n Proto is not in PATH. If you use the QtCreator IDE, you can skip configuring qbs manually as QtCreator does this automatically. QtCreator also allows you to customize PATH (and other environment variables) in the Projects pane.
 
