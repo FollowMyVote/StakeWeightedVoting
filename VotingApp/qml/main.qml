@@ -54,6 +54,18 @@ ApplicationWindow {
     VotingSystem {
         id: _votingSystem
 
+        function connectToBackendHelper() {
+            if (currentAccount) {
+                console.log("*** Connecting to backend as", currentAccount.name)
+                connectionProgressPopup.text = qsTr("Connecting to Follow My Vote")
+                connectToBackend("localhost", 17073, currentAccount.name)
+            } else {
+                console.log("*** Current account unset; No accounts in wallet?")
+                connectionProgressPopup.text = qsTr("Wallet contains no accounts.\nCannot continue.")
+                connectionProgressPopup.progress = .01
+            }
+        }
+
         // Normal startup routine:
         Component.onCompleted: {
             connectionProgressPopup.text = qsTr("Waiting for Bitshares wallet")
@@ -71,9 +83,7 @@ ApplicationWindow {
                 connectionProgressPopup.text = qsTr("Syncing with blockchain")
                 syncWithBlockchain()
             } else if (!backendIsConnected) {
-                console.log("*** Connecting to backend as", currentAccount.name)
-                connectionProgressPopup.text = qsTr("Connecting to Follow My Vote")
-                connectToBackend("localhost", 17073, currentAccount.name)
+                connectToBackendHelper()
             } else {
                 connectionProgressPopup.progress = 1
                 connectionProgressPopup.text = "Finishing up"
@@ -84,9 +94,7 @@ ApplicationWindow {
             connectionProgressPopup.progress = .9
             console.log("*** Blockchain synced")
             if (!backendIsConnected) {
-                console.log("*** Connecting to backend as", currentAccount.name)
-                connectionProgressPopup.text = qsTr("Connecting to Follow My Vote")
-                connectToBackend("localhost", 17073, currentAccount.name)
+                connectToBackendHelper()
             }
         }
         onBackendConnected: {
