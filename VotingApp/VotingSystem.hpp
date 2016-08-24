@@ -87,15 +87,13 @@ public:
 
     /**
      * @brief Attempt to establish connection with the blockchain wallet
-     * @param useTestingBackend If true, uses StubChainAdaptor and associated testing backend rather than a real
-     * blockchain. Automatically connects backend and wallet both. Pass true here only for testing.
      * @return A promise which resolves when the wallet is connected
      *
      * Attempts to connect to the blockchain wallet by opening a websocket server and launching a web+bts:// URL
      * containing the host and port the wallet should connect to and serve an API on. This may silently fail, if no
      * wallet is configured to accept web+bts scheme links, in which case the returned promise will never settle.
      */
-    Q_INVOKABLE QJSValue connectToBlockchainWallet(bool useTestingBackend = false);
+    Q_INVOKABLE QJSValue connectToBlockchainWallet();
     /**
      * @brief Connect to the backend at the specified network endpoint
      * @param hostname Host name or IP of the Follow My Vote server

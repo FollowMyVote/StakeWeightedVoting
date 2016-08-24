@@ -29,8 +29,6 @@
 #include "BitsharesWalletBridge.hpp"
 #include "capnqt/QSocketWrapper.hpp"
 
-#include <FakeBlockchain.hpp>
-
 #include <Utilities.hpp>
 #include <BotanIntegration/TlsPskAdaptorFactory.hpp>
 
@@ -313,43 +311,32 @@ QJSValue VotingSystem::syncWithBlockchain() {
     return d->promiseConverter->convert(kj::joinPromises(promises.finish()).then([this]{emit blockchainSynced();}));
 }
 
-QJSValue VotingSystem::connectToBlockchainWallet(bool useTestingBackend) {
+QJSValue VotingSystem::connectToBlockchainWallet() {
     Q_D(VotingSystem);
 
     QPPromise* configuredPromise = new QPPromise(this);
 
-    //TODO: make a real implementation of this
-    if (useTestingBackend) {
-        auto chain = kj::heap<FakeBlockchain>();
-        auto backendStub = chain->getBackendStub();
-        d->chain->setChain(kj::mv(chain));
-        d->backend = kj::heap<BackendApi>(backendStub, *d->promiseConverter);
-        emit backendConnected();
-        emit backendConnectedChanged(true);
-        configuredPromise->resolve();
-    } else {
-        if (!d->bitsharesBridge) {
-            d->bitsharesBridge = kj::heap<bts::BitsharesWalletBridge>(qApp->applicationName());
-            connect(d->bitsharesBridge.get(), &bts::BitsharesWalletBridge::connectionLost,
-                    this, &VotingSystem::blockchainWalletDisconnected);
-        }
-        if (!d->bitsharesBridge->isListening() && !d->bitsharesBridge->listen(QHostAddress::LocalHost, 27073)) {
-            setLastError(tr("Unable to listen for Bitshares wallet: %1").arg(d->bitsharesBridge->errorString()));
-            return QJSValue::NullValue;
-        }
-        KJ_LOG(DBG, "Listening for Bitshares wallet",
-               d->bitsharesBridge->serverAddress().toString().toStdString(),
-               d->bitsharesBridge->serverPort());
-        d->tasks.add(d->bitsharesBridge->nextWalletClient().then([this, d, configuredPromise](BlockchainWallet::Client c) {
-                         KJ_LOG(DBG, "Setting blockchain");
-                         d->chain->setChain(c);
-                         emit blockchainWalletConnected();
-                         configuredPromise->resolve();
-                     }));
-        QDesktopServices::openUrl(QStringLiteral("web+bts:%1/%2")
-                                  .arg(d->bitsharesBridge->serverAddress().toString())
-                                  .arg(d->bitsharesBridge->serverPort()));
+    if (!d->bitsharesBridge) {
+        d->bitsharesBridge = kj::heap<bts::BitsharesWalletBridge>(qApp->applicationName());
+        connect(d->bitsharesBridge.get(), &bts::BitsharesWalletBridge::connectionLost,
+                this, &VotingSystem::blockchainWalletDisconnected);
     }
+    if (!d->bitsharesBridge->isListening() && !d->bitsharesBridge->listen(QHostAddress::LocalHost, 27073)) {
+        setLastError(tr("Unable to listen for Bitshares wallet: %1").arg(d->bitsharesBridge->errorString()));
+        return QJSValue::NullValue;
+    }
+    KJ_LOG(DBG, "Listening for Bitshares wallet",
+           d->bitsharesBridge->serverAddress().toString().toStdString(),
+           d->bitsharesBridge->serverPort());
+    d->tasks.add(d->bitsharesBridge->nextWalletClient().then([this, d, configuredPromise](BlockchainWallet::Client c) {
+        KJ_LOG(DBG, "Setting blockchain");
+        d->chain->setChain(c);
+        emit blockchainWalletConnected();
+        configuredPromise->resolve();
+    }));
+    QDesktopServices::openUrl(QStringLiteral("web+bts:%1/%2")
+                              .arg(d->bitsharesBridge->serverAddress().toString())
+                              .arg(d->bitsharesBridge->serverPort()));
 
     return *configuredPromise;
 }
