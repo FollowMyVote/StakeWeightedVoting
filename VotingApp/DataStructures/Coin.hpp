@@ -20,7 +20,7 @@
 #define COIN_HPP
 
 #include "coin.capnp.h"
-#include "backend.capnp.h"
+#include "coindetails.capnp.h"
 
 #include <QQmlVarPropertyHelpers.h>
 
@@ -80,7 +80,7 @@ public:
      * \brief Update the fields on the Coin
      * \param details The new details
      */
-    void updateFields(Backend::CoinDetails::Reader details);
+    void updateFields(CoinDetails::Reader details);
 };
 
 } } // namespace swv::data

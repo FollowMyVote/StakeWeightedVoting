@@ -78,18 +78,6 @@ ContestGeneratorApi*BackendApi::getVotedContests() {
     return new ContestGeneratorApi(request.send().getGenerator(), promiseConverter);
 }
 
-ContestResultsApi* BackendApi::getContestResults(swv::data::Contest* contest) {
-    if (contest == nullptr)
-        return nullptr;
-
-    auto request = m_backend.getContestResultsRequest();
-    auto blob = QByteArray::fromHex(contest->get_id().toLocal8Bit());
-    BlobMessageReader reader(convertBlob(blob));
-    request.setContestId(reader->getRoot<::ContestId>());
-
-    return new ContestResultsApi(request.send().getResults(), *contest);
-}
-
 ContestCreatorApi* BackendApi::contestCreator() {
     // Lazy load the creator; most runs we will probably never need it.
     if (creator.get() == nullptr)

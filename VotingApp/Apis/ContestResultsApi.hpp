@@ -1,8 +1,7 @@
 #ifndef CONTESTRESULTSAPI_HPP
 #define CONTESTRESULTSAPI_HPP
 
-#include <backend.capnp.h>
-#include <purchase.capnp.h>
+#include <contestgenerator.capnp.h>
 
 #include <QObject>
 #include <QBarSeries>
@@ -16,16 +15,10 @@ namespace data { class Contest; }
 
 class ContestResultsApi : public QObject {
     Q_OBJECT
-    Q_PROPERTY(QtCharts::QBarSeries* results READ results WRITE setResults NOTIFY resultsChanged)
-    Q_PROPERTY(QtCharts::QBarCategoryAxis* xAxis READ xAxis CONSTANT)
-    Q_PROPERTY(QtCharts::QValueAxis* yAxis READ yAxis CONSTANT)
+    Q_PROPERTY(QVariantList contestantResults READ contestantResults NOTIFY resultsChanged)
+    Q_PROPERTY(QVariantMap writeInResults READ writeInResults NOTIFY resultsChanged)
 
-    Backend::ContestResults::Client resultsApi;
-    const data::Contest& contest;
-
-    QtCharts::QBarSeries* m_results = new QtCharts::QBarSeries(this);
-    QtCharts::QBarCategoryAxis* m_xAxis = new QtCharts::QBarCategoryAxis(this);
-    QtCharts::QValueAxis* m_yAxis = new QtCharts::QValueAxis(this);
+    ContestResults::Client resultsApi;
 
     class ErrorHandler : public kj::TaskSet::ErrorHandler {
     public:
@@ -35,7 +28,7 @@ class ContestResultsApi : public QObject {
     } errorHandler;
     kj::TaskSet m_tasks;
 
-    class ResultsNotifier : public Notifier<capnp::List<Backend::ContestResults::TalliedOpinion>>::Server {
+    class ResultsNotifier : public Notifier<capnp::List<ContestResults::TalliedOpinion>>::Server {
         ContestResultsApi& resultsApi;
 
     public:
@@ -46,20 +39,20 @@ class ContestResultsApi : public QObject {
         virtual ::kj::Promise<void> notify(NotifyContext context) override;
     };
 
-    void updateBarSeries(capnp::List<Backend::ContestResults::TalliedOpinion>::Reader talliedOpinions);
+    void updateResults(capnp::List<ContestResults::TalliedOpinion>::Reader talliedOpinions);
+
+    QVariantList m_contestantResults;
+    QVariantMap m_writeInResults;
 
 public:
-    ContestResultsApi(Backend::ContestResults::Client resultsApi, const data::Contest& contest);
+    ContestResultsApi(ContestResults::Client resultsApi);
     virtual ~ContestResultsApi() noexcept;
 
-    QtCharts::QBarSeries* results() { return m_results; }
-    void setResults(QtCharts::QBarSeries* results);
-
-    QtCharts::QBarCategoryAxis* xAxis() const { return m_xAxis; }
-    QtCharts::QValueAxis* yAxis() const { return m_yAxis; }
+    QVariantList contestantResults() const { return m_contestantResults; }
+    QVariantMap writeInResults() const { return m_writeInResults; }
 
 signals:
-    void resultsChanged(const QtCharts::QBarSeries* results);
+    void resultsChanged();
 };
 
 } // namespace swv

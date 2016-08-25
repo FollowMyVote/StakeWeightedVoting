@@ -23,8 +23,6 @@
 #include <QByteArray>
 #include <QVariantMap>
 
-#include <backend.capnp.h>
-
 namespace swv {
 
 inline QByteArray convertBlob(capnp::Data::Reader data) {
@@ -35,11 +33,6 @@ inline QByteArray convertBlob(capnp::Data::Reader data) {
 /// while the returned Builder exists.
 inline capnp::Data::Builder convertBlob(QByteArray& data) {
     return capnp::Data::Builder(reinterpret_cast<kj::byte*>(data.data()), data.size());
-}
-inline QVariantMap convertListedContest(ContestGenerator::ListedContest::Reader contest) {
-    return {{"contestId", QString(convertBlob(ReaderPacker(contest.getContestId()).array()).toHex())},
-            {"votingStake", qint64(contest.getVotingStake())},
-            {"tracksLiveResults", contest.getTracksLiveResults()}};
 }
 inline QString convertText(capnp::Text::Reader text) {
     return QString::fromStdString(text);

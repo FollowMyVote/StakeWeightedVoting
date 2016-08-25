@@ -108,7 +108,7 @@ void processContest(gch::database& db, ::Datagram::ContestKey::Creator::Reader k
     // All relevant data consistency checks should have been done before FMV published the contest to the chain. We
     // should be able to skip them here, relying on the FMV signature to be sure this is a legitimate contest creation
     // request.
-    db.create<Contest>([&db, key, contestDigest, contest](Contest& c) {
+    const auto& contestObject = db.create<Contest>([&db, key, contestDigest, contest](Contest& c) {
         auto& index = db.get_index_type<gch::simple_index<gch::operation_history_object>>();
         c.contestId = gch::operation_history_id_type(index.size());
         if (key.isSignature()) {
@@ -131,7 +131,7 @@ void processContest(gch::database& db, ::Datagram::ContestKey::Creator::Reader k
                                fc::time_point(db.head_block_time()));
         c.endTime = fc::time_point(fc::milliseconds(contest.getEndTime()));
     });
-    KJ_LOG(DBG, "Created new contest", db.get_index_type<ContestIndex>().indices().size());
+    KJ_LOG(DBG, "Created new contest", contestObject.contestId.instance.value);
 }
 
 inline fc::sha256 digest(capnp::Data::Reader r) {

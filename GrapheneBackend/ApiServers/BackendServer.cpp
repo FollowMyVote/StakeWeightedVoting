@@ -27,7 +27,7 @@
 
 namespace swv {
 
-void populateCoinVolumeHistory(Backend::CoinDetails::VolumeHistory::Builder builder,
+void populateCoinVolumeHistory(CoinDetails::VolumeHistory::Builder builder,
                                int32_t historyLength, const CoinVolumeHistory& historyRecord) {
     KJ_REQUIRE(historyLength <= 1000000,
                "OK, let's be reasonable here. You don't need a million hours of volume history.");
@@ -57,9 +57,9 @@ BackendServer::~BackendServer() {}
     KJ_LOG(DBG, __FUNCTION__, contestIndex.size());
     auto& startTimeIndex = contestIndex.get<ByStartTime>();
     auto itr = startTimeIndex.begin();
-    context.initResults().setGenerator(kj::heap<FeedGenerator<ByStartTime>>(itr == startTimeIndex.end()? nullptr
-                                                                                                       : &*itr,
-                                                                            vdb.db()));
+    auto firstContest = itr == startTimeIndex.end()? nullptr : &*itr;
+    kj::Own<::Generator<::ContestInfo>::Server> genny = kj::heap<FeedGenerator<ByStartTime>>(firstContest, vdb);
+    context.initResults().setGenerator(kj::mv(genny));
     return kj::READY_NOW;
 }
 
@@ -144,7 +144,7 @@ gch::account_id_type getAccountId(kj::StringPtr nameOrId, const gch::database& d
 }
 
 template<typename SearchIndex>
-ContestGenerator::Client FilteredGenerator(capnp::List<Backend::Filter>::Reader filters, const gch::database& db) {
+ContestGenerator::Client FilteredGenerator(capnp::List<Backend::Filter>::Reader filters, VoteDatabase& vdb) {
     KJ_LOG(DBG, __FUNCTION__);
     std::vector<typename FeedGenerator<SearchIndex>::Filter> filterFunctions;
     using Filter = Backend::Filter::Type;
@@ -157,7 +157,7 @@ ContestGenerator::Client FilteredGenerator(capnp::List<Backend::Filter>::Reader 
     for (auto filter : filters) {
         if (filter.getType() == Filter::SEARCH_TERMS) {
             KJ_REQUIRE(filter.getArguments().size() > 0, "Search terms filter must have at least one term");
-            firstContest = findFirstContest<SearchIndex, ById>(nullptr, db, firstContest);
+            firstContest = findFirstContest<SearchIndex, ById>(nullptr, vdb.db(), firstContest);
             std::vector<std::string> terms;
             for (auto term : filter.getArguments())
                 terms.emplace_back(term);
@@ -170,8 +170,8 @@ ContestGenerator::Client FilteredGenerator(capnp::List<Backend::Filter>::Reader 
             KJ_REQUIRE(filter.getArguments().size() == 1, "Unexpected number of arguments for creator filter");
             try {
                 using Selector = ResultSelector<SearchIndex, ByCreator>;
-                auto creator = getAccountId(filter.getArguments()[0], db);
-                firstContest = findFirstContest<SearchIndex, ByCreator>(creator, db, firstContest);
+                auto creator = getAccountId(filter.getArguments()[0], vdb.db());
+                firstContest = findFirstContest<SearchIndex, ByCreator>(creator, vdb.db(), firstContest);
                 filterFunctions.emplace_back([creator = kj::mv(creator)] (const Contest& contest,
                                                                           const gch::database&) {
                     // If contest's creator is the creator we're searching for, accept
@@ -185,7 +185,7 @@ ContestGenerator::Client FilteredGenerator(capnp::List<Backend::Filter>::Reader 
             try {
                 using Selector = ResultSelector<SearchIndex, ByCoin>;
                 auto coin = gch::asset_id_type(std::stoull((std::string)filter.getArguments()[0]));
-                firstContest = findFirstContest<SearchIndex, ByCoin>(coin, db, firstContest);
+                firstContest = findFirstContest<SearchIndex, ByCoin>(coin, vdb.db(), firstContest);
                 filterFunctions.emplace_back([coin] (const Contest& contest, const gch::database&) {
                     // If contest's coin matches the coin we're searching for, accept
                     return contest.coin == coin? Selector::accept : Selector::reject;
@@ -218,7 +218,7 @@ ContestGenerator::Client FilteredGenerator(capnp::List<Backend::Filter>::Reader 
         }
     }
 
-    return kj::heap<FeedGenerator<SearchIndex>>(firstContest, db, kj::mv(filterFunctions));
+    return kj::heap<FeedGenerator<SearchIndex>>(firstContest, vdb, kj::mv(filterFunctions));
 }
 
 ::kj::Promise<void> BackendServer::searchContests(Backend::Server::SearchContestsContext context) {
@@ -234,10 +234,10 @@ ContestGenerator::Client FilteredGenerator(capnp::List<Backend::Filter>::Reader 
     // creator, so if any of those are available, use that strategy.
     for (auto filter : filters) {
         if (filter.getType() == Backend::Filter::Type::CONTEST_COIN) {
-            context.initResults().setGenerator(FilteredGenerator<ByCoin>(filters, vdb.db()));
+            context.initResults().setGenerator(FilteredGenerator<ByCoin>(filters, vdb));
             return kj::READY_NOW;
         } else if (filter.getType() == Backend::Filter::Type::CONTEST_CREATOR) {
-            context.initResults().setGenerator(FilteredGenerator<ByCreator>(filters, vdb.db()));
+            context.initResults().setGenerator(FilteredGenerator<ByCreator>(filters, vdb));
             return kj::READY_NOW;
         }
     }
@@ -252,14 +252,7 @@ ContestGenerator::Client FilteredGenerator(capnp::List<Backend::Filter>::Reader 
 
     // This is the catch-all case: no optimizing strategy is available, so we just iterate contests by ID and inspect
     // them all.
-    context.initResults().setGenerator(FilteredGenerator<ById>(filters, vdb.db()));
-    return kj::READY_NOW;
-}
-
-::kj::Promise<void> BackendServer::getContestResults(Backend::Server::GetContestResultsContext context) {
-    KJ_LOG(DBG, __FUNCTION__);
-    auto contestId = gch::operation_history_id_type(context.getParams().getContestId().getOperationId());
-    context.initResults().setResults(kj::heap<ContestResultsServer>(vdb, contestId));
+    context.initResults().setGenerator(FilteredGenerator<ById>(filters, vdb));
     return kj::READY_NOW;
 }
 

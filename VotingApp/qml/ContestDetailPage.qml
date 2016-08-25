@@ -14,21 +14,21 @@ Page {
 
     property alias contest: contestDelegate.contest
     property VotingSystem votingSystem
-
-    property var resultsApi: votingSystem.backend.getContestResults(contest)
-    Binding {
-        target: resultsApi
-        property: "results"
-        value: resultSeries
+    property var resultMap: {
+        var contestantNameToTally = contest.contestants.reduce(function(results, contestant, contestantIndex) {
+            var contestantResults = contest.resultsApi.contestantResults
+            var tally = (contestantResults.length > contestantIndex)? contestantResults[contestantIndex] : 0
+            results[contestant.name] = tally
+            return results
+        }, {})
+        for (var writeInName in contest.resultsApi.writeInResults)
+            contestantNameToTally[writeInName] = contest.resultsApi.writeInResults[writeInName]
+        return contestantNameToTally
     }
 
     signal loaded
     signal closed
     onClosed: {
-        if (resultsApi)
-            // Schedule the resultsApi for deletion in about 200ms; this page should be gone by then
-            // The delay isn't necessary, but it squelches some warnings in the console
-            resultsApi.destroy(200)
         contestDetailPage.StackView.view.pop()
     }
 
@@ -61,8 +61,8 @@ Page {
 
                 BarSeries {
                     id: resultSeries
-                    axisX: resultsApi.xAxis
-                    axisY: resultsApi.yAxis
+                    axisX: BarCategoryAxis { categories: Object.keys(resultMap) }
+                    BarSet { values: Object.keys(resultMap).map(function(name) { return resultMap[name] }) }
                 }
             }
         }

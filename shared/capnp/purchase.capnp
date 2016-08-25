@@ -17,6 +17,7 @@
 @0x926d0fcd95f1e5d5;
 
 using Map = import "map.capnp".Map;
+using Notifier = import "notifier.capnp".Notifier;
 
 interface Purchase {
     # A purchase API is created and sent to a client whenever the client wishes to make a purhcase. The client can
@@ -46,13 +47,4 @@ interface Purchase {
     struct Price {
         price @0 :Int64 = 0;
     }
-}
-
-interface Notifier(T) {
-    # Notifiers are used to send a notification of some event. The party requesting notification creates the notifier
-    # and sends it to the party providing notification. The notifying party then calls notify when the event pending
-    # notification occurs. If the event is a single-occurrence event, and it has already occurred when the notifying
-    # party receives the Notifier, that party should send the notification immediately; not allow it to go unnotified.
-
-    notify @0 (notification :T) -> ();
 }

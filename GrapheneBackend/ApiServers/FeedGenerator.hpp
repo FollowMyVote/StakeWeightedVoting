@@ -19,14 +19,17 @@
 #define FEEDGENERATOR_HPP
 
 #include "Objects/Contest.hpp"
+#include "ContestResultsServer.hpp"
 #include "Utilities.hpp"
+#include "VoteDatabase.hpp"
 
 #include <contestgenerator.capnp.h>
-
-#include <graphene/chain/database.hpp>
+#include <generator.capnp.h>
 
 #include <kj/vector.h>
 #include <kj/debug.h>
+
+using ContestGenerator = Generator<::ContestInfo>;
 
 namespace swv {
 
@@ -56,24 +59,22 @@ public:
      */
     using Filter = std::function<FilterResult(const Contest&, const gch::database&)>;
 
-    FeedGenerator(const Contest* firstContest, const gch::database& db, std::vector<Filter> filters = {});
+    FeedGenerator(const Contest* firstContest, VoteDatabase& vdb, std::vector<Filter> filters = {});
     virtual ~FeedGenerator();
 
 protected:
     // ContestGenerator::Server interface
-    virtual ::kj::Promise<void> getContest(GetContestContext context) override;
-    virtual ::kj::Promise<void> getContests(GetContestsContext context) override;
-    virtual ::kj::Promise<void> logEngagement(LogEngagementContext context) override;
+    virtual ::kj::Promise<void> getValues(GetValuesContext context) override;
 
 private:
     const Contest* currentContest = nullptr;
-    const gch::database& db;
+    VoteDatabase& vdb;
     std::vector<Filter> filters;
     const typename ContestObjectMultiIndex::index<Index>::type& index;
     // Cache the results of filters, so we make sure we don't call a filter on the same contest twice
     mutable std::map<gch::operation_history_id_type, FilterResult> filterCache;
 
-    void populateContest(ContestGenerator::ListedContest::Builder nextContest);
+    void populateContest(::ContestInfo::Builder nextContest);
     FilterResult filter(const Contest& c) const {
         auto itr = filterCache.find(c.contestId);
         if (itr != filterCache.end())
@@ -81,7 +82,7 @@ private:
 
         auto result = Accept;
         for (auto& filter : filters) {
-            switch (filter(c, db)) {
+            switch (filter(c, vdb.db())) {
             case Break:
                 filterCache[c.contestId] = Break;
                 return Break;
@@ -95,50 +96,18 @@ private:
 };
 
 template<typename Index>
-FeedGenerator<Index>::FeedGenerator(const Contest* firstContest, const graphene::chain::database& db,
+FeedGenerator<Index>::FeedGenerator(const Contest* firstContest, VoteDatabase& vdb,
                                     std::vector<Filter> filters)
     : currentContest(firstContest),
-      db(db),
-      index(db.get_index_type<ContestIndex>().indices().get<Index>()),
+      vdb(vdb),
+      index(vdb.db().get_index_type<ContestIndex>().indices().get<Index>()),
       filters(kj::mv(filters)) {}
 
 template<typename Index>
 FeedGenerator<Index>::~FeedGenerator(){}
 
 template<typename Index>
-::kj::Promise<void> FeedGenerator<Index>::getContest(ContestGenerator::Server::GetContestContext context) {
-    if (currentContest == nullptr)
-        return KJ_EXCEPTION(FAILED, "No more contests available");
-
-    auto itr = index.iterator_to(*currentContest);
-    if (itr == index.end()) {
-        currentContest = nullptr;
-        // I don't think this should ever happen. If it does, log it.
-        KJ_LOG(WARNING, "Got index.end() when finding iterator to currentContest");
-        return KJ_EXCEPTION(FAILED, "No more contests available");
-    }
-    // Skip past all ineligible contests
-    // TODO: the isActive check should be optional, in a filter
-    while (!itr->isActive(db) || filter(*itr) != Accept) {
-        // If a filter broke, or we've checked all contests, kill the generator
-        if (filter(*itr) == Break || ++itr == index.end()) {
-            currentContest = nullptr;
-            return KJ_EXCEPTION(FAILED, "No more contests available");
-        }
-    }
-    currentContest = &*itr;
-    populateContest(context.initResults().initNextContest());
-
-    if (++itr == index.end())
-        currentContest = nullptr;
-    else
-        currentContest = &*itr;
-
-    return kj::READY_NOW;
-}
-
-template<typename Index>
-::kj::Promise<void> FeedGenerator<Index>::getContests(ContestGenerator::Server::GetContestsContext context) {
+::kj::Promise<void> FeedGenerator<Index>::getValues(GetValuesContext context) {
     if (currentContest == nullptr)
         return kj::READY_NOW;
 
@@ -152,7 +121,7 @@ template<typename Index>
     while (itr != index.end() && contestsToReturn.size() < context.getParams().getCount()) {
         auto& contest = *itr++;
         // If the contest is inactive, skip it
-        if (!contest.isActive(db))
+        if (!contest.isActive(vdb.db()))
             continue;
         // If the contest is not accepted, skip it, but if it breaks a filter, kill the generator too
         if (filter(contest) != Accept) {
@@ -165,10 +134,10 @@ template<typename Index>
         contestsToReturn.add(&contest);
     }
 
-    auto results = context.initResults().initNextContests(contestsToReturn.size());
+    auto results = context.initResults().initValues(contestsToReturn.size());
     for (auto i = 0u; i < results.size(); ++i) {
         currentContest = contestsToReturn[i];
-        populateContest(results[i]);
+        populateContest(results[i].initValue());
     }
 
     if (itr == index.end())
@@ -179,14 +148,10 @@ template<typename Index>
 }
 
 template<typename Index>
-::kj::Promise<void> FeedGenerator<Index>::logEngagement(ContestGenerator::Server::LogEngagementContext context) {
-    // TODO
-}
-
-template<typename Index>
-void FeedGenerator<Index>::populateContest(ContestGenerator::ListedContest::Builder nextContest) {
+void FeedGenerator<Index>::populateContest(::ContestInfo::Builder nextContest) {
     nextContest.getContestId().setOperationId(currentContest->contestId.instance);
-    nextContest.setTracksLiveResults(false);
+    nextContest.setContestResults(kj::heap<ContestResultsServer>(vdb, currentContest->contestId));
+    // TODO: set engagement notification API
 
     // Shorter type names
     using contestantResult = typename decltype(currentContest->contestantResults)::value_type;
@@ -202,6 +167,7 @@ void FeedGenerator<Index>::populateContest(ContestGenerator::ListedContest::Buil
                                          [](const writeInResult& a, const writeInResult& b) -> writeInResult
     { return {{}, a.second + b.second}; }).second;
     nextContest.setVotingStake(votingStake);
+    KJ_DBG(nextContest);
 }
 
 } // namespace swv

@@ -1,6 +1,7 @@
 #include "ContestGeneratorApi.hpp"
-
+#include "ContestResultsApi.hpp"
 #include "Converters.hpp"
+#include "DataStructures/Contest.hpp"
 
 #include <ids.capnp.h>
 
@@ -9,8 +10,8 @@
 namespace swv {
 
 ContestGeneratorApi::ContestGeneratorApi(ContestGenerator::Client generator,
-                                                 PromiseConverter& converter,
-                                                 QObject *parent)
+                                         PromiseConverter& converter,
+                                         QObject *parent)
     : QObject(parent),
       generator(generator),
       converter(converter)
@@ -19,32 +20,9 @@ ContestGeneratorApi::ContestGeneratorApi(ContestGenerator::Client generator,
 ContestGeneratorApi::~ContestGeneratorApi() noexcept
 {}
 
-QJSValue ContestGeneratorApi::getContest() {
-    m_isFetchingContests = true;
-    emit isFetchingContestsChanged(true);
-
-    auto pass = [this](auto&& r) {
-        m_isFetchingContests = false;
-        emit isFetchingContestsChanged(false);
-        return kj::mv(r);
-    };
-
-    auto contestPromise = generator.getContestRequest().send().then(kj::mv(pass), [this](auto&& exception) {
-        m_isOutOfContests = true;
-        emit isOutOfContestsChanged(true);
-        m_isFetchingContests = false;
-        emit isFetchingContestsChanged(false);
-        return kj::mv(exception);
-    });
-    return converter.convert(kj::mv(contestPromise),
-                             [](capnp::Response<ContestGenerator::GetContestResults> response) -> QVariant {
-        return {convertListedContest(response.getNextContest())};
-    });
-}
-
 QJSValue ContestGeneratorApi::getContests(int count) {
     KJ_LOG(DBG, "Requesting contests", count);
-    auto request = generator.getContestsRequest();
+    auto request = generator.getValuesRequest();
     request.setCount(count);
     m_isFetchingContests = true;
     emit isFetchingContestsChanged(true);
@@ -55,8 +33,8 @@ QJSValue ContestGeneratorApi::getContests(int count) {
         return kj::mv(e);
     };
 
-    auto contestsPromise = request.send().then([this, count](capnp::Response<ContestGenerator::GetContestsResults> r) {
-        if (!r.hasNextContests() || r.getNextContests().size() < count) {
+    auto contestsPromise = request.send().then([this, count](capnp::Response<ContestGenerator::GetValuesResults> r) {
+        if (!r.hasValues() || r.getValues().size() < count) {
             m_isOutOfContests = true;
             emit isOutOfContestsChanged(true);
         }
@@ -66,22 +44,23 @@ QJSValue ContestGeneratorApi::getContests(int count) {
     }, pass);
 
     return converter.convert(kj::mv(contestsPromise),
-                             [](capnp::Response<ContestGenerator::GetContestsResults> r) -> QVariant {
-        KJ_LOG(DBG, "Got contests", r.getNextContests().size());
+                             [](capnp::Response<ContestGenerator::GetValuesResults> r) -> QVariant {
+        KJ_LOG(DBG, "Got contests", r.getValues().size());
         QVariantList contests;
-        for (auto contest : r.getNextContests())
-            contests.append(convertListedContest(contest));
+        for (auto contestWrapper : r.getValues()) {
+            auto contest = contestWrapper.getValue();
+            auto results = new ContestResultsApi(contest.getContestResults());
+            QQmlEngine::setObjectOwnership(results, QQmlEngine::JavaScriptOwnership);
+            // TODO: Set engagement notification API (when server defines it)
+            contests.append(
+                        QVariantMap{
+                            {"contestId", QString(convertBlob(ReaderPacker(contest.getContestId()).array()).toHex())},
+                            {"votingStake", qint64(contest.getVotingStake())},
+                            {"resultsApi", QVariant::fromValue(results)}
+                        });
+        }
         return {QVariant(contests)};
     });
-}
-
-void ContestGeneratorApi::logEngagement(QString contestId, Engagement::Type engagementType) {
-    auto blob = QByteArray::fromHex(contestId.toLocal8Bit());
-    BlobMessageReader message(convertBlob(blob));
-    auto request = generator.logEngagementRequest();
-    request.setContestId(message->getRoot<::ContestId>());
-    request.setEngagementType(static_cast<ContestGenerator::EngagementType>(engagementType));
-    converter.adopt(request.send().then([](auto){}));
 }
 
 }

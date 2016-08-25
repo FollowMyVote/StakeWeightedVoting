@@ -296,7 +296,7 @@ QJSValue VotingSystem::connectToBackend(QString hostname, quint16 port, QString 
         d->completeConnection(kj::mv(transport->cargo), myAccountName);
     });
     d->socket->abort();
-    d->socket->connectToHost(hostname, port);
+    d->socket->connectToHost(hostname, port, QAbstractSocket::ReadWrite, QAbstractSocket::IPv4Protocol);
     KJ_LOG(DBG, "Attempting new connection", hostname.toStdString(), port);
 
     return returnPromise;

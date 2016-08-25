@@ -12,7 +12,7 @@ inline unsigned int resultCount(const Contest& c) {
     return c.contestantResults.size() + c.writeInResults.size();
 }
 
-::kj::Promise<void> ContestResultsServer::results(Backend::ContestResults::Server::ResultsContext context) {
+::kj::Promise<void> ContestResultsServer::results(ContestResults::Server::ResultsContext context) {
     KJ_LOG(DBG, __FUNCTION__, context.getParams());
     const auto& contest = getContest();
     auto results = context.initResults().initResults(resultCount(contest));
@@ -21,7 +21,7 @@ inline unsigned int resultCount(const Contest& c) {
     return kj::READY_NOW;
 }
 
-::kj::Promise<void> ContestResultsServer::subscribe(Backend::ContestResults::Server::SubscribeContext context) {
+::kj::Promise<void> ContestResultsServer::subscribe(ContestResults::Server::SubscribeContext context) {
     KJ_LOG(DBG, __FUNCTION__, context.getParams());
     // TODO: Consider using database::changed_objects signal instead of a secondary index and vdb.contestResultsUpdated
     notifiers.emplace_back(context.getParams().getNotifier());
@@ -51,7 +51,7 @@ const Contest& ContestResultsServer::getContest() {
     return *itr;
 }
 
-void ContestResultsServer::populateResults(capnp::List<Backend::ContestResults::TalliedOpinion>::Builder results,
+void ContestResultsServer::populateResults(capnp::List<ContestResults::TalliedOpinion>::Builder results,
                                            const Contest& contest) {
     auto resultIndex = 0u;
     for (const auto& contestantResult : contest.contestantResults) {

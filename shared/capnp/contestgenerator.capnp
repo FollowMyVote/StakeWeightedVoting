@@ -17,36 +17,49 @@
 @0xb3e6658f22b0e5d5;
 
 using ContestId = import "ids.capnp".ContestId;
+using Generator = import "generator.capnp".Generator;
+using Notifier = import "notifier.capnp".Notifier;
 
-interface ContestGenerator {
-    # An API to retrieve an 'infinite stream' of contests a few at a time. This implements a contest feed, where the
-    # client can fetch a few contests to start with, and then fetch more as needed. It also supports feedback on the
-    # returned contests, so that the client can notify the server of engagement on certain contests allowing the server
-    # to select the next contests to be returned to maximize probability of engagement.
+enum EngagementType {
+# The different types of contest engagement the server tracks
+    expanded @0;
+    # User expanded the contest to see more detail
+    voted @1;
+    # User voted on the specified contest
+    liked @2;
+    # User liked or starred or favorited or however you want to say it on the specified contest
+}
 
-    getContest @0 () -> (nextContest :ListedContest);
-    # Retrieve one more contest
-    getContests @1 (count :Int32) -> (nextContests :List(ListedContest));
-    # Retrieve count more contests; may return less than count if no more contests are available
+interface ContestResults {
+    results @0 () -> (results :List(TalliedOpinion));
+    # Call results() to get the current results
+    subscribe @1 (notifier :Notifier(List(TalliedOpinion))) -> ();
+    # Subscribe to changes to the results. Notifications will be sent until the ContestResults is destroyed.
 
-    logEngagement @2 (contestId :ContestId, engagementType :EngagementType);
-    # Notify the server of engagement with a particular contest
-
-    enum EngagementType {
-        expanded @0;
-        # User expanded the contest to see more detail
-        voted @1;
-        # User voted on the specified contest
-        liked @2;
-        # User liked or starred or favorited or however you want to say it on the specified contest
-    }
-
-    struct ListedContest {
-        contestId @0 :ContestId;
-        # Chain-specific contest ID
-        votingStake @1 :Int64;
-        # Total stake voting on the specified contest
-        tracksLiveResults @2 :Bool;
-        # Whether the backend provides live results for this contest or not
+    struct TalliedOpinion {
+        contestant :union {
+            contestant @0 :Int32;
+            writeIn @2 :Text;
+        }
+        tally @1 :Int64;
     }
 }
+
+struct ContestInfo {
+    contestId @0 :ContestId;
+    # Chain-specific contest ID; the client can use this to retrieve the full contest from the blockchain
+    votingStake @1 :Int64;
+    # Total stake voting on the specified contest
+    contestResults @2 :ContestResults;
+    # API to fetch/subscribe to results for the contest
+    engagementNotifier @3 :Notifier(Engagement);
+    # API to notify the server of engagement on the contest
+
+    struct Engagement {
+        type @0 :EngagementType;
+    }
+}
+
+using ContestGenerator = Generator(ContestInfo);
+# The API for a "contest feed." Returns information about contests, including the ID (which the client can use to look
+# up the full contest on the blockchain).

@@ -60,9 +60,6 @@ public:
     /// @brief Get the contests the current user has voted on
     Q_INVOKABLE swv::ContestGeneratorApi* getVotedContests();
 
-    /// @brief Get the results API for a specified contest
-    Q_INVOKABLE swv::ContestResultsApi* getContestResults(swv::data::Contest* contest);
-
     swv::ContestCreatorApi* contestCreator();
 
     Backend::Client backend() { return m_backend; }
