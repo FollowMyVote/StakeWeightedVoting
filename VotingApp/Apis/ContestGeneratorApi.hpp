@@ -2,17 +2,21 @@
 #define CONTESTGENERATORWRAPPER_HPP
 
 #include <contestgenerator.capnp.h>
+#include <generator.capnp.h>
+#include <contest.capnp.h>
 
 #include "PromiseConverter.hpp"
 
 #include <QQmlEnumClassHelper.h>
 
+using ContestGenerator = Generator<::ContestInfo>;
+
 namespace swv {
 
 QML_ENUM_CLASS(Engagement,
-               expanded = (int)ContestGenerator::EngagementType::EXPANDED,
-               voted = (int)ContestGenerator::EngagementType::VOTED,
-               liked = (int)ContestGenerator::EngagementType::LIKED)
+               expanded = static_cast<int>(::EngagementType::EXPANDED),
+               voted = static_cast<int>(::EngagementType::VOTED),
+               liked = static_cast<int>(::EngagementType::LIKED))
 
 class ContestGeneratorApi : public QObject {
     Q_OBJECT
@@ -25,13 +29,11 @@ class ContestGeneratorApi : public QObject {
     bool m_isFetchingContests = false;
 
 public:
+
     ContestGeneratorApi(ContestGenerator::Client generator, PromiseConverter& converter, QObject *parent = 0);
     virtual ~ContestGeneratorApi() noexcept;
 
-    Q_INVOKABLE QJSValue getContest();
     Q_INVOKABLE QJSValue getContests(int count);
-
-    Q_INVOKABLE void logEngagement(QString contestId, Engagement::Type engagementType);
 
     Q_INVOKABLE void takeOwnership(QObject* obj) {
         if (obj) obj->setParent(this);

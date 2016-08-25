@@ -32,7 +32,7 @@ void Coin::updateFields(::Coin::Reader coin) {
     update_precision(coin.getPrecision());
 }
 
-void Coin::updateFields(Backend::CoinDetails::Reader details) {
+void Coin::updateFields(CoinDetails::Reader details) {
     update_iconUrl(convertText(details.getIconUrl()));
     update_contestCount(details.getActiveContestCount());
 

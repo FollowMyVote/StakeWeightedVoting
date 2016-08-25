@@ -7,7 +7,6 @@ Project {
         name: "VotingApp"
 
         Depends { name: "shared" }
-        Depends { name: "StubChainAdaptor" }
         Depends { name: "Qt"; submodules: ["network", "qml", "charts", "websockets", "quickcontrols2"] }
         Depends { name: "libqtqmltricks-qtquickuielements" }
         Depends { name: "libqtqmltricks-qtsupermacros" }

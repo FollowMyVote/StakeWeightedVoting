@@ -37,8 +37,7 @@ namespace swv { namespace data {
  * of the Current Decision for the contest. The current decision is the @ref swv::data::DecisionWrapper which should be
  * displayed in the UI as the decision on the contest.
  */
-class Contest : public QObject
-{
+class Contest : public QObject {
 private:
     Q_OBJECT
     QML_READONLY_VAR_PROPERTY(QString, id)

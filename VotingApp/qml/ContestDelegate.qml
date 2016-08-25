@@ -15,15 +15,6 @@ Rectangle {
     property var contest
     property VotingSystem votingSystem
 
-    Component.onCompleted: {
-        if (!contest || !contest.name) {
-            for (var prop in model)
-                console.log(prop, model[prop])
-            for (var prop in model.model)
-                console.log(prop, model.model[prop])
-        }
-    }
-
     Column {
         id: contestMainColumn
         UI.ExtraAnchors.topDock: parent

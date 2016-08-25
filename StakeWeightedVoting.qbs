@@ -9,7 +9,7 @@ Project {
     references: {
         var baseList = ["shared", "GrapheneBackend"]
         if (!ignoreApp)
-            baseList = baseList.concat(["StubChainAdaptor", "VotingApp"])
+            baseList = baseList.concat(["VotingApp"])
         return baseList
     }
 }

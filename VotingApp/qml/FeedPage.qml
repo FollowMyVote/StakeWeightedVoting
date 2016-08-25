@@ -64,7 +64,6 @@ Page {
                 contest: {
                     if (model && model.contest && model.contest.name)
                         return model.contest
-                    console.log("Something's fucked up.")
                     return contestListModel.get(index)
                 }
 
@@ -117,20 +116,10 @@ Page {
             return votingSystem.chain.getContest(contestDescription.contestId).then(function(contest) {
                 // Work around a bug in Qt causing contest to be garbage collected while still in use
                 generator.takeOwnership(contest)
+                // Set votingStake and resultsApi as dynamic properties on contest
                 contest.votingStake = contestDescription.votingStake
-                contest.tracksLiveResults = contestDescription.tracksLiveResults
+                contest.resultsApi = contestDescription.resultsApi
                 return {contest: contest}
-            })
-        }
-        function fetchContest() {
-            return generator.getContest().then(loadContestFromChain).then(function(contest) {
-                contestListModel.append(contest)
-            }, function(error) {
-                outOfContests()
-                // Reject the resulting promise
-                var promise = Q.promise()
-                promise.reject()
-                return promise
             })
         }
         function repopulateContests() {
@@ -150,15 +139,18 @@ Page {
             }
 
             console.log("Populating contest list, %1/%2".arg(contentHeight).arg(height))
-            if (contentHeight < height)
-                fetchContest().then(contestListView.populateContests)
+            if (contentHeight < height*2)
+                fetchMoreContests(10).then(contestListView.populateContests)
             else
                 populated()
         }
-        function fetchMoreContests() {
-            if (!generator || generator.isFetchingContests || generator.isOutOfContests)
-                return
-            return generator.getContests(3).then(function(contestDescriptions) {
+        function fetchMoreContests(count) {
+            if (!generator || generator.isFetchingContests || generator.isOutOfContests) {
+                return Q.rejected("Generator is not ready")
+            }
+            if (!count)
+                count = 3
+            return generator.getContests(count).then(function(contestDescriptions) {
                 return Q.all(contestDescriptions.map(function(c) { return contestListView.loadContestFromChain(c) }))
             }).then(function(contests) {
                 contests.map(function(c) {
@@ -168,7 +160,7 @@ Page {
                         console.error("Got something, but it's not a contest:", JSON.stringify(c))
                 })
                 populated()
-                if (contests.length < 3)
+                if (contests.length < count)
                     outOfContests()
             })
         }
