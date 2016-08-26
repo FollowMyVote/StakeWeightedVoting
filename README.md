@@ -21,14 +21,16 @@ See [Architecture](Architecture.md) for more information on how the components i
 ### Dependencies:
 - [Cap'n Proto](https://capnproto.org) 0.5.3+
 - [Qt](https://qt.io) 5.7+ including QBS
+- [Botan](https://botan.randombit.net] 1.11.30+
 - Python 2 with PyYAML (to fetch icons)
 - [Graphene](https://github.com/followmyvote/graphene) (Optional)
- - Be sure to use develop branch!
  - If building with graphene, be sure to set the `GRAPHENE_PATH` environment variable to the path graphene is installed to
 
 These video tutorials show how to build and test this project:
  - [Graphene blockchain testnet setup](https://youtu.be/7ETrFkZ9LM0)
  - [Stake-weighted voting system setup](https://youtu.be/IkXC0-Mp3vg)
+
+Alternatively, for testing/developing only the app, an all-in-one testnet Docker image is available [here](https://hub.docker.com/r/followmyvote/docker-testnet/). This may be used simply by starting the testnet container, following the [voting system setup instructions](https://youtu.be/IkXC0-Mp3vg) from the beginning to 3:15 (you will not need the GrapheneBackend, as this is in the docker image), then building by clicking the hammer button in the lower left corner of Qt Creator. While that builds, follow the instructions from 7:35 to 10:05 to set up the wallet (the private key to paste in is `5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3`). Finally, pick up the instructions at 15:00 and follow to the end of the video.
 
 Once the dependencies are installed, building the application is as simple as running `qbs` in the top-level directory. If this doesn't work, probably qbs is not configured yet or Cap'n Proto is not in PATH. If you use the QtCreator IDE, you can skip configuring qbs manually as QtCreator does this automatically. QtCreator also allows you to customize PATH (and other environment variables) in the Projects pane.
 
