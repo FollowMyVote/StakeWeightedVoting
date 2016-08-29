@@ -14,11 +14,12 @@ void ContestResultsApi::updateResults(capnp::List<ContestResults::TalliedOpinion
         if (tally.getContestant().isContestant())
             m_contestantResults.append(0);
 
-    for (auto tally : talliedOpinions) {
-        if (tally.getContestant().isContestant())
-            m_contestantResults[tally.getContestant().getContestant()] = tally.getTally();
+    for (auto contestantTally : talliedOpinions) {
+        auto tally = QVariant::fromValue(contestantTally.getTally());
+        if (contestantTally.getContestant().isContestant())
+            m_contestantResults[contestantTally.getContestant().getContestant()] = tally;
         else
-            m_writeInResults.insert(convertText(tally.getContestant().getWriteIn()), tally.getTally());
+            m_writeInResults.insert(convertText(contestantTally.getContestant().getWriteIn()), tally);
     }
     emit resultsChanged();
 }
