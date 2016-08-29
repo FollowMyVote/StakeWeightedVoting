@@ -8,15 +8,12 @@ namespace swv {
 ContestResultsServer::ContestResultsServer(VoteDatabase& vdb, gch::operation_history_id_type contestId)
     : vdb(vdb), contestId(contestId) {}
 
-inline unsigned int resultCount(const Contest& c) {
-    return c.contestantResults.size() + c.writeInResults.size();
-}
-
 ::kj::Promise<void> ContestResultsServer::results(ContestResults::Server::ResultsContext context) {
     KJ_LOG(DBG, __FUNCTION__, context.getParams());
-    const auto& contest = getContest();
-    auto results = context.initResults().initResults(resultCount(contest));
-    populateResults(results, contest);
+    auto results = tallyResults();
+    auto resultCount = results.size();
+    populateResults(context.getResults().initResults(resultCount),
+                    kj::mv(results));
 
     return kj::READY_NOW;
 }
@@ -31,8 +28,10 @@ inline unsigned int resultCount(const Contest& c) {
                                        if (contestId == this->contestId) {
                                            for (auto& notifier : notifiers) {
                                                auto request = notifier.notifyRequest();
-                                               const auto& contest = getContest();
-                                               populateResults(request.initNotification(resultCount(contest)), contest);
+                                               auto results = tallyResults();
+                                               auto resultCount = results.size();
+                                               populateResults(request.initNotification(resultCount),
+                                                               kj::mv(results));
                                                request.send();
                                            }
                                        }
@@ -51,19 +50,14 @@ const Contest& ContestResultsServer::getContest() {
     return *itr;
 }
 
-void ContestResultsServer::populateResults(capnp::List<ContestResults::TalliedOpinion>::Builder results,
-                                           const Contest& contest) {
-    auto resultIndex = 0u;
-    for (const auto& contestantResult : contest.contestantResults) {
-        auto result = results[resultIndex++];
-        result.initContestant().setContestant(contestantResult.first);
-        result.setTally(contestantResult.second);
-    }
-    for (const auto& writeInResult : contest.writeInResults) {
-        auto result = results[resultIndex++];
-        result.initContestant().setWriteIn(writeInResult.first);
-        result.setTally(writeInResult.second);
-    }
+ContestResultsServer::Results ContestResultsServer::tallyResults() {
+    // TODO: implement me
+    Results results;
+}
+
+void ContestResultsServer::populateResults(capnp::List<ContestResults::TalliedOpinion>::Builder resultsBuilder,
+                                           Results results) {
+    // TODO: implement me
 }
 
 } // namespace swv

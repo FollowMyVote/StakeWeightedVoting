@@ -52,8 +52,11 @@ using DecisionObjectMultiIndex = bmi::multi_index_container<
                                 bmi::member<Decision, gch::account_balance_id_type, &Decision::voter>,
                                 bmi::member<Decision, gch::operation_history_id_type, &Decision::contestId>,
                                 bmi::member<Decision, gch::operation_history_id_type, &Decision::decisionId>>>,
-        bmi::ordered_non_unique<bmi::tag<ByContest>,
-                                bmi::member<Decision, gch::operation_history_id_type, &Decision::contestId>>
+        bmi::ordered_unique<bmi::tag<ByContest>,
+                            bmi::composite_key<Decision,
+                                bmi::member<Decision, gch::operation_history_id_type, &Decision::contestId>,
+                                bmi::member<Decision, gch::account_balance_id_type, &Decision::voter>,
+                                bmi::member<Decision, gch::operation_history_id_type, &Decision::decisionId>>>
     >
 >;
 using DecisionIndex = gch::generic_index<Decision, DecisionObjectMultiIndex>;

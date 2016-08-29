@@ -26,9 +26,12 @@ protected:
     // Backend::ContestResults::Server interface
     virtual ::kj::Promise<void> results(ResultsContext context) override;
     virtual ::kj::Promise<void> subscribe(SubscribeContext context) override;
+
     const Contest& getContest();
-    void populateResults(capnp::List<ContestResults::TalliedOpinion>::Builder results,
-                         const Contest& contest);
+
+    using Results = std::map<fc::static_variant<int32_t, std::string>, int64_t>;
+    Results tallyResults();
+    void populateResults(capnp::List<ContestResults::TalliedOpinion>::Builder resultsBuilder, Results results);
 };
 
 } // namespace swv

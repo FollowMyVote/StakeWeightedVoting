@@ -32,9 +32,10 @@ enum EngagementType {
 
 interface ContestResults {
     results @0 () -> (results :List(TalliedOpinion));
-    # Call results() to get the current results
+    # Get the current results. Results are returned in no particular order.
     subscribe @1 (notifier :Notifier(List(TalliedOpinion))) -> ();
     # Subscribe to changes to the results. Notifications will be sent until the ContestResults is destroyed.
+    # Results are provided in no particular order.
 
     struct TalliedOpinion {
         contestant :union {
