@@ -11,16 +11,18 @@ void ContestResultsApi::updateResults(capnp::List<ContestResults::TalliedOpinion
     // Allocate space in m_contestantResults
     m_contestantResults.clear();
     for (auto tally : talliedOpinions)
-        if (tally.getContestant().isContestant())
+        while (tally.getContestant().isContestant() &&
+               m_contestantResults.size() <= tally.getContestant().getContestant())
             m_contestantResults.append(0);
 
     for (auto contestantTally : talliedOpinions) {
-        auto tally = QVariant::fromValue(contestantTally.getTally());
+        auto tally = QVariant(static_cast<qreal>(contestantTally.getTally()));
         if (contestantTally.getContestant().isContestant())
             m_contestantResults[contestantTally.getContestant().getContestant()] = tally;
         else
             m_writeInResults.insert(convertText(contestantTally.getContestant().getWriteIn()), tally);
     }
+    qDebug() << m_contestantResults;
     emit resultsChanged();
 }
 
@@ -30,6 +32,7 @@ ContestResultsApi::ContestResultsApi(ContestResults::Client resultsApi)
     auto resultsRequest = resultsApi.resultsRequest().send();
 
     m_tasks.add(resultsRequest.then([this](capnp::Response<ContestResults::ResultsResults> results) {
+        KJ_DBG(results);
         auto talliedOpinions = results.getResults();
         updateResults(talliedOpinions);
     }));

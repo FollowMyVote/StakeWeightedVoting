@@ -15,14 +15,15 @@ Page {
     property alias contest: contestDelegate.contest
     property VotingSystem votingSystem
     property var resultMap: {
+        var contestantResults = contest.resultsApi.contestantResults
+        var precision = Math.pow(10, votingSystem.getCoin(contest.coin).precision)
         var contestantNameToTally = contest.contestants.reduce(function(results, contestant, contestantIndex) {
-            var contestantResults = contest.resultsApi.contestantResults
             var tally = (contestantResults.length > contestantIndex)? contestantResults[contestantIndex] : 0
-            results[contestant.name] = tally
+            results[contestant.name] = tally / precision
             return results
         }, {})
         for (var writeInName in contest.resultsApi.writeInResults)
-            contestantNameToTally[writeInName] = contest.resultsApi.writeInResults[writeInName]
+            contestantNameToTally[writeInName] = contest.resultsApi.writeInResults[writeInName] / precision
         return contestantNameToTally
     }
 
@@ -56,13 +57,33 @@ Page {
                 votingSystem: contestDetailPage.votingSystem
             }
             ChartView {
+                id: resultsChart
                 UI.ExtraAnchors.horizontalFill: parent
                 height: 400
+                legend.visible: false
+                ToolTip.delay: 300
 
                 BarSeries {
                     id: resultSeries
                     axisX: BarCategoryAxis { categories: Object.keys(resultMap) }
+                    axisY: ValueAxis {
+                        min: 0
+                        max: !!resultMap && !!resultMap.reduce? resultMap.reduce(function(max, tally) {
+                            return Math.max(max, tally)
+                        }, 0) : 100
+                        onRangeChanged: applyNiceNumbers()
+                    }
                     BarSet { values: Object.keys(resultMap).map(function(name) { return resultMap[name] }) }
+
+                    onHovered: {
+                        if (status) {
+                            var candidate = axisX.categories[index]
+                            var message = qsTr("%1 has received %2 votes").arg(candidate)
+                                                                          .arg(resultMap[candidate].toString())
+                            resultsChart.ToolTip.show(message, 5000)
+                        } else
+                            resultsChart.ToolTip.hide()
+                    }
                 }
             }
         }

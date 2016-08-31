@@ -7,6 +7,7 @@
 #include <purchase.capnp.h>
 
 #include <boost/signals2.hpp>
+#include <boost/variant.hpp>
 
 #include <vector>
 
@@ -29,7 +30,8 @@ protected:
 
     const Contest& getContest();
 
-    using Results = std::map<fc::static_variant<int32_t, std::string>, int64_t>;
+    using Results = std::map<boost::variant<int32_t, std::string>, gch::share_type>;
+
     Results tallyResults();
     void populateResults(capnp::List<ContestResults::TalliedOpinion>::Builder resultsBuilder, Results results);
 };

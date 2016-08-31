@@ -24,8 +24,7 @@
 
 namespace swv {
 
-class Decision : public gdb::abstract_object<Decision>
-{
+class Decision : public gdb::abstract_object<Decision> {
 public:
     const static uint8_t space_id = DecisionObjectId::space_id;
     const static uint8_t type_id = DecisionObjectId::type_id;
@@ -36,6 +35,9 @@ public:
     gch::operation_history_id_type contestId;
     std::map<int32_t, int32_t> opinions;
     std::vector<std::pair<std::string, std::string>> writeIns;
+
+    std::map<int32_t, int32_t> contestantOpinions(const Contest& contest) const;
+    std::map<std::string, int32_t> writeInOpinions(const Contest& contest) const;
 };
 
 namespace bmi = boost::multi_index;
