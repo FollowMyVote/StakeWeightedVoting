@@ -23,6 +23,7 @@ class ContestResultsServer : public ContestResults::Server {
 public:
     ContestResultsServer(VoteDatabase& vdb, gch::operation_history_id_type contestId);
 
+    int64_t totalVotingStake();
 protected:
     // Backend::ContestResults::Server interface
     virtual ::kj::Promise<void> results(ResultsContext context) override;

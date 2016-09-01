@@ -26,6 +26,8 @@ Page {
             contestantNameToTally[writeInName] = contest.resultsApi.writeInResults[writeInName] / precision
         return contestantNameToTally
     }
+    property var candidates: resultMap? Object.keys(resultMap) : []
+    property var tallies: candidates.map(function(name) { return resultMap[name] })
 
     signal loaded
     signal closed
@@ -61,19 +63,18 @@ Page {
                 UI.ExtraAnchors.horizontalFill: parent
                 height: 400
                 legend.visible: false
+                localizeNumbers: true
                 ToolTip.delay: 300
 
                 BarSeries {
                     id: resultSeries
-                    axisX: BarCategoryAxis { categories: Object.keys(resultMap) }
+                    axisX: BarCategoryAxis { categories: candidates }
                     axisY: ValueAxis {
                         min: 0
-                        max: !!resultMap && !!resultMap.reduce? resultMap.reduce(function(max, tally) {
-                            return Math.max(max, tally)
-                        }, 0) : 100
+                        max: tallies? Math.max.apply(null, tallies) : 100
                         onRangeChanged: applyNiceNumbers()
                     }
-                    BarSet { values: Object.keys(resultMap).map(function(name) { return resultMap[name] }) }
+                    BarSet { values: tallies }
 
                     onHovered: {
                         if (status) {

@@ -150,24 +150,10 @@ template<typename Index>
 template<typename Index>
 void FeedGenerator<Index>::populateContest(::ContestInfo::Builder nextContest) {
     nextContest.getContestId().setOperationId(currentContest->contestId.instance);
-    nextContest.setContestResults(kj::heap<ContestResultsServer>(vdb, currentContest->contestId));
+    auto resultsServer = kj::heap<ContestResultsServer>(vdb, currentContest->contestId);
+    nextContest.setVotingStake(resultsServer->totalVotingStake());
+    nextContest.setContestResults(kj::mv(resultsServer));
     // TODO: set engagement notification API
-
-    // Shorter type names
-    using contestantResult = typename decltype(currentContest->contestantResults)::value_type;
-    using writeInResult = typename decltype(currentContest->writeInResults)::value_type;
-    // Cliff notes: votingStake = sum(all votes for contestants) + sum(all votes for write-ins)
-    auto votingStake = std::accumulate(currentContest->contestantResults.begin(),
-                                       currentContest->contestantResults.end(),
-                                       std::pair<int32_t, int64_t>(),
-                                       [](const contestantResult& a, const contestantResult& b) -> contestantResult
-    { return {0, a.second + b.second}; }).second
-                       + std::accumulate(currentContest->writeInResults.begin(), currentContest->writeInResults.end(),
-                                         std::pair<std::string, int64_t>(),
-                                         [](const writeInResult& a, const writeInResult& b) -> writeInResult
-    { return {{}, a.second + b.second}; }).second;
-    nextContest.setVotingStake(votingStake);
-    KJ_DBG(nextContest);
 }
 
 } // namespace swv

@@ -3,10 +3,20 @@
 
 #include <kj/debug.h>
 
+#include <iostream>
+
 namespace swv {
 
 ContestResultsServer::ContestResultsServer(VoteDatabase& vdb, gch::operation_history_id_type contestId)
     : vdb(vdb), contestId(contestId) {}
+
+int64_t ContestResultsServer::totalVotingStake() {
+    auto results = tallyResults();
+    return std::accumulate(results.begin(), results.end(), gch::share_type(),
+                           [](gch::share_type sum, const auto& result) {
+        return sum + result.second;
+    }).value;
+}
 
 ::kj::Promise<void> ContestResultsServer::results(ContestResults::Server::ResultsContext context) {
     KJ_LOG(DBG, __FUNCTION__, context.getParams());
@@ -129,6 +139,9 @@ ContestResultsServer::Results ContestResultsServer::tallyResults() {
 
 #undef EXPECT
 
+    std::for_each(results.begin(), results.end(), [](const auto& result) {
+        idump((boost::get<int32_t>(result.first))(result.second));
+    });
     return results;
 }
 
@@ -136,21 +149,12 @@ void ContestResultsServer::populateResults(capnp::List<ContestResults::TalliedOp
                                            Results results) {
     unsigned index = 0;
     for (const auto& result : results) {
-        auto resultBuilder = resultsBuilder[index];
+        auto resultBuilder = resultsBuilder[index++];
         resultBuilder.setTally(result.second.value);
-
-        // Visitor that sets the resultBuilder's contestant correctly, whether the candidate is a contestant or writein
-        struct {
-            using result_type = void;
-            decltype(resultBuilder.initContestant()) r;
-            void operator()(int32_t contestantIndex) {
-                r.setContestant(contestantIndex);
-            }
-            void operator()(const std::string& writeInName) {
-                r.setWriteIn(writeInName);
-            }
-        } visitor{resultBuilder.initContestant()};
-        result.first.apply_visitor(visitor);
+        if (result.first.type() == typeid(int32_t))
+            resultBuilder.getContestant().setContestant(boost::get<int32_t>(result.first));
+        else
+            resultBuilder.getContestant().setWriteIn(boost::get<std::string>(result.first));
     }
 }
 

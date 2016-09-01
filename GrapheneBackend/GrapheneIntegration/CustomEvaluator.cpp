@@ -68,19 +68,6 @@ void processDecision(gch::database& db, const gch::account_balance_object& balan
         for (auto writeIn : decision.getWriteIns().getEntries())
             d.writeIns.emplace_back(std::make_pair(writeIn.getKey(), writeIn.getValue()));
     });
-    if (newDecision.opinions.size() > 0)
-        db.modify(contest, [&](Contest& c) {
-            auto opinion = *newDecision.opinions.begin();
-            if (opinion.first < c.contestants.size()) {
-                // Vote is for a normal candidate
-                auto& result = c.contestantResults[opinion.first];
-                result += newDecision.voter(db).balance.value;
-            } else {
-                // Vote is for a write-in candidate
-                auto& result = c.writeInResults[newDecision.writeIns[opinion.first - c.contestants.size()].first];
-                result += newDecision.voter(db).balance.value;
-            }
-        });
 
     // Register decision with coin volume history mechanism
     {
