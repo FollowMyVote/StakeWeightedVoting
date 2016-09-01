@@ -50,11 +50,6 @@ public:
     fc::time_point startTime;
     fc::time_point endTime;
 
-    /// Dynamic property -- could be extracted into a separate object to improve performance
-    std::map<int32_t, int64_t> contestantResults;
-    /// Dynamic property -- could be extracted into a separate object to improve performance
-    std::map<std::string, int64_t> writeInResults;
-
     /// Returns true if this contest is active; false otherwise.
     /// Currently this just checks if the current time is in [startTime, endTime]
     bool isActive(const gch::database& db) const;
@@ -81,7 +76,6 @@ using ContestIndex = gch::generic_index<Contest, ContestObjectMultiIndex>;
 } // namespace swv
 
 FC_REFLECT_DERIVED(swv::Contest, (graphene::db::object),
-                   (contestId)(creator)(name)(description)(tags)(contestants)(coin)(creationTime)(startTime)(endTime)
-                   (contestantResults)(writeInResults))
+                   (contestId)(creator)(name)(description)(tags)(contestants)(coin)(creationTime)(startTime)(endTime))
 
 #endif // CONTEST_HPP

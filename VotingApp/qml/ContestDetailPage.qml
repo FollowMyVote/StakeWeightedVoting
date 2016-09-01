@@ -15,16 +15,19 @@ Page {
     property alias contest: contestDelegate.contest
     property VotingSystem votingSystem
     property var resultMap: {
+        var contestantResults = contest.resultsApi.contestantResults
+        var precision = Math.pow(10, votingSystem.getCoin(contest.coin).precision)
         var contestantNameToTally = contest.contestants.reduce(function(results, contestant, contestantIndex) {
-            var contestantResults = contest.resultsApi.contestantResults
             var tally = (contestantResults.length > contestantIndex)? contestantResults[contestantIndex] : 0
-            results[contestant.name] = tally
+            results[contestant.name] = tally / precision
             return results
         }, {})
         for (var writeInName in contest.resultsApi.writeInResults)
-            contestantNameToTally[writeInName] = contest.resultsApi.writeInResults[writeInName]
+            contestantNameToTally[writeInName] = contest.resultsApi.writeInResults[writeInName] / precision
         return contestantNameToTally
     }
+    property var candidates: resultMap? Object.keys(resultMap) : []
+    property var tallies: candidates.map(function(name) { return resultMap[name] })
 
     signal loaded
     signal closed
@@ -56,13 +59,32 @@ Page {
                 votingSystem: contestDetailPage.votingSystem
             }
             ChartView {
+                id: resultsChart
                 UI.ExtraAnchors.horizontalFill: parent
                 height: 400
+                legend.visible: false
+                localizeNumbers: true
+                ToolTip.delay: 300
 
                 BarSeries {
                     id: resultSeries
-                    axisX: BarCategoryAxis { categories: Object.keys(resultMap) }
-                    BarSet { values: Object.keys(resultMap).map(function(name) { return resultMap[name] }) }
+                    axisX: BarCategoryAxis { categories: candidates }
+                    axisY: ValueAxis {
+                        min: 0
+                        max: tallies? Math.max.apply(null, tallies) : 100
+                        onRangeChanged: applyNiceNumbers()
+                    }
+                    BarSet { values: tallies }
+
+                    onHovered: {
+                        if (status) {
+                            var candidate = axisX.categories[index]
+                            var message = qsTr("%1 has received %2 votes").arg(candidate)
+                                                                          .arg(resultMap[candidate].toString())
+                            resultsChart.ToolTip.show(message, 5000)
+                        } else
+                            resultsChart.ToolTip.hide()
+                    }
                 }
             }
         }

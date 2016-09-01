@@ -7,6 +7,7 @@
 #include <purchase.capnp.h>
 
 #include <boost/signals2.hpp>
+#include <boost/variant.hpp>
 
 #include <vector>
 
@@ -22,13 +23,18 @@ class ContestResultsServer : public ContestResults::Server {
 public:
     ContestResultsServer(VoteDatabase& vdb, gch::operation_history_id_type contestId);
 
+    int64_t totalVotingStake();
 protected:
     // Backend::ContestResults::Server interface
     virtual ::kj::Promise<void> results(ResultsContext context) override;
     virtual ::kj::Promise<void> subscribe(SubscribeContext context) override;
+
     const Contest& getContest();
-    void populateResults(capnp::List<ContestResults::TalliedOpinion>::Builder results,
-                         const Contest& contest);
+
+    using Results = std::map<boost::variant<int32_t, std::string>, gch::share_type>;
+
+    Results tallyResults();
+    void populateResults(capnp::List<ContestResults::TalliedOpinion>::Builder resultsBuilder, Results results);
 };
 
 } // namespace swv
