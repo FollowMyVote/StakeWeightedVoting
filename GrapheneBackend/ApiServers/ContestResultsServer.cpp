@@ -23,9 +23,7 @@ int64_t ContestResultsServer::totalVotingStake() {
     try {
         auto results = tallyResults();
         auto resultCount = results.size();
-        populateResults(context.getResults().initResults(resultCount),
-                        kj::mv(results));
-        KJ_DBG(context.getResults());
+        populateResults(context.getResults().initResults(resultCount), kj::mv(results));
     } catch (fc::exception& e) {
         edump((e.to_detail_string()));
     }
@@ -39,23 +37,20 @@ int64_t ContestResultsServer::totalVotingStake() {
 
     try {
         notifiers.emplace_back(context.getParams().getNotifier());
-        subscriptions.emplace_back(vdb.contestResultsUpdated.connect(
-                                       [this] (gch::operation_history_id_type contestId) mutable -> void {
-                                       try {
-                                           if (contestId == this->contestId) {
-                                               for (auto& notifier : notifiers) {
-                                                   auto request = notifier.notifyRequest();
-                                                   auto results = tallyResults();
-                                                   auto resultCount = results.size();
-                                                   populateResults(request.initNotification(resultCount),
-                                                   kj::mv(results));
-                                                   request.send();
-                                               }
-                                           }
-                                       } catch (kj::Exception& e) {
-                                           KJ_LOG(ERROR, "Exception in results notifier", e);
-                                       }
-                                   }));
+        subscriptions.emplace_back(vdb.db().applied_block.connect([this] (const gch::signed_block&) mutable -> void {
+            try {
+                for (auto& notifier : notifiers) {
+                    auto request = notifier.notifyRequest();
+                    auto results = tallyResults();
+                    auto resultCount = results.size();
+                    populateResults(request.initNotification(resultCount),
+                                    kj::mv(results));
+                    request.send();
+                }
+            } catch (kj::Exception& e) {
+                KJ_LOG(ERROR, "Exception in results notifier", e);
+            }
+        }));
     } catch (fc::exception& e) {
         edump((e.to_detail_string()));
     }
@@ -139,9 +134,6 @@ ContestResultsServer::Results ContestResultsServer::tallyResults() {
 
 #undef EXPECT
 
-    std::for_each(results.begin(), results.end(), [](const auto& result) {
-        idump((boost::get<int32_t>(result.first))(result.second));
-    });
     return results;
 }
 
