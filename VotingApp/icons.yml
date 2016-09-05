@@ -6,3 +6,5 @@ icons:
   - action/delete_forever
   - action/favorite
   - action/favorite_border
+  - action/check_circle
+  - alert/warning

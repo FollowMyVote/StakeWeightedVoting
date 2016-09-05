@@ -202,7 +202,7 @@ QJSValue BlockchainWalletApi::getContest(QString contestId) {
                     auto bytes = settings.value(key, QByteArray()).toByteArray();
                     BlobMessageReader reader(convertBlob(bytes));
                     decision->updateFields(reader->getRoot<::Decision>());
-                    contest->setCurrentDecision(decision);
+                    contest->setPendingDecision(decision);
                 } catch (kj::Exception e) {
                     emit this->error(tr("Error when recovering decision: %1")
                                      .arg(QString::fromStdString(e.getDescription())));
@@ -220,7 +220,7 @@ QJSValue BlockchainWalletApi::getContest(QString contestId) {
             connect(decision, &data::Decision::opinionsChanged, persist);
             connect(decision, &data::Decision::writeInsChanged, persist);
         });
-        contest->setCurrentDecision(decision);
+        contest->setPendingDecision(decision);
         return contest;
     });
     return promiseConverter.convert(kj::mv(promise), [](data::Contest* contest) -> QVariant {

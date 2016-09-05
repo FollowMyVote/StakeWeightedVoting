@@ -33,8 +33,7 @@ namespace swv { namespace data {
 /**
  * @brief The DecisionWrapper class is a read-write wrapper for the Decision type.
  */
-class Decision : public QObject
-{
+class Decision : public QObject {
     Q_OBJECT
     QML_READONLY_VAR_PROPERTY(QString, id)
     QML_READONLY_VAR_PROPERTY(QString, contestId)
@@ -57,6 +56,10 @@ public:
     }
     bool operator!= (const Decision& other) {
         return !(*this == other);
+    }
+    /// @brief == operator for QML
+    Q_INVOKABLE bool isEqual(const Decision& other) {
+        return *this == other;
     }
 
 private:

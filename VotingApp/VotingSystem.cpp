@@ -363,7 +363,7 @@ QJSValue VotingSystem::castCurrentDecision(swv::data::Contest* contest) {
         return QJSValue::NullValue;
     }
 
-    auto decision = contest->currentDecision();
+    auto decision = contest->pendingDecision();
     if (decision == nullptr) {
         setLastError(tr("Unable to cast vote because no decision was found."));
         return QJSValue::NullValue;
@@ -455,17 +455,17 @@ void VotingSystem::cancelCurrentDecision(data::Contest* contest) {
     if (d->currentAccount == nullptr) {
         // If this ever happens, it's probably a bug. Log it, and just reset the decisions.
         KJ_LOG(ERROR, "Current account was unset while canceling a decision. This probably shouldn't be possible.");
-        contest->currentDecision()->set_opinions({});
-        contest->currentDecision()->set_writeIns({});
+        contest->pendingDecision()->set_opinions({});
+        contest->pendingDecision()->set_writeIns({});
         return;
     }
 
     auto promise = d->chain->_getDecision(currentAccount()->get_name(), contest->get_id());
     d->tasks.add(promise.then([contest](swv::data::Decision* decision) {
-        contest->setCurrentDecision(decision);
+        contest->setPendingDecision(decision);
     }, [contest](kj::Exception) {
-        contest->currentDecision()->set_opinions({});
-        contest->currentDecision()->set_writeIns({});
+        contest->pendingDecision()->set_opinions({});
+        contest->pendingDecision()->set_writeIns({});
     }));
 }
 

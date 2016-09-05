@@ -40,16 +40,16 @@ Contest::Contest(QString id, ::Contest::Reader r, QObject* parent)
 
 Contest::~Contest() { qDebug() << "Destroyed Contest" << m_name; }
 
-void Contest::setCurrentDecision(Decision* newDecision) {
-    if (newDecision == m_currentDecision)
+void Contest::setPendingDecision(Decision* newDecision) {
+    if (newDecision == m_pendingDecision)
         return;
 
-    if (m_currentDecision)
-        m_currentDecision->deleteLater();
+    if (m_pendingDecision)
+        m_pendingDecision->deleteLater();
     if (newDecision)
         newDecision->setParent(this);
-    m_currentDecision = newDecision;
-    emit currentDecisionChanged();
+    m_pendingDecision = newDecision;
+    emit pendingDecisionChanged();
 }
 
 } } // namespace swv::data

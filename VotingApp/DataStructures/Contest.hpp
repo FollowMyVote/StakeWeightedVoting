@@ -47,26 +47,26 @@ private:
     QML_READONLY_VAR_PROPERTY(QVariantList, contestants)
     QML_READONLY_VAR_PROPERTY(quint64, coin)
     QML_READONLY_VAR_PROPERTY(QDateTime, startTime)
-    Q_PROPERTY(swv::data::Decision* currentDecision READ currentDecision WRITE setCurrentDecision NOTIFY currentDecisionChanged)
+    Q_PROPERTY(swv::data::Decision* pendingDecision READ pendingDecision WRITE setPendingDecision NOTIFY pendingDecisionChanged)
 
-    Decision* m_currentDecision = nullptr;
+    Decision* m_pendingDecision = nullptr;
 
 public:
     Contest(QString id = "00", ::Contest::Reader r = {}, QObject* parent = nullptr);
     virtual ~Contest();
 
-    Decision* currentDecision() {
-        return m_currentDecision;
+    Decision* pendingDecision() {
+        return m_pendingDecision;
     }
-    const swv::data::Decision* currentDecision() const {
-        return m_currentDecision;
+    const swv::data::Decision* pendingDecision() const {
+        return m_pendingDecision;
     }
 
-    // Set the current decision. Destroys the old current decision and takes ownership of the new one.
-    void setCurrentDecision(Decision* newDecision);
+    // Set the pending decision. Destroys the old pending decision and takes ownership of the new one.
+    void setPendingDecision(Decision* newDecision);
 
 signals:
-    void currentDecisionChanged();
+    void pendingDecisionChanged();
 };
 
 } } // namespace swv::data
