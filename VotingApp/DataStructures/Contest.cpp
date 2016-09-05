@@ -40,16 +40,14 @@ Contest::Contest(QString id, ::Contest::Reader r, QObject* parent)
 
 Contest::~Contest() { qDebug() << "Destroyed Contest" << m_name; }
 
-void Contest::setCurrentDecision(Decision* newDecision)
-{
-    if (newDecision == nullptr) {
-        qDebug() << "Ignoring setCurrentDecision(nullptr)";
+void Contest::setCurrentDecision(Decision* newDecision) {
+    if (newDecision == m_currentDecision)
         return;
-    }
 
-    if (m_currentDecision && newDecision != m_currentDecision)
+    if (m_currentDecision)
         m_currentDecision->deleteLater();
-    newDecision->setParent(this);
+    if (newDecision)
+        newDecision->setParent(this);
     m_currentDecision = newDecision;
     emit currentDecisionChanged();
 }
