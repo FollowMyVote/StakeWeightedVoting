@@ -341,7 +341,7 @@ QJSValue VotingSystem::connectToBlockchainWallet() {
     return *configuredPromise;
 }
 
-QJSValue VotingSystem::castCurrentDecision(swv::data::Contest* contest) {
+QJSValue VotingSystem::castPendingDecision(swv::data::Contest* contest) {
     Q_D(VotingSystem);
 
     if (!d->backend) {
@@ -363,11 +363,13 @@ QJSValue VotingSystem::castCurrentDecision(swv::data::Contest* contest) {
         return QJSValue::NullValue;
     }
 
-    auto decision = contest->currentDecision();
+    auto decision = contest->pendingDecision();
     if (decision == nullptr) {
         setLastError(tr("Unable to cast vote because no decision was found."));
         return QJSValue::NullValue;
     }
+    auto officialDecision = std::unique_ptr<data::Decision>(new data::Decision());
+    *officialDecision = *decision;
 
     auto chain = this->chain();
     if (chain == nullptr) {
@@ -418,6 +420,9 @@ QJSValue VotingSystem::castCurrentDecision(swv::data::Contest* contest) {
         }
 
         return kj::joinPromises(promises.finish());
+    }).then([this, d, contest, officialDecision = kj::mv(officialDecision)]() mutable {
+        // Update the official decision on the contest
+        contest->setOfficialDecision(officialDecision.release());
     });
 
     return d->promiseConverter->convert(kj::mv(finishPromise));
@@ -444,7 +449,7 @@ data::Account* VotingSystem::getAccount(QString name) {
     return nullptr;
 }
 
-void VotingSystem::cancelCurrentDecision(data::Contest* contest) {
+void VotingSystem::cancelPendingDecision(data::Contest* contest) {
     Q_D(VotingSystem);
 
     if (!d->backend) {
@@ -454,18 +459,18 @@ void VotingSystem::cancelCurrentDecision(data::Contest* contest) {
     }
     if (d->currentAccount == nullptr) {
         // If this ever happens, it's probably a bug. Log it, and just reset the decisions.
-        KJ_LOG(ERROR, "Current account was unset while canceling a decision. This probably shouldn't be possible.");
-        contest->currentDecision()->set_opinions({});
-        contest->currentDecision()->set_writeIns({});
+        KJ_LOG(ERROR, "Current account was unset while canceling a decision. This shouldn't be possible.");
+        contest->pendingDecision()->set_opinions({});
+        contest->pendingDecision()->set_writeIns({});
         return;
     }
 
     auto promise = d->chain->_getDecision(currentAccount()->get_name(), contest->get_id());
-    d->tasks.add(promise.then([contest](swv::data::Decision* decision) {
-        contest->setCurrentDecision(decision);
+    d->tasks.add(promise.then([contest](std::unique_ptr<swv::data::Decision> decision) {
+        contest->setPendingDecision(decision.release());
     }, [contest](kj::Exception) {
-        contest->currentDecision()->set_opinions({});
-        contest->currentDecision()->set_writeIns({});
+        contest->pendingDecision()->set_opinions({});
+        contest->pendingDecision()->set_writeIns({});
     }));
 }
 

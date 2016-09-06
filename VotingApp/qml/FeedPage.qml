@@ -26,6 +26,7 @@ Page {
                 contentItem: UI.SvgIconLoader {
                     icon: "qrc:/icons/navigation/menu.svg"
                     color: Material.foreground
+                    size: height
                 }
                 onClicked: navigationDrawer.open()
             }
@@ -33,6 +34,7 @@ Page {
                 contentItem: UI.SvgIconLoader {
                     icon: "qrc:/icons/navigation/refresh.svg"
                     color: Material.foreground
+                    size: height
                 }
                 onClicked: contestListView.repopulateContests()
             }
@@ -154,9 +156,14 @@ Page {
                 return Q.all(contestDescriptions.map(function(c) { return contestListView.loadContestFromChain(c) }))
             }).then(function(contests) {
                 contests.map(function(c) {
-                    if (c && c.hasOwnProperty("contest") && !!c.contest)
+                    if (c && c.hasOwnProperty("contest") && !!c.contest) {
                         contestListModel.append(c)
-                    else
+                        // Look up and set the official decision on this contest
+                        var promise = votingSystem.chain.getDecision(votingSystem.currentAccount.name, c.contest.id)
+                        promise.then(function(decision) {
+                            c.contest.officialDecision = decision
+                        })
+                    } else
                         console.error("Got something, but it's not a contest:", JSON.stringify(c))
                 })
                 populated()

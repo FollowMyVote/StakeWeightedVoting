@@ -19,39 +19,93 @@
 #include "Contest.hpp"
 
 #include <QDebug>
+#include <QQmlEngine>
 
 namespace swv { namespace data {
 
-Contest::Contest(QString id, ::Contest::Reader r, QObject* parent)
+Contest::Contest(QString id, QObject* parent)
     : QObject(parent),
-      m_id(id) {
-    m_name = QString::fromStdString(r.getName());
-    m_description = QString::fromStdString(r.getDescription());
-    for (auto tag : r.getTags().getEntries())
-        m_tags.insert(QString::fromStdString(tag.getKey()), QString::fromStdString(tag.getValue()));
-    for (auto contestant : r.getContestants().getEntries())
+      m_id(id) {}
+
+Contest::~Contest() { qDebug() << "Destroyed Contest" << m_name; }
+
+void Contest::updateFields(::Contest::Reader r) {
+    update_coin(r.getCoin());
+    update_description(QString::fromStdString(r.getDescription()));
+    update_name(QString::fromStdString(r.getName()));
+    update_startTime(QDateTime::fromMSecsSinceEpoch(r.getStartTime()));
+    updateContestants(r.getContestants());
+    updateTags(r.getTags());
+}
+
+void Contest::serialize(::Contest::Builder b) {
+    b.setCoin(m_coin);
+    b.setDescription(m_description.toStdString());
+    b.setName(m_name.toStdString());
+    b.setStartTime(m_startTime.toMSecsSinceEpoch());
+    serializeContestants(b.initContestants());
+    serializeTags(b.initTags());
+}
+
+void Contest::setPendingDecision(Decision* newDecision) {
+    if (newDecision == m_pendingDecision)
+        return;
+
+    if (m_pendingDecision)
+        m_pendingDecision->deleteLater();
+    if (newDecision) {
+        newDecision->setParent(this);
+        QQmlEngine::setObjectOwnership(newDecision, QQmlEngine::CppOwnership);
+    }
+
+    m_pendingDecision = newDecision;
+    emit pendingDecisionChanged();
+}
+
+void Contest::setOfficialDecision(Decision* officialDecision) {
+    if (m_officialDecision == officialDecision)
+        return;
+
+    if (m_officialDecision)
+        m_officialDecision->deleteLater();
+    if (officialDecision) {
+        officialDecision->setParent(this);
+        QQmlEngine::setObjectOwnership(officialDecision, QQmlEngine::CppOwnership);
+    }
+
+    m_officialDecision = officialDecision;
+    emit officialDecisionChanged(officialDecision);
+}
+
+void Contest::updateContestants(::Map<capnp::Text, capnp::Text>::Reader contestantReader) {
+    for (auto contestant : contestantReader.getEntries())
         m_contestants.append(QVariantMap({{QStringLiteral("name"),
                                            QString::fromStdString(contestant.getKey())},
                                           {QStringLiteral("description"),
                                            QString::fromStdString(contestant.getValue())}}));
-    m_coin = r.getCoin();
-    m_startTime = QDateTime::fromMSecsSinceEpoch(r.getStartTime());
 }
 
-Contest::~Contest() { qDebug() << "Destroyed Contest" << m_name; }
-
-void Contest::setCurrentDecision(Decision* newDecision)
-{
-    if (newDecision == nullptr) {
-        qDebug() << "Ignoring setCurrentDecision(nullptr)";
-        return;
+void Contest::serializeContestants(::Map<capnp::Text, capnp::Text>::Builder contestantBuilder) {
+    auto contestants = contestantBuilder.initEntries(m_contestants.size());
+    for (unsigned i = 0; i < contestants.size(); ++i) {
+        contestants[i].setKey(m_contestants[i].toMap()["name"].toString().toStdString());
+        contestants[i].setValue(m_contestants[i].toMap()["description"].toString().toStdString());
     }
+}
 
-    if (m_currentDecision && newDecision != m_currentDecision)
-        m_currentDecision->deleteLater();
-    newDecision->setParent(this);
-    m_currentDecision = newDecision;
-    emit currentDecisionChanged();
+void Contest::updateTags(::Map<capnp::Text, capnp::Text>::Reader tagsReader) {
+    for (auto tag : tagsReader.getEntries())
+        m_tags.insert(QString::fromStdString(tag.getKey()), QString::fromStdString(tag.getValue()));
+}
+
+void Contest::serializeTags(::Map<capnp::Text, capnp::Text>::Builder tagsBuilder) {
+    auto tags = tagsBuilder.initEntries(m_tags.size());
+    unsigned index = 0;
+    for (const auto& tagName : m_tags.keys()) {
+        auto tagBuilder = tags[index++];
+        tagBuilder.setKey(tagName.toStdString());
+        tagBuilder.setValue(m_tags[tagName].toString().toStdString());
+    }
 }
 
 } } // namespace swv::data

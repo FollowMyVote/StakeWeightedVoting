@@ -91,6 +91,7 @@ int main(int argc, char *argv[])
     REGISTER_ENUM(ContestLimits);
     REGISTER_ENUM(ContestType);
     REGISTER_ENUM(TallyAlgorithm);
+    REGISTER_ENUM(ContestDecisionStatus);
 #undef REGISTER_ENUM
 
     // Other registrations

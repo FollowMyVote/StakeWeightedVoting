@@ -45,18 +45,21 @@ void BlockchainWalletApi::setChain(BlockchainWallet::Client chain) {
 
 QJSValue BlockchainWalletApi::getDecision(QString owner, QString contestId) {
     auto promise = _getDecision(kj::mv(owner), kj::mv(contestId));
-    return promiseConverter.convert(kj::mv(promise), [](swv::data::Decision* d) -> QVariant {
-        return {QVariant::fromValue<QObject*>(d)};
+    return promiseConverter.convert(kj::mv(promise), [](std::unique_ptr<swv::data::Decision> d) -> QVariant {
+        // Transfer object ownership to QML; C++ is done with it
+        QQmlEngine::setObjectOwnership(d.get(), QQmlEngine::JavaScriptOwnership);
+        return {QVariant::fromValue<QObject*>(d.release())};
     });
 }
 
-kj::Promise<data::Decision*> BlockchainWalletApi::_getDecision(QString owner, QString contestId) {
+kj::Promise<std::unique_ptr<data::Decision>> BlockchainWalletApi::_getDecision(QString owner, QString contestId) {
     using Reader = ::Balance::Reader;
     using DatagramResponse = capnp::Response<BlockchainWallet::GetDatagramByBalanceResults>;
 
-    // First fetch the contest object, and all balances belonging to this owner so we can search those balances for
-    // datagrams pertaining to the contest
-    auto promise = getContestImpl(contestId).then([=](capnp::Response<BlockchainWallet::GetContestByIdResults> r) {
+    // Fetch the contest object; everything this function does is continuations of that promise
+    return getContestImpl(contestId).then([=](capnp::Response<BlockchainWallet::GetContestByIdResults> r) {
+        // Fetch all balances belonging to this owner so we can search those balances for datagrams containing
+        // decisions on our contest
         return getBalancesBelongingToImpl(owner).then([contestResponse = kj::mv(r)](auto response) mutable {
             return std::make_tuple(kj::mv(contestResponse), kj::mv(response));
         });
@@ -79,7 +82,7 @@ kj::Promise<data::Decision*> BlockchainWalletApi::_getDecision(QString owner, QS
 
         // This struct is basically a lambda on steroids. I'm using it to transform the array of balances into an array
         // of datagrams by looking up relevant datagrams on each balance. Also, make sure the newest balance's decision
-        // is in the front (I don't care about preserving order) so that the newest decision will be returned.
+        // is in the front (I don't care about preserving order)
         struct {
             // Capture this
             BlockchainWalletApi* wrapper;
@@ -123,6 +126,7 @@ kj::Promise<data::Decision*> BlockchainWalletApi::_getDecision(QString owner, QS
         return kj::joinPromises(accumulator.datagramPromises.finish());
     }).then([=](kj::Array<kj::Maybe<DatagramResponse>> datagrams) {
         std::unique_ptr<swv::data::Decision> decision;
+        // Take the first valid decision as the official decision
         for (auto& datagramMaybe : datagrams) {
             KJ_IF_MAYBE(datagram, datagramMaybe) {
                 BlobMessageReader reader(datagram->getDatagram().getContent());
@@ -153,11 +157,8 @@ kj::Promise<data::Decision*> BlockchainWalletApi::_getDecision(QString owner, QS
             }
         }
 
-        QQmlEngine::setObjectOwnership(decision.get(), QQmlEngine::JavaScriptOwnership);
-        return decision.release();
+        return kj::mv(decision);
     });
-
-    return kj::mv(promise);
 }
 
 void BlockchainWalletApi::unlockWallet() {
@@ -187,7 +188,8 @@ QJSValue BlockchainWalletApi::getContest(QString contestId) {
     // The blockchain wallet API implementation will check that the contest was published by Follow My Vote for us; we
     // don't need to check it again here.
     auto promise = getContestImpl(contestId).then([this, contestId](auto results) {
-        auto contest = new data::Contest(contestId, results.getContest().getValue());
+        auto contest = new data::Contest(contestId);
+        contest->updateFields(results.getContest().getValue());
         QQmlEngine::setObjectOwnership(contest, QQmlEngine::JavaScriptOwnership);
         auto decision = new data::Decision({}, contest);
         decision->update_contestId(contestId);
@@ -202,7 +204,7 @@ QJSValue BlockchainWalletApi::getContest(QString contestId) {
                     auto bytes = settings.value(key, QByteArray()).toByteArray();
                     BlobMessageReader reader(convertBlob(bytes));
                     decision->updateFields(reader->getRoot<::Decision>());
-                    contest->setCurrentDecision(decision);
+                    contest->setPendingDecision(decision);
                 } catch (kj::Exception e) {
                     emit this->error(tr("Error when recovering decision: %1")
                                      .arg(QString::fromStdString(e.getDescription())));
@@ -220,7 +222,7 @@ QJSValue BlockchainWalletApi::getContest(QString contestId) {
             connect(decision, &data::Decision::opinionsChanged, persist);
             connect(decision, &data::Decision::writeInsChanged, persist);
         });
-        contest->setCurrentDecision(decision);
+        contest->setPendingDecision(decision);
         return contest;
     });
     return promiseConverter.convert(kj::mv(promise), [](data::Contest* contest) -> QVariant {
