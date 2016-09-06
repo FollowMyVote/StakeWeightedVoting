@@ -93,7 +93,7 @@ public:
      * @param contestId ID of the contest to retrieve
      * @return Contest having the provided ID
      *
-     * The returned contest will have its currentDecision set
+     * The returned contest will have its pendingDecision set
      */
     Q_INVOKABLE QJSValue getContest(QString contestId);
 
@@ -113,7 +113,7 @@ public:
      */
     Q_INVOKABLE QJSValue getDecision(QString owner, QString contestId);
     /// @brief Identical to getDecision, but returns a kj::Promise instead of a Promise*. For C++ use.
-    kj::Promise<data::Decision*> _getDecision(QString owner, QString contestId);
+    kj::Promise<std::unique_ptr<data::Decision>> _getDecision(QString owner, QString contestId);
 
     /**
      * @brief Request wallet be unlocked

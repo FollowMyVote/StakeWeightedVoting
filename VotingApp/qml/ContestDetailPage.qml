@@ -40,6 +40,7 @@ Page {
             contentItem: UI.SvgIconLoader {
                 icon: "qrc:/icons/navigation/arrow_back.svg"
                 color: Material.foreground
+                size: height
             }
             onClicked: contestDetailPage.closed()
         }

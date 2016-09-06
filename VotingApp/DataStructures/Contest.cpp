@@ -19,6 +19,7 @@
 #include "Contest.hpp"
 
 #include <QDebug>
+#include <QQmlEngine>
 
 namespace swv { namespace data {
 
@@ -52,8 +53,10 @@ void Contest::setPendingDecision(Decision* newDecision) {
 
     if (m_pendingDecision)
         m_pendingDecision->deleteLater();
-    if (newDecision)
+    if (newDecision) {
         newDecision->setParent(this);
+        QQmlEngine::setObjectOwnership(newDecision, QQmlEngine::CppOwnership);
+    }
 
     m_pendingDecision = newDecision;
     emit pendingDecisionChanged();
@@ -65,8 +68,10 @@ void Contest::setOfficialDecision(Decision* officialDecision) {
 
     if (m_officialDecision)
         m_officialDecision->deleteLater();
-    if (officialDecision)
+    if (officialDecision) {
         officialDecision->setParent(this);
+        QQmlEngine::setObjectOwnership(officialDecision, QQmlEngine::CppOwnership);
+    }
 
     m_officialDecision = officialDecision;
     emit officialDecisionChanged(officialDecision);

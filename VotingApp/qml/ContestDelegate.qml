@@ -10,10 +10,22 @@ import FollowMyVote.StakeWeightedVoting 1.0
 import QuickPromise 1.0
 
 Rectangle {
+    id: delegate
     height: contestMainColumn.height + 8
 
     property var contest
     property VotingSystem votingSystem
+    property int status: {
+        // Mention these, so the binding re-evaluates if they change
+        contest.pendingDecision.opinions && contest.pendingDecision.writeIns && contest.officialDecision &&
+                contest.officialDecision.opinions && contest.officialDecision.writeIns
+        console.log(JSON.stringify(contest.officialDecision))
+        if (!contest || !contest.pendingDecision || !contest.officialDecision || contest.officialDecision.isNull())
+            return contest.pendingDecision.isNull()? ContestDecisionStatus.NoDecision
+                                                   : ContestDecisionStatus.PendingDecision
+        return contest.officialDecision.isEqual(contest.pendingDecision)?
+                    ContestDecisionStatus.OfficialDecision : ContestDecisionStatus.PendingDecision
+    }
 
     Column {
         id: contestMainColumn
@@ -74,26 +86,51 @@ Rectangle {
                 model: contest.contestants
                 Button {
                     text: modelData.name + "\n" + modelData.description
-                    highlighted: !!contest.currentDecision.opinions[index.toString()]
+                    highlighted: !!contest.pendingDecision.opinions[index.toString()]
                     onClicked: {
                         var opinions = {}
                         opinions[index.toString()] = !highlighted
-                        contest.currentDecision.opinions = opinions
+                        contest.pendingDecision.opinions = opinions
                     }
                 }
             }
         }
-        Row {
-            anchors.right: parent.right
+        RowLayout {
+            width: parent.width
             spacing: 8
 
+            UI.SvgIconLoader {
+                id: icon
+                icon: delegate.status === ContestDecisionStatus.OfficialDecision? "qrc:/icons/action/check_circle.svg"
+                                                                                : "qrc:/icons/alert/warning.svg"
+                color: Material.color(delegate.status === ContestDecisionStatus.OfficialDecision? Material.Green
+                                                                                                : Material.Grey)
+                Layout.fillHeight: true
+                size: height
+            }
+            Label {
+                text: {
+                    if (delegate.status === ContestDecisionStatus.NoDecision)
+                        return "Undecided"
+                    if (delegate.status === ContestDecisionStatus.PendingDecision)
+                        return "Pending"
+                    if (delegate.status === ContestDecisionStatus.OfficialDecision)
+                        return "Official"
+                }
+                font.pixelSize: icon.height / 2
+                font.weight: Font.DemiBold
+                color: delegate.status === ContestDecisionStatus.OfficialDecision? Material.foreground
+                                                                                 : Material.color(Material.Grey)
+            }
+
+            Item { height: 1; Layout.fillWidth: true }
             Button {
-                text: qsTr("Undo Changes")
-                onClicked: votingSystem.cancelCurrentDecision(contest)
+                text: qsTr("Cancel")
+                onClicked: votingSystem.cancelPendingDecision(contest)
             }
             Button {
                 text: qsTr("Cast Vote")
-                onClicked: votingSystem.castCurrentDecision(contest)
+                onClicked: votingSystem.castPendingDecision(contest)
             }
         }
     }

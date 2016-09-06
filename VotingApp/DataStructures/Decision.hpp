@@ -47,6 +47,14 @@ public:
     void updateFields(::Decision::Reader r);
     void serialize(::Decision::Builder b);
 
+    Decision& operator= (const Decision& other) {
+        m_id = other.m_id;
+        m_contestId = other.m_contestId;
+        m_opinions = canonicalizeOpinions(other.m_opinions);
+        m_writeIns = other.m_writeIns;
+        return *this;
+    }
+
     /// @brief Compare two decisions. Decisions are equal if they apply to the same contest and have the same opinions
     /// and write-ins. The IDs are not relevant to equality.
     bool operator== (const Decision& other) {
@@ -58,8 +66,15 @@ public:
         return !(*this == other);
     }
     /// @brief == operator for QML
-    Q_INVOKABLE bool isEqual(const Decision& other) {
-        return *this == other;
+    Q_INVOKABLE bool isEqual(swv::data::Decision* other) {
+        if (other == nullptr) return false;
+        return *this == *other;
+    }
+
+    Q_INVOKABLE bool isNull() const {
+        return m_opinions.isEmpty() || std::all_of(m_opinions.begin(), m_opinions.end(), [](const QVariant& opinion) {
+            return opinion.isNull() || opinion.toInt() == 0;
+        });
     }
 
 private:

@@ -24,6 +24,7 @@
 #include <contest.capnp.h>
 
 #include <QQmlVarPropertyHelpers.h>
+#include <QQmlEnumClassHelper.h>
 
 #include <QObject>
 #include <QDateTime>
@@ -33,9 +34,16 @@ namespace swv { namespace data {
 /**
  * @brief The Contest class is a QML-friendly presentation of the data in a capnp UnsignedContest
  *
- * In addition to exposing the properties of ::UnsignedContest in a QML-accessible form, Contest implements the concept
- * of the Current Decision for the contest. The current decision is the @ref swv::data::DecisionWrapper which should be
- * displayed in the UI as the decision on the contest.
+ * In addition to exposing the properties of ::UnsignedContest in a QML-accessible form, Contest provides storage for
+ * two data::Decision objects: the Pending Decision and the Official Decision.
+ *
+ * The Pending Decision should be used by the GUI to store the user's currently selected opinions which have not yet
+ * been committed to the blockchain. This property should always be populated with a Decision object, even if that
+ * decision has no opinions, or just mirrors the Official Decision.
+ *
+ * The Official Decision should contain the decision currently on record (i.e. the newest one on the blockchain) for
+ * the current user. If the user has not broadcast any decision to the blockchain, the Official Decision should be
+ * nullptr.
  */
 class Contest : public QObject {
 private:
@@ -47,7 +55,11 @@ private:
     QML_READONLY_VAR_PROPERTY(QVariantList, contestants)
     QML_READONLY_VAR_PROPERTY(quint64, coin)
     QML_READONLY_VAR_PROPERTY(QDateTime, startTime)
+    /// The pending decision is the decision the user has input, but not yet committed to the blockchain
+    /// Note that this property is provided merely as storage and is not used or updated by Contest.
     Q_PROPERTY(swv::data::Decision* pendingDecision READ pendingDecision WRITE setPendingDecision NOTIFY pendingDecisionChanged)
+    /// The official decision is the on-chain decision of record
+    /// Note that this property is provided merely as storage and is not used or updated by Contest.
     Q_PROPERTY(swv::data::Decision* officialDecision READ officialDecision WRITE setOfficialDecision NOTIFY officialDecisionChanged)
 
     Decision* m_pendingDecision = nullptr;
@@ -84,6 +96,10 @@ protected:
     void serializeTags(::Map<capnp::Text, capnp::Text>::Builder tagsBuilder);
 };
 
-} } // namespace swv::data
+} // namespace swv::data
+
+QML_ENUM_CLASS(ContestDecisionStatus, NoDecision, PendingDecision, OfficialDecision)
+
+} // namespace swv
 
 #endif // CONTEST_HPP

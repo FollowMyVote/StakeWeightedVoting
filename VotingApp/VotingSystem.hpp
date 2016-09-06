@@ -115,12 +115,12 @@ public:
      * @brief Cast the current decision for the given contest
      * @param contest The contest to cast a decision for
      *
-     * This method will publish the currentDecision on the specified contest to the chain for the current user. If the
+     * This method will publish the pendingDecision on the specified contest to the chain for the current user. If the
      * decision cannot be cast, an error is emitted.
      *
-     * See also @ref cancelCurrentDecision
+     * See also @ref cancelPendingDecision
      */
-    Q_INVOKABLE QJSValue castCurrentDecision(swv::data::Contest* contest);
+    Q_INVOKABLE QJSValue castPendingDecision(swv::data::Contest* contest);
 
     Q_INVOKABLE swv::data::Coin* getCoin(quint64 id);
     Q_INVOKABLE swv::data::Coin* getCoin(QString name);
@@ -159,7 +159,7 @@ public slots:
      * This method will set the currentDeicison on the provided contest to the decision currently on chain for that
      * contest for the current user.
      */
-    void cancelCurrentDecision(swv::data::Contest* contest);
+    void cancelPendingDecision(swv::data::Contest* contest);
 
     void setCurrentAccount(QString accountName) { setCurrentAccount(getAccount(accountName)); }
     void setCurrentAccount(swv::data::Account* account);
