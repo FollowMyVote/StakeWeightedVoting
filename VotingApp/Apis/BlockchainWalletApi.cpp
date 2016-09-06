@@ -187,7 +187,8 @@ QJSValue BlockchainWalletApi::getContest(QString contestId) {
     // The blockchain wallet API implementation will check that the contest was published by Follow My Vote for us; we
     // don't need to check it again here.
     auto promise = getContestImpl(contestId).then([this, contestId](auto results) {
-        auto contest = new data::Contest(contestId, results.getContest().getValue());
+        auto contest = new data::Contest(contestId);
+        contest->updateFields(results.getContest().getValue());
         QQmlEngine::setObjectOwnership(contest, QQmlEngine::JavaScriptOwnership);
         auto decision = new data::Decision({}, contest);
         decision->update_contestId(contestId);

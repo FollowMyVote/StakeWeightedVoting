@@ -48,25 +48,40 @@ private:
     QML_READONLY_VAR_PROPERTY(quint64, coin)
     QML_READONLY_VAR_PROPERTY(QDateTime, startTime)
     Q_PROPERTY(swv::data::Decision* pendingDecision READ pendingDecision WRITE setPendingDecision NOTIFY pendingDecisionChanged)
+    Q_PROPERTY(swv::data::Decision* officialDecision READ officialDecision WRITE setOfficialDecision NOTIFY officialDecisionChanged)
 
     Decision* m_pendingDecision = nullptr;
+    Decision* m_officialDecision = nullptr;
 
 public:
-    Contest(QString id = "00", ::Contest::Reader r = {}, QObject* parent = nullptr);
+    Contest(QString id = "00", QObject* parent = nullptr);
     virtual ~Contest();
 
-    Decision* pendingDecision() {
+    void updateFields(::Contest::Reader r);
+    void serialize(::Contest::Builder b);
+
+    Decision* pendingDecision() const {
         return m_pendingDecision;
     }
-    const swv::data::Decision* pendingDecision() const {
-        return m_pendingDecision;
+    Decision* officialDecision() const {
+        return m_officialDecision;
     }
 
-    // Set the pending decision. Destroys the old pending decision and takes ownership of the new one.
+public slots:
+    /// @brief Set the pending decision. Destroys the old pending decision and takes ownership of the new one.
     void setPendingDecision(Decision* newDecision);
+    /// @brief Set the official decision. Destroys the old official decision and takes ownership of the new one.
+    void setOfficialDecision(Decision* officialDecision);
 
 signals:
     void pendingDecisionChanged();
+    void officialDecisionChanged(Decision* officialDecision);
+
+protected:
+    void updateContestants(::Map<capnp::Text, capnp::Text>::Reader contestantReader);
+    void serializeContestants(::Map<capnp::Text, capnp::Text>::Builder contestantBuilder);
+    void updateTags(::Map<capnp::Text, capnp::Text>::Reader tagsReader);
+    void serializeTags(::Map<capnp::Text, capnp::Text>::Builder tagsBuilder);
 };
 
 } } // namespace swv::data
