@@ -42,17 +42,16 @@ class VotingSystemPrivate;
  * @brief The VotingSystem class is the high-level interface to the voting system.
  *
  * This class is intended to be created and used from QML directly. It manages the chain adaptor and communication with
- * the backend server. It also manages pending decisions and provides services to the QML that require that C++ touch,
- * such as submitting decisions for broadcast.
+ * the backend server.
  *
  * Before the voting system can be used, it must have a connection to the backend server.
  *
  * The voting system operates within the context of an active or current account. The system reads and writes all chain
  * state relative to this account. In particular, when casting decisions, the current account is the one which the
- * decision will be cast on behalf of. The current account is configured via the currentAccout property.
+ * decision will be cast on behalf of. The current account is configured via the currentAccouNt property.
  *
- * The voting system implements the concept of the Current Decision for each contest. The current decision is the
- * decision which should be displayed in the UI as the decision on a given contest. The current decision may be in one
+ * The voting system implements the concept of the Pending Decision for each contest. The Pending Decision is the
+ * decision which should be displayed in the UI as the decision on a given contest. The Pending Decision may be in one
  * of several states (see @ref Decision::State):
  *  - Pending means the current decision is not cast. This is also the state of an empty (uninitialized) decision
  *  - Cast means the decision has been cast and is stored on the chain, and has not been changed since
