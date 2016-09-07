@@ -44,11 +44,6 @@
 
 namespace swv {
 
-const static QString PENDING_DECISIONS = QStringLiteral("pendingDecisions");
-const static QString PENDING_DECISION = QStringLiteral("pendingDecisions/%1");
-const static QString OPINIONS = QStringLiteral("pendingDecisions/%1/opinions");
-const static QString WRITEINS = QStringLiteral("pendingDecisions/%1/writeins");
-
 class VotingSystemPrivate : private kj::TaskSet::ErrorHandler {
     Q_DISABLE_COPY(VotingSystemPrivate)
     Q_DECLARE_PUBLIC(VotingSystem)
