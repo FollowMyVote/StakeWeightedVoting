@@ -102,6 +102,12 @@ Page {
 
         property var generator
 
+        Connections {
+            target: votingSystem
+            enabled: !!votingSystem && !!generator && !!votingSystem.currentAccount
+            onCurrentAccountChanged: contestListView.repopulateContests()
+        }
+
         property bool watchYChanges: true
         onContentYChanged: {
             if (!watchYChanges || !generator || generator.isFetchingContests || generator.isOutOfContests)
@@ -115,7 +121,8 @@ Page {
 
         function loadContestFromChain(contestDescription) {
             console.log("Fetching data for", JSON.stringify(contestDescription))
-            return votingSystem.chain.getContest(contestDescription.contestId).then(function(contest) {
+            return votingSystem.chain.getContest(contestDescription.contestId,
+                                                 votingSystem.currentAccount.name).then(function(contest) {
                 // Work around a bug in Qt causing contest to be garbage collected while still in use
                 generator.takeOwnership(contest)
                 // Set votingStake and resultsApi as dynamic properties on contest

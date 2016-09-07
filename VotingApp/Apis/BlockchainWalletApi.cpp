@@ -28,7 +28,7 @@
 
 namespace swv {
 
-const static QString PERSISTENT_DECISION_KEY = QStringLiteral("persistedDecisions/%1");
+const static QString PERSISTENT_DECISION_KEY = QStringLiteral("persistedDecisions/%1/%2");
 
 BlockchainWalletApi::BlockchainWalletApi(PromiseConverter& promiseConverter, QObject *parent)
     : QObject(parent),
@@ -184,21 +184,19 @@ QJSValue BlockchainWalletApi::getBalancesBelongingTo(QString owner) {
     });
 }
 
-QJSValue BlockchainWalletApi::getContest(QString contestId) {
+QJSValue BlockchainWalletApi::getContest(QString contestId, QString pendingDecisionAccount) {
     // The blockchain wallet API implementation will check that the contest was published by Follow My Vote for us; we
     // don't need to check it again here.
-    auto promise = getContestImpl(contestId).then([this, contestId](auto results) {
+    auto promise = getContestImpl(contestId).then([this, contestId, pendingDecisionAccount](auto results) {
         auto contest = new data::Contest(contestId);
         contest->updateFields(results.getContest().getValue());
         QQmlEngine::setObjectOwnership(contest, QQmlEngine::JavaScriptOwnership);
         auto decision = new data::Decision({}, contest);
         decision->update_contestId(contestId);
 
-        // Defer persistence concerns until later; the contest doesn't know about the QML engine yet so we can't
-        // manipulate the QJSValue properties
-        QTimer::singleShot(0, [this, contest, decision]() mutable {
+        if (!pendingDecisionAccount.isEmpty()) {
             QSettings settings;
-            auto key = PERSISTENT_DECISION_KEY.arg(contest->get_id());
+            auto key = PERSISTENT_DECISION_KEY.arg(pendingDecisionAccount).arg(contest->get_id());
             if (settings.contains(key)) {
                 try {
                     auto bytes = settings.value(key, QByteArray()).toByteArray();
@@ -221,7 +219,8 @@ QJSValue BlockchainWalletApi::getContest(QString contestId) {
             };
             connect(decision, &data::Decision::opinionsChanged, persist);
             connect(decision, &data::Decision::writeInsChanged, persist);
-        });
+        }
+
         contest->setPendingDecision(decision);
         return contest;
     });
