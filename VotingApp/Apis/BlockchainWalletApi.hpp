@@ -91,11 +91,13 @@ public:
     /**
      * @brief Get the contest with the specified ID
      * @param contestId ID of the contest to retrieve
+     * @param pendingDecisionAccount Name of the account to persist/restore pending decisions for
      * @return Contest having the provided ID
      *
-     * The returned contest will have its pendingDecision set
+     * The returned contest will have its pendingDecision set. If pendingDecisionAccount is set, the decision will be
+     * automatically persisted for that account. Otherwise, the decision will not be persisted.
      */
-    Q_INVOKABLE QJSValue getContest(QString contestId);
+    Q_INVOKABLE QJSValue getContest(QString contestId, QString pendingDecisionAccount = QString::null);
 
     /**
      * @brief Get the on-chain decision for the specified owner and contest
