@@ -21,7 +21,7 @@ See [Architecture](Architecture.md) for more information on how the components i
 ### Dependencies:
 - [Cap'n Proto](https://capnproto.org) 0.5.3+
 - [Qt](https://qt.io) 5.7+ including QBS
-- [Botan](https://botan.randombit.net] 1.11.30+
+- [Botan](https://botan.randombit.net) 1.11.30+
 - Python 2 with PyYAML (to fetch icons)
 - [Graphene](https://github.com/followmyvote/graphene) (Optional)
  - If building with graphene, be sure to set the `GRAPHENE_PATH` environment variable to the path graphene is installed to
