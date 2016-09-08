@@ -16,6 +16,9 @@ ApplicationWindow {
         id: connectionProgressPopup
         visible: true
     }
+    WalletConfirmationPopup {
+        id: walletConfirmationPopup
+    }
 
     NavigationDrawer {
         id: _navigationDrawer

@@ -164,19 +164,20 @@ Page {
 
             acceptButton.onClicked: {
                 var total = priceSelector.model[priceSelector.currentIndex]
-                var payPromise = votingSystem.chain.transfer(votingSystem.currentAccount.name, total.payAddress,
-                                                             total.amount, total.coinId, total.memo)
+                var payPromise = walletConfirmationPopup.getAuthorization(function() {
+                    return votingSystem.chain.transfer(votingSystem.currentAccount.name, total.payAddress,
+                                                       total.amount, total.coinId, total.memo)
+                })
                 payPromise.then(function(trxid) {
                     createContestPage.paymentSent()
+                    waiting = true
                     checkoutDialog.paymentSent = true
                     purchaseApi.paymentSent(priceSelector.currentIndex)
                 }, function(error) {
-                    waiting = false
                     //TODO: Show error?
                     console.log("Payment failed:", JSON.stringify(error))
                     paymentCanceled()
                 })
-                waiting = true
             }
             cancelButton.onClicked: {
                 checkoutCanceled()

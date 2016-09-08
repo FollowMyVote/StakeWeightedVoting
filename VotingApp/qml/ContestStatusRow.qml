@@ -52,16 +52,26 @@ Item {
             Button {
                 id: castButton
                 text: qsTr("Cast Vote")
-                onClicked: votingSystem.castPendingDecision(contest)
+                onClicked: walletConfirmationPopup.getAuthorization(function() {
+                    return votingSystem.castPendingDecision(contest)
+                })
             }
             Button {
                 id: revokeButton
                 text: qsTr("Revoke Vote")
-                onClicked: {
+                onClicked: walletConfirmationPopup.getAuthorization(function() {
+                    // Stringify is necessary because javascript can't deep-copy (epic fail)
+                    var backup = JSON.stringify({opinions: contest.pendingDecision.opinions,
+                                                 writeIns: contest.pendingDecision.writeIns})
                     contest.pendingDecision.opinions = {}
                     contest.pendingDecision.writeIns = []
-                    votingSystem.castPendingDecision(contest)
-                }
+                    return votingSystem.castPendingDecision(contest).then(null, function() {
+                        // Only bother to parse it if we know we'll need it
+                        backup = JSON.parse(backup)
+                        contest.pendingDecision.opinions = backup.opinions
+                        contest.pendingDecision.writeIns = backup.writeIns
+                    })
+                })
             }
         }
     }

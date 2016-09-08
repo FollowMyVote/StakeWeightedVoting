@@ -42,6 +42,7 @@ Project {
             "qml/FeedPage.qml",
             "qml/NavigationDrawer.qml",
             "qml/ShadowedPopup.qml",
+            "qml/WalletConfirmationPopup.qml",
             "qml/main.qml",
             "DataStructures/*.cpp",
             "DataStructures/*.hpp",

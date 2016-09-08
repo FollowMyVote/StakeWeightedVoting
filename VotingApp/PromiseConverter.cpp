@@ -26,8 +26,7 @@ PromiseConverter::PromiseConverter(kj::TaskSet& tasks, QObject* promiseParent, Q
       tasks(tasks)
 {}
 
-QJSValue PromiseConverter::convert(kj::Promise<void> promise)
-{
+QJSValue PromiseConverter::convert(kj::Promise<void> promise) {
     auto convertedPromise = kj::heap<QPPromise>(promiseParent);
 
     auto responsePromise = promise.then(
