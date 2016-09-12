@@ -19,6 +19,7 @@
 using ContestId = import "ids.capnp".ContestId;
 using Generator = import "generator.capnp".Generator;
 using Notifier = import "notifier.capnp".Notifier;
+using DecisionGenerator = import "decisiongenerator.capnp".DecisionGenerator;
 
 enum EngagementType {
 # The different types of contest engagement the server tracks
@@ -36,6 +37,9 @@ interface ContestResults {
     subscribe @1 (notifier :Notifier(List(TalliedOpinion))) -> ();
     # Subscribe to changes to the results. Notifications will be sent until the ContestResults is destroyed.
     # Results are provided in no particular order.
+
+    decisions @2 () -> (decisionGenerator :DecisionGenerator);
+    # Get a generator for the decisions that comprise the results reported by this ContestResults
 
     struct TalliedOpinion {
         contestant :union {
