@@ -1,5 +1,24 @@
+/*
+ * Copyright 2015 Follow My Vote, Inc.
+ * This file is part of The Follow My Vote Stake-Weighted Voting Application ("SWV").
+ *
+ * SWV is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * SWV is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with SWV.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "ContestResultsApi.hpp"
 #include "Converters.hpp"
+#include "DecisionGeneratorApi.hpp"
 #include "DataStructures/Contest.hpp"
 
 #include <QBarSet>
@@ -25,22 +44,30 @@ void ContestResultsApi::updateResults(capnp::List<ContestResults::TalliedOpinion
     emit resultsChanged();
 }
 
-ContestResultsApi::ContestResultsApi(ContestResults::Client resultsApi)
+ContestResultsApi::ContestResultsApi(ContestResults::Client resultsApi, PromiseConverter& converter)
     : resultsApi(resultsApi),
-      m_tasks(errorHandler) {
+      converter(converter) {
     auto resultsRequest = resultsApi.resultsRequest().send();
 
-    m_tasks.add(resultsRequest.then([this](capnp::Response<ContestResults::ResultsResults> results) {
+    converter.adopt(resultsRequest.then([this](capnp::Response<ContestResults::ResultsResults> results) {
         auto talliedOpinions = results.getResults();
         updateResults(talliedOpinions);
     }));
 
     auto subscribeRequest = resultsApi.subscribeRequest();
     subscribeRequest.setNotifier(kj::heap<ResultsNotifier>(*this));
-    m_tasks.add(subscribeRequest.send().then([](auto){}));
+    converter.adopt(subscribeRequest.send().then([](auto){}));
 }
 
 ContestResultsApi::~ContestResultsApi() noexcept {}
+
+DecisionGeneratorApi* ContestResultsApi::decisionGenerator() {
+    if (m_decisionGenerator.get() == nullptr)
+        m_decisionGenerator =
+                kj::heap<DecisionGeneratorApi>(resultsApi.decisionsRequest().send().getDecisionGenerator(), converter);
+
+    return m_decisionGenerator;
+}
 
 ContestResultsApi::ResultsNotifier::ResultsNotifier(ContestResultsApi& resultsApi)
     : resultsApi(resultsApi) {}
@@ -49,11 +76,6 @@ ContestResultsApi::ResultsNotifier::ResultsNotifier(ContestResultsApi& resultsAp
     auto talliedOpinions = context.getParams().getNotification();
     resultsApi.updateResults(talliedOpinions);
     return kj::READY_NOW;
-}
-
-void ContestResultsApi::ErrorHandler::taskFailed(kj::Exception&& exception) {
-    // TODO: Do something smart in the UI
-    KJ_LOG(ERROR, "Exception from RPC", exception);
 }
 
 } // namespace swv
