@@ -22,7 +22,8 @@
 
 namespace swv {
 
-DecisionGeneratorApi::DecisionGeneratorApi(DecisionGenerator::Client generator, PromiseConverter& converter, QObject *parent)
+DecisionGeneratorApi::DecisionGeneratorApi(DecisionGenerator::Client generator, PromiseConverter& converter,
+                                           QObject *parent)
     : QObject(parent),
       generator(generator),
       converter(converter) {}

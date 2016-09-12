@@ -118,6 +118,17 @@ public:
     kj::Promise<std::unique_ptr<data::Decision>> _getDecision(QString owner, QString contestId);
 
     /**
+     * @brief Get a DecisionRecord for the specified decision ID
+     * @param decisionId ID of the decision to fetch a record for
+     * @return Promise for the decision record
+     *
+     * Unlike @ref getDecision above, this call does not look up the active decision for a particular account on a
+     * specified contest. Instead, it takes the decision's ID and fetches the DecisionRecord, which contains the
+     * decision itself and some other information about it.
+     */
+    Q_INVOKABLE QJSValue getDecisionRecord(QString decisionId);
+
+    /**
      * @brief Request wallet be unlocked
      *
      * This will prompt the user to unlock their wallet, if it is locked. If already unlocked, it will have no effect.

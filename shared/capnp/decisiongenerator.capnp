@@ -17,7 +17,6 @@
 @0x912c38576b075e21;
 
 using DecisionId = import "ids.capnp".DecisionId;
-using Decision = import "decision.capnp".Decision;
 using Generator = import "generator.capnp".Generator;
 
 struct DecisionInfo {
@@ -28,19 +27,6 @@ struct DecisionInfo {
     counted @1 :Bool;
     # Whether the decision was counted or not. This would be false on a decision that was later replaced by its owner,
     # for example. For every {voter, contest} pair, there may be several decisions, but exactly one should be counted.
-}
-
-struct DecisionRecord {
-# This is the information about a decision that the client may retrieve from the blockchain given a DecisionId
-
-    id @0 :DecisionId;
-    # ID of the decision
-    voter @1 :Text;
-    # Human-readable ID of the voter. This may be an account name, public key, address, etc.
-    decision @2 :Decision;
-    # The actual content of the decision
-    weight @3 :Int64;
-    # The weight of the decision at the time the DecisionRecord was retrieved
 }
 
 using DecisionGenerator = Generator(DecisionInfo);

@@ -161,6 +161,10 @@ kj::Promise<std::unique_ptr<data::Decision>> BlockchainWalletApi::_getDecision(Q
     });
 }
 
+QJSValue BlockchainWalletApi::getDecisionRecord(QString decisionId) {
+    // TODO: Implement DecisionRecord wrapper, then write this call
+}
+
 void BlockchainWalletApi::unlockWallet() {
     promiseConverter.adopt(m_chain.unlockWalletRequest().send().then([](auto){}));
 }
