@@ -20,7 +20,7 @@ interface Generator(Value) {
     # An API to retrieve an 'infinite stream' of values a few at a time. The client can retrieve values as it needs
     # them, rather than fetching a static list all at once. A Value may be any type, including an interface.
 
-    getValues @0 (count :Int32) -> (values :List(Wrapper));
+    getValues @0 (count :UInt8) -> (values :List(Wrapper));
     # Retrieve count more values; may return less than count values if no more values are available
 
     struct Wrapper {

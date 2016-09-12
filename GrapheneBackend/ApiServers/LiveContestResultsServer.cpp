@@ -1,4 +1,5 @@
-#include "ContestResultsServer.hpp"
+#include "LiveContestResultsServer.hpp"
+#include "SnapshotDecisionGenerator.hpp"
 #include "VoteDatabase.hpp"
 
 #include <kj/debug.h>
@@ -7,10 +8,10 @@
 
 namespace swv {
 
-ContestResultsServer::ContestResultsServer(VoteDatabase& vdb, gch::operation_history_id_type contestId)
+LiveContestResultsServer::LiveContestResultsServer(VoteDatabase& vdb, gch::operation_history_id_type contestId)
     : vdb(vdb), contestId(contestId) {}
 
-int64_t ContestResultsServer::totalVotingStake() {
+int64_t LiveContestResultsServer::totalVotingStake() {
     auto results = tallyResults();
     return std::accumulate(results.begin(), results.end(), gch::share_type(),
                            [](gch::share_type sum, const auto& result) {
@@ -18,7 +19,7 @@ int64_t ContestResultsServer::totalVotingStake() {
     }).value;
 }
 
-::kj::Promise<void> ContestResultsServer::results(ContestResults::Server::ResultsContext context) {
+::kj::Promise<void> LiveContestResultsServer::results(ContestResults::Server::ResultsContext context) {
     KJ_LOG(DBG, __FUNCTION__, context.getParams());
     try {
         auto results = tallyResults();
@@ -31,10 +32,8 @@ int64_t ContestResultsServer::totalVotingStake() {
     return kj::READY_NOW;
 }
 
-::kj::Promise<void> ContestResultsServer::subscribe(ContestResults::Server::SubscribeContext context) {
+::kj::Promise<void> LiveContestResultsServer::subscribe(ContestResults::Server::SubscribeContext context) {
     KJ_LOG(DBG, __FUNCTION__, context.getParams());
-    // TODO: Consider using database::changed_objects signal instead of a secondary index and vdb.contestResultsUpdated
-
     try {
         notifiers.emplace_back(context.getParams().getNotifier());
         subscriptions.emplace_back(vdb.db().applied_block.connect([this] (const gch::signed_block&) mutable -> void {
@@ -58,14 +57,20 @@ int64_t ContestResultsServer::totalVotingStake() {
     return kj::READY_NOW;
 }
 
-const Contest& ContestResultsServer::getContest() {
+::kj::Promise<void> LiveContestResultsServer::decisions(ContestResults::Server::DecisionsContext context) {
+    KJ_LOG(DBG, __FUNCTION__, context.getParams());
+    context.getResults().setDecisionGenerator(kj::heap<SnapshotDecisionGenerator>(contestId, vdb));
+    return kj::READY_NOW;
+}
+
+const Contest& LiveContestResultsServer::getContest() {
     auto& index = vdb.contestIndex().indices().get<ById>();
     auto itr = index.find(contestId);
     KJ_REQUIRE(itr != index.end(), "No contest with the specified ID was found.");
     return *itr;
 }
 
-ContestResultsServer::Results ContestResultsServer::tallyResults() {
+LiveContestResultsServer::Results LiveContestResultsServer::tallyResults() {
     Results results;
 
     /*
@@ -137,7 +142,7 @@ ContestResultsServer::Results ContestResultsServer::tallyResults() {
     return results;
 }
 
-void ContestResultsServer::populateResults(capnp::List<ContestResults::TalliedOpinion>::Builder resultsBuilder,
+void LiveContestResultsServer::populateResults(capnp::List<ContestResults::TalliedOpinion>::Builder resultsBuilder,
                                            Results results) {
     unsigned index = 0;
     for (const auto& result : results) {

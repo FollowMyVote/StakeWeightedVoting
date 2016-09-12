@@ -14,20 +14,22 @@
 namespace swv {
 class VoteDatabase;
 
-class ContestResultsServer : public ContestResults::Server {
+class LiveContestResultsServer : public ContestResults::Server {
     VoteDatabase& vdb;
     gch::operation_history_id_type contestId;
     std::vector<boost::signals2::scoped_connection> subscriptions;
     std::vector<::Notifier<::capnp::List<::ContestResults::TalliedOpinion>>::Client> notifiers;
 
 public:
-    ContestResultsServer(VoteDatabase& vdb, gch::operation_history_id_type contestId);
+    LiveContestResultsServer(VoteDatabase& vdb, gch::operation_history_id_type contestId);
+    virtual ~LiveContestResultsServer(){}
 
     int64_t totalVotingStake();
 protected:
     // Backend::ContestResults::Server interface
     virtual ::kj::Promise<void> results(ResultsContext context) override;
     virtual ::kj::Promise<void> subscribe(SubscribeContext context) override;
+    virtual ::kj::Promise<void> decisions(DecisionsContext context) override;
 
     const Contest& getContest();
 
