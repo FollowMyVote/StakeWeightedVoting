@@ -68,14 +68,6 @@ public:
     BlockchainWallet::Client chain() { return m_chain; }
 
     /**
-     * @brief Get a balance by ID
-     * @param id ID of the balance to retrieve
-     * @return Balance having the provided ID
-     *
-     * The wrapper maintains ownership of the returned object.
-     */
-    Q_INVOKABLE QJSValue getBalance(QByteArray id);
-    /**
      * @brief Get all balances belonging to the specified owner
      * @param owner Unambiguous ID of the owner; exact semantics are chain-specific
      * @return All balances known to belong to the specified owner

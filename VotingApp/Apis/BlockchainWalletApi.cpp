@@ -169,15 +169,6 @@ void BlockchainWalletApi::unlockWallet() {
     promiseConverter.adopt(m_chain.unlockWalletRequest().send().then([](auto){}));
 }
 
-QJSValue BlockchainWalletApi::getBalance(QByteArray id) {
-    auto request = m_chain.getBalanceRequest();
-    BlobMessageReader reader(convertBlob(id));
-    request.setId(reader->getRoot<::BalanceId>());
-    return promiseConverter.convert(request.send(), [](auto response) -> QVariant {
-        return {QVariant::fromValue<QObject*>(new data::Balance(response.getBalance()))};
-    });
-}
-
 QJSValue BlockchainWalletApi::getBalancesBelongingTo(QString owner) {
     return promiseConverter.convert(getBalancesBelongingToImpl(owner), [](auto response) -> QVariant {
         auto balances = response.getBalances();
