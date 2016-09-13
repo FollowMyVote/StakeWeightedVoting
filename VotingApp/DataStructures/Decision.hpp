@@ -31,11 +31,10 @@
 namespace swv { namespace data {
 
 /**
- * @brief The DecisionWrapper class is a read-write wrapper for the Decision type.
+ * @brief The Decision class is a read-write wrapper for the Decision type.
  */
 class Decision : public QObject {
     Q_OBJECT
-    QML_READONLY_VAR_PROPERTY(QString, id)
     QML_READONLY_VAR_PROPERTY(QString, contestId)
     QML_WRITABLE_VAR_PROPERTY(QVariantMap, opinions)
     QML_WRITABLE_VAR_PROPERTY(QVariantList, writeIns)
@@ -48,7 +47,6 @@ public:
     void serialize(::Decision::Builder b);
 
     Decision& operator= (const Decision& other) {
-        m_id = other.m_id;
         m_contestId = other.m_contestId;
         m_opinions = canonicalizeOpinions(other.m_opinions);
         m_writeIns = other.m_writeIns;
