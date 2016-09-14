@@ -333,7 +333,13 @@ kj::Promise<void> BWB::BlockchainWalletApiImpl::getContestById(GetContestByIdCon
         result.setDecision(contestMessage->getRoot<::Decision>());
 
         // Fire off calls to fetch the other necessary info, storing promises for when that's done
-        auto promiseArray = kj::heapArrayBuilder<kj::Promise<void>>(2);
+        auto promiseArray = kj::heapArrayBuilder<kj::Promise<void>>(3);
+        promiseArray.add(beginCall("blockchain.getBlockByHeight", QJsonArray() << response.toObject()["block_num"])
+                .then([result](QJsonValue block) mutable {
+            auto timestamp = static_cast<uint64_t>(QDateTime::fromString(block.toObject()["timestamp"].toString(),
+                                                   Qt::ISODate).toMSecsSinceEpoch());
+            result.setTimestamp(timestamp);
+        }));
         promiseArray.add(beginCall("blockchain.getObjectById", QJsonArray() << decodedOp["payer"])
                 .then([result](QJsonValue response) mutable {
             result.setVoter(response.toObject()["name"].toString().toStdString());

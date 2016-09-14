@@ -6,6 +6,7 @@
 #include <QQmlVarPropertyHelpers.h>
 
 #include <QObject>
+#include <QDateTime>
 #include <QVariantMap>
 
 namespace swv {
@@ -22,6 +23,7 @@ class DecisionRecord : public QObject {
     QML_READONLY_VAR_PROPERTY(QString, id)
     QML_READONLY_VAR_PROPERTY(QString, voter)
     QML_READONLY_VAR_PROPERTY(qint64, weight)
+    QML_READONLY_VAR_PROPERTY(QDateTime, timestamp)
     QML_READONLY_VAR_PROPERTY(QString, contestId)
     QML_READONLY_VAR_PROPERTY(QVariantMap, opinions)
     QML_READONLY_VAR_PROPERTY(QVariantList, writeIns)

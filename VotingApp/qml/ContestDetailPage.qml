@@ -105,6 +105,7 @@ Page {
                         // Return a promise for a list of DecisionRecords by joining a list of promises thereof
                         return Q.all(decisionInfoList.map(function(info) {
                             return votingSystem.chain.getDecisionRecord(info.decisionId).then(function(record) {
+                                console.log(record.timestamp)
                                 // Add the counted property to the DecisionRecord
                                 record.counted = info.counted
                                 return record

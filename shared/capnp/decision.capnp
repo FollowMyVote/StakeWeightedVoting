@@ -56,4 +56,6 @@ struct DecisionRecord {
     # The actual content of the decision
     weight @3 :Int64;
     # The weight of the decision at the time the DecisionRecord was retrieved
+    timestamp @4 :Int64;
+    # The millisecond timestamp of the decision
 }
