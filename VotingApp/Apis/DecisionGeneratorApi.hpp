@@ -45,7 +45,7 @@ public:
                                   QObject *parent = 0);
     virtual ~DecisionGeneratorApi() noexcept {}
 
-    Q_INVOKABLE QJSValue getDecisions(uint8_t count);
+    Q_INVOKABLE QJSValue getDecisions(int count);
 
     bool isOutOfDecisions() const { return m_isOutOfDecisions; }
     bool isFetchingDecisions() const { return m_isFetchingDecisions; }

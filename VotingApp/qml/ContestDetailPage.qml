@@ -88,6 +88,37 @@ Page {
                     }
                 }
             }
+            Repeater {
+                id: decisionRecordsRepeater
+                model: ListModel {
+                    id: decisionRecordsList
+                }
+                delegate: Label {
+                    text: (counted? "Counted" : "Uncounted") + " vote from " + voter
+                }
+
+                property var generator
+
+                Component.onCompleted: {
+                    generator = contest.resultsApi.getDecisionGenerator()
+                    generator.getDecisions(100).then(function(decisionInfoList) {
+                        // Return a promise for a list of DecisionRecords by joining a list of promises thereof
+                        return Q.all(decisionInfoList.map(function(info) {
+                            return votingSystem.chain.getDecisionRecord(info.decisionId).then(function(record) {
+                                // Add the counted property to the DecisionRecord
+                                record.counted = info.counted
+                                return record
+                            })
+                        })).then(function(records) {
+                            console.log(JSON.stringify(records))
+                            // Append each DecisionRecord to the records list
+                            records.map(function(record) {
+                                decisionRecordsList.append(record)
+                            })
+                        })
+                    })
+                }
+            }
         }
     }
 }

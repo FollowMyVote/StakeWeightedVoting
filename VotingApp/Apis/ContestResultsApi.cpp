@@ -61,12 +61,8 @@ ContestResultsApi::ContestResultsApi(ContestResults::Client resultsApi, PromiseC
 
 ContestResultsApi::~ContestResultsApi() noexcept {}
 
-DecisionGeneratorApi* ContestResultsApi::decisionGenerator() {
-    if (m_decisionGenerator.get() == nullptr)
-        m_decisionGenerator =
-                kj::heap<DecisionGeneratorApi>(resultsApi.decisionsRequest().send().getDecisionGenerator(), converter);
-
-    return m_decisionGenerator;
+DecisionGeneratorApi* ContestResultsApi::getDecisionGenerator() {
+    return new DecisionGeneratorApi(resultsApi.decisionsRequest().send().getDecisionGenerator(), converter);
 }
 
 ContestResultsApi::ResultsNotifier::ResultsNotifier(ContestResultsApi& resultsApi)

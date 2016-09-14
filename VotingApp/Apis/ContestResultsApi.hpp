@@ -38,11 +38,9 @@ class ContestResultsApi : public QObject {
     Q_OBJECT
     Q_PROPERTY(QVariantList contestantResults READ contestantResults NOTIFY resultsChanged)
     Q_PROPERTY(QVariantMap writeInResults READ writeInResults NOTIFY resultsChanged)
-    Q_PROPERTY(DecisionGeneratorApi* decisionGenerator READ decisionGenerator CONSTANT)
 
     ContestResults::Client resultsApi;
     PromiseConverter& converter;
-    kj::Own<DecisionGeneratorApi> m_decisionGenerator;
 
     class ResultsNotifier : public Notifier<capnp::List<ContestResults::TalliedOpinion>>::Server {
         ContestResultsApi& resultsApi;
@@ -66,7 +64,9 @@ public:
 
     QVariantList contestantResults() const { return m_contestantResults; }
     QVariantMap writeInResults() const { return m_writeInResults; }
-    DecisionGeneratorApi* decisionGenerator();
+
+    /// Request and return a new decision generator. Caller takes ownership.
+    Q_INVOKABLE swv::DecisionGeneratorApi* getDecisionGenerator();
 
 signals:
     void resultsChanged();

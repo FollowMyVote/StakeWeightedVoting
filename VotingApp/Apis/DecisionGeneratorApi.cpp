@@ -28,7 +28,11 @@ DecisionGeneratorApi::DecisionGeneratorApi(DecisionGenerator::Client generator, 
       generator(generator),
       converter(converter) {}
 
-QJSValue DecisionGeneratorApi::getDecisions(uint8_t count) {
+QJSValue DecisionGeneratorApi::getDecisions(int count) {
+    if (count > std::numeric_limits<uint8_t>::max())
+        // Fail hard for this; the GUI should guarantee count is valid
+        qFatal("Application bug: count must fit in a uint8_t");
+
     KJ_LOG(DBG, "Requesting decisions", count);
     auto request = generator.getValuesRequest();
     request.setCount(count);

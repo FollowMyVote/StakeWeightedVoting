@@ -334,16 +334,17 @@ kj::Promise<void> BWB::BlockchainWalletApiImpl::getContestById(GetContestByIdCon
 
         // Fire off calls to fetch the other necessary info, storing promises for when that's done
         auto promiseArray = kj::heapArrayBuilder<kj::Promise<void>>(2);
-        promiseArray[0] = beginCall("blockchain.getObjectById", QJsonArray() << decodedOp["payer"])
+        promiseArray.add(beginCall("blockchain.getObjectById", QJsonArray() << decodedOp["payer"])
                 .then([result](QJsonValue response) mutable {
             result.setVoter(response.toObject()["name"].toString().toStdString());
-        });
-        promiseArray[1] = beginCall("blockchain.getAccountBalances", QJsonArray() << decodedOp["payer"])
-                .then([result, key](QJsonValue response) mutable {
+        }));
+        promiseArray.add(beginCall("blockchain.getAccountBalances", QJsonArray() << decodedOp["payer"]).then(
+                    [result, coinInstance = key.getDecisionKey().getBalanceId().getCoinInstance()]
+                    (QJsonValue response) mutable {
             // Set weight to 0, and overwrite it if we find a balance of the right type
             result.setWeight(0);
             auto balances = response.toArray();
-            auto coinId = QStringLiteral("1.3.%1").arg(key.getDecisionKey().getBalanceId().getCoinInstance());
+            auto coinId = QStringLiteral("1.3.%1").arg(coinInstance);
             // I don't care whether I find it or not, I'm just using find_if so it stops iterating if we find it
             std::find_if(balances.begin(), balances.end(), [result, coinId](const QJsonValue& balance) mutable {
                 if (balance.toObject()["type"].toString() == coinId) {
@@ -352,7 +353,7 @@ kj::Promise<void> BWB::BlockchainWalletApiImpl::getContestById(GetContestByIdCon
                 }
                 return false;
             });
-        });
+        }));
 
         // Return a promise for the subcalls to finish. When they're done, the result will be ready to return.
         return kj::joinPromises(promiseArray.finish());
