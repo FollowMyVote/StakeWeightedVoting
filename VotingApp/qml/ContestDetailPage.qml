@@ -91,10 +91,10 @@ Page {
             Repeater {
                 id: decisionRecordsRepeater
                 model: ListModel {
-                    id: decisionRecordsList
+                    id: decisionGroupsList
                 }
                 delegate: Label {
-                    text: (counted? "Counted" : "Uncounted") + " vote from " + voter
+                    text: ((records.count === 1)? "A vote" : (records.count + " votes")) + " from " + voter
                 }
 
                 property var generator
@@ -110,10 +110,14 @@ Page {
                                 return record
                             })
                         })).then(function(records) {
-                            console.log(JSON.stringify(records))
-                            // Append each DecisionRecord to the records list
-                            records.map(function(record) {
-                                decisionRecordsList.append(record)
+                            // Coalesce records into groups by voter and append groups to list model
+                            records.reduce(function(groups, record) {
+                                if (groups.length === 0 || groups[groups.length-1].voter !== record.voter)
+                                    groups.push({voter: record.voter, records: []})
+                                groups[groups.length-1].records.push(record)
+                                return groups
+                            }, []).map(function(group) {
+                                decisionGroupsList.append(group)
                             })
                         })
                     })
