@@ -8,10 +8,11 @@ namespace swv {
 SnapshotDecisionGenerator::SnapshotDecisionGenerator(gch::operation_history_id_type contestId, const VoteDatabase& vdb)
     : vdb(vdb) {
     auto& index = vdb.decisionIndex().indices().get<ByContest>();
-    auto range = index.equal_range(boost::make_tuple(contestId));
-    std::transform(range.first, range.second, snapshotDecisionIds.begin(), [](const Decision& decision) {
+    auto range = index.equal_range(contestId);
+    std::transform(range.first, range.second, std::back_inserter(snapshotDecisionIds), [](const Decision& decision) {
         return decision.id;
     });
+    KJ_DBG("Took snapshot of decisions", contestId.instance.value, snapshotDecisionIds.size(), index.size());
 }
 
 kj::Promise<void> SnapshotDecisionGenerator::getValues(GetValuesContext context) {
