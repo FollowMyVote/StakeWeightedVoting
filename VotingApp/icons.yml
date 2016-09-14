@@ -3,6 +3,7 @@ icons:
   - navigation/menu
   - navigation/refresh
   - navigation/arrow_back
+  - navigation/expand_more
   - action/delete_forever
   - action/favorite
   - action/favorite_border

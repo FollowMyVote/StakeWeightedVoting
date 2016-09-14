@@ -81,6 +81,17 @@ public:
      * \param details The new details
      */
     void updateFields(CoinDetails::Reader details);
+
+    /*!
+     * \brief Format the provided amount as a human-readable string
+     * \param amount The amount to format. This is treated as an integer; decimals will be truncated
+     * \param appendName If true, the coin's name will be appended, i.e. "123 COIN"
+     * \return Amount formatted as a human-readable string
+     *
+     * The primary use of this function is to adjust the amount by the precision of the coin, so if a coin has a
+     * precision of 3, the formatted amount 123456 would be "123.456"
+     */
+    Q_INVOKABLE QString formatAmount(qreal amount, bool appendName = false);
 };
 
 } } // namespace swv::data

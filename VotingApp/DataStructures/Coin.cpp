@@ -19,6 +19,11 @@
 #include "Coin.hpp"
 #include "Converters.hpp"
 
+#include <QLocale>
+#include <QDebug>
+
+#include <cmath>
+
 namespace swv { namespace data {
 
 Coin::Coin(QObject* parent)
@@ -40,6 +45,12 @@ void Coin::updateFields(CoinDetails::Reader details) {
         // TODO: copy history into a QLineSeries property
         // Will do when we integrate Qt Charts into the project
     }
+}
+
+QString Coin::formatAmount(qreal amount, bool appendName) {
+    // Set the currency symbol to a space and trim it. That's apparently the easiest way to omit the $
+    return QLocale::system().toCurrencyString(std::floor(amount)/std::pow(10, m_precision), " ", m_precision).trimmed()
+            + (appendName? (" " + m_name) : QString::null);
 }
 
 } } // namespace swv::data
