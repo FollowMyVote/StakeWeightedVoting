@@ -20,8 +20,9 @@ kj::Promise<void> SnapshotDecisionGenerator::getValues(GetValuesContext context)
 
     auto results = context.getResults().initValues(std::min<unsigned>(context.getParams().getCount(),
                                                                       snapshotDecisionIds.size()));
+    KJ_DBG("Preparing to return decisions", results.size());
     unsigned index = 0;
-    while (!snapshotDecisionIds.empty()) {
+    while (!snapshotDecisionIds.empty() && index < results.size()) {
         const auto& decision = snapshotDecisionIds.front()(vdb.db());
         auto decisionBuilder = results[index++].getValue();
         decisionBuilder.getId().setOperationId(decision.decisionId.instance.value);

@@ -49,8 +49,11 @@ Page {
 
     Flickable {
         anchors.fill: parent
+        flickableDirection: Flickable.VerticalFlick
+        contentHeight: contestDetailColumn.height
 
         Column {
+            id: contestDetailColumn
             UI.ExtraAnchors.horizontalFill: parent
             anchors.margins: 4
             spacing: 4
@@ -91,6 +94,7 @@ Page {
             }
             Repeater {
                 id: decisionRecordsRepeater
+                model: []
                 delegate: Rectangle {
                     height: recordGroupColumn.height + 16
                     width: parent.width
@@ -169,30 +173,56 @@ Page {
                     }
                 }
 
-                property var generator
-
-                Component.onCompleted: {
-                    generator = contest.resultsApi.getDecisionGenerator()
-                    // TODO: Generalize this to work with any number of decisions
-                    // TODO: Float current user's decisions to top
-                    generator.getDecisions(100).then(function(decisionInfoList) {
-                        // Return a promise for a list of DecisionRecords by joining a list of promises thereof
-                        return Q.all(decisionInfoList.map(function(info) {
+                // We store decisions here until we have their entire group
+                property var pendingDecisions: []
+                property var finalDecisionRecords: []
+                function showDecisionGroup(group) {
+                    if (group.voter === votingSystem.currentAccount.name)
+                        finalDecisionRecords.unshift(group)
+                    else
+                        finalDecisionRecords.push(group)
+                    decisionRecordsRepeater.model = finalDecisionRecords
+                }
+                function fetchAllDecisions(generator) {
+                    generator.getDecisions(100).then(function(decisionInfos) {
+                        return Q.all(decisionInfos.map(function(info) {
                             return votingSystem.chain.getDecisionRecord(info.decisionId).then(function(record) {
                                 // Add the counted property to the DecisionRecord
                                 record.counted = info.counted
                                 return record
                             })
-                        })).then(function(records) {
-                            // Coalesce records into groups by voter and append groups to list model
-                            decisionRecordsRepeater.model = records.reduce(function(groups, record) {
-                                if (groups.length === 0 || groups[groups.length-1].voter !== record.voter)
-                                    groups.push({voter: record.voter, records: []})
-                                groups[groups.length-1].records.push(record)
-                                return groups
-                            }, [])
-                        })
+                        }))
+                    }).then(function(decisionRecords) {
+                        // Iterate over the new decisions, moving groups to pendingGroups as we find them
+                        for (var i = 0; i < decisionRecords.length; ++i) {
+                            // First, append the new decision to pendingDecisions
+                            var decision = decisionRecords[i]
+                            pendingDecisions.push(decision)
+
+                            // A counted decision marks the end of a group
+                            if (decision.counted) {
+                                // pendingDecisions contains a full group. Display it
+                                showDecisionGroup({voter: decision.voter, records: pendingDecisions})
+                                pendingDecisions = []
+                            }
+                        }
+
+                        if (generator.isOutOfDecisions) {
+                            console.log("Done fetching decisions.")
+                            if (pendingDecisions.length)
+                                console.error("Pending decisions left over:", JSON.stringify(pendingDecisions))
+                            // Clean up
+                            pendingDecisions = []
+                            finalDecisionRecords = []
+                            return
+                        }
+                        // Still more work to do; keep going
+                        fetchAllDecisions(generator)
                     })
+                }
+
+                Component.onCompleted: {
+                    fetchAllDecisions(contest.resultsApi.getDecisionGenerator())
                 }
             }
         }

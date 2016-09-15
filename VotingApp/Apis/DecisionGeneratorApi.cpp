@@ -40,6 +40,7 @@ QJSValue DecisionGeneratorApi::getDecisions(int count) {
     emit isFetchingDecisionsChanged(true);
 
     auto pass = [this](auto&& e) {
+        KJ_DBG(e);
         m_isFetchingDecisions = false;
         emit isFetchingDecisionsChanged(false);
         return kj::mv(e);
