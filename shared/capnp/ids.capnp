@@ -30,3 +30,8 @@ struct ContestId {
     operationId @0 :UInt64;
     # Instance of the operation_history_id_type for the operation that created this contest
 }
+
+struct DecisionId {
+    operationId @0 :UInt64;
+    # Instance of the operation_history_id_type for the operation that created this decision
+}

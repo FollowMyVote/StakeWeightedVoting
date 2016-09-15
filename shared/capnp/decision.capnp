@@ -17,6 +17,7 @@
 @0x9d1e6685c0b5a466;
 
 using ContestId = import "ids.capnp".ContestId;
+using DecisionId = import "ids.capnp".DecisionId;
 using Contestant = import "contest.capnp".UnsignedContest.Contestant;
 using Map = import "map.capnp".Map;
 
@@ -42,4 +43,19 @@ struct Decision {
         opinion @1 :Int32;
         # The integral opinion on the specified contestant
     }
+}
+
+struct DecisionRecord {
+# This is the information about a decision that the client may retrieve from the blockchain given a DecisionId
+
+    id @0 :DecisionId;
+    # ID of the decision
+    voter @1 :Text;
+    # Human-readable ID of the voter. This may be an account name, public key, address, etc.
+    decision @2 :Decision;
+    # The actual content of the decision
+    weight @3 :Int64;
+    # The weight of the decision at the time the DecisionRecord was retrieved
+    timestamp @4 :Int64;
+    # The millisecond timestamp of the decision
 }

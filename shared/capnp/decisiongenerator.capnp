@@ -14,16 +14,20 @@
 # You should have received a copy of the GNU General Public License
 # along with SWV.  If not, see <http://www.gnu.org/licenses/>.
 
-@0xb4ffa96079050068;
+@0x912c38576b075e21;
 
-interface Generator(Value) {
-    # An API to retrieve an 'infinite stream' of values a few at a time. The client can retrieve values as it needs
-    # them, rather than fetching a static list all at once. A Value may be any type, including an interface.
+using DecisionId = import "ids.capnp".DecisionId;
+using Generator = import "generator.capnp".Generator;
 
-    getValues @0 (count :UInt8) -> (values :List(Wrapper));
-    # Retrieve count more values; may return less than count values if no more values are available
+struct DecisionInfo {
+# This is the information about a decision that the server returns to the client when listing decisions on a contest
 
-    struct Wrapper {
-        value @0 :Value;
-    }
+    id @0 :DecisionId;
+    # ID of the decision
+    counted @1 :Bool;
+    # Whether the decision was counted or not. This would be false on a decision that was later replaced by its owner,
+    # for example. For every {voter, contest} pair, there may be several decisions, but exactly one should be counted.
 }
+
+using DecisionGenerator = Generator(DecisionInfo);
+# The generator for fetching decisions on a contest

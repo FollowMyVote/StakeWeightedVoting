@@ -18,7 +18,7 @@
 #include "BackendServer.hpp"
 #include "VoteDatabase.hpp"
 #include "FeedGenerator.hpp"
-#include "ContestResultsServer.hpp"
+#include "LiveContestResultsServer.hpp"
 #include "ContestCreatorServer.hpp"
 #include "Objects/Contest.hpp"
 #include "Utilities.hpp"

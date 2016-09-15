@@ -24,6 +24,7 @@ using Balance = import "balance.capnp".Balance;
 using Contest = import "contest.capnp".Contest;
 using Datagram = import "datagram.capnp".Datagram;
 using Signed = import "signed.capnp".Signed;
+using DecisionRecord = import "decision.capnp".DecisionRecord;
 
 interface BlockchainWallet {
 # This interface defines the API between the stake-weighted voting app and a wallet for the blockchain
@@ -48,6 +49,9 @@ interface BlockchainWallet {
 
     getContestById @6 (id :ContestId) -> (contest :Signed(Contest));
     # Get a contest by ID
+
+    getDecisionRecordById @12 (id :DecisionId) -> (record :DecisionRecord);
+    # Get a decision record by ID
 
     getDatagramByBalance @7 (balanceId :BalanceId, key :Datagram.DatagramKey) -> (datagram :Datagram);
     # Get the datagram belonging to the specified balance and having the specified type and key

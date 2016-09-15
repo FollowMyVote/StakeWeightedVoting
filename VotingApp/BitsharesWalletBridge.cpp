@@ -45,6 +45,7 @@ protected:
     virtual ::kj::Promise<void> getBalance(GetBalanceContext context) override;
     virtual ::kj::Promise<void> getBalancesBelongingTo(GetBalancesBelongingToContext context) override;
     virtual ::kj::Promise<void> getContestById(GetContestByIdContext context) override;
+    virtual ::kj::Promise<void> getDecisionRecordById(GetDecisionRecordByIdContext context) override;
     virtual ::kj::Promise<void> getDatagramByBalance(GetDatagramByBalanceContext context) override;
     virtual ::kj::Promise<void> publishDatagram(PublishDatagramContext context) override;
     virtual ::kj::Promise<void> transfer(TransferContext context) override;
@@ -296,6 +297,72 @@ kj::Promise<void> BWB::BlockchainWalletApiImpl::getContestById(GetContestByIdCon
         auto timestamp = static_cast<uint64_t>(QDateTime::fromString(block.toObject()["timestamp"].toString(),
                                                Qt::ISODate).toMSecsSinceEpoch());
         contest.setStartTime(std::max(contest.getStartTime(), timestamp));
+    });
+}
+
+::kj::Promise<void> BWB::BlockchainWalletApiImpl::getDecisionRecordById(GetDecisionRecordByIdContext context) {
+    KJ_LOG(DBG, __FUNCTION__, context.getParams());
+    auto operationInstance = context.getParams().getId().getOperationId();
+    context.getResults().getRecord().getId().setOperationId(operationInstance);
+    auto operationId = QStringLiteral("1.11.%1").arg(operationInstance);
+    return beginCall("blockchain.getObjectById", QJsonArray() << operationId).then(
+                [this, context, operationInstance](QJsonValue response) mutable {
+        // This parsing is pretty similar to that in getContest above. See there for commentary
+        auto customOp = response.toObject()["op"].toArray();
+        auto opCode = customOp[0].toInt();
+        KJ_REQUIRE(opCode == 35, "Invalid decision ID references an operation with wrong opcode",
+                   opCode, operationInstance);
+        auto decodedOp = customOp[1].toObject();
+        auto operationData = QByteArray::fromHex(decodedOp["data"].toString().toLocal8Bit());
+        auto operationDataReader = convertBlob(operationData);
+        KJ_REQUIRE(capnp::Data::Reader(operationDataReader.slice(0, ::VOTE_MAGIC->size())) == *::VOTE_MAGIC,
+                   "Invalid decision ID references an operation which was not published by Follow My Vote software",
+                   operationInstance);
+        BlobMessageReader datagramMessage(operationDataReader.slice(::VOTE_MAGIC->size(), operationDataReader.size()));
+        auto datagramReader = datagramMessage->getRoot<::Datagram>();
+        auto key = datagramReader.getKey().getKey();
+        KJ_REQUIRE(key.isDecisionKey(), "Invalid decision ID references a datagram which does not contain a decision",
+                   operationInstance);
+        KJ_REQUIRE(decodedOp["payer"].toString().replace("1.2.", QString::null).toULongLong() ==
+                       key.getDecisionKey().getBalanceId().getAccountInstance(),
+                   "Decision claims to be published by a different account than actually published it.");
+
+        // Set the actual decision in the result
+        auto result = context.getResults().getRecord();
+        BlobMessageReader contestMessage(datagramReader.getContent());
+        result.setDecision(contestMessage->getRoot<::Decision>());
+
+        // Fire off calls to fetch the other necessary info, storing promises for when that's done
+        auto promiseArray = kj::heapArrayBuilder<kj::Promise<void>>(3);
+        promiseArray.add(beginCall("blockchain.getBlockByHeight", QJsonArray() << response.toObject()["block_num"])
+                .then([result](QJsonValue block) mutable {
+            auto timestamp = static_cast<uint64_t>(QDateTime::fromString(block.toObject()["timestamp"].toString(),
+                                                   Qt::ISODate).toMSecsSinceEpoch());
+            result.setTimestamp(timestamp);
+        }));
+        promiseArray.add(beginCall("blockchain.getObjectById", QJsonArray() << decodedOp["payer"])
+                .then([result](QJsonValue response) mutable {
+            result.setVoter(response.toObject()["name"].toString().toStdString());
+        }));
+        promiseArray.add(beginCall("blockchain.getAccountBalances", QJsonArray() << decodedOp["payer"]).then(
+                    [result, coinInstance = key.getDecisionKey().getBalanceId().getCoinInstance()]
+                    (QJsonValue response) mutable {
+            // Set weight to 0, and overwrite it if we find a balance of the right type
+            result.setWeight(0);
+            auto balances = response.toArray();
+            auto coinId = QStringLiteral("1.3.%1").arg(coinInstance);
+            // I don't care whether I find it or not, I'm just using find_if so it stops iterating if we find it
+            std::find_if(balances.begin(), balances.end(), [result, coinId](const QJsonValue& balance) mutable {
+                if (balance.toObject()["type"].toString() == coinId) {
+                    result.setWeight(balance.toObject()["amount"].toString().toULongLong());
+                    return true;
+                }
+                return false;
+            });
+        }));
+
+        // Return a promise for the subcalls to finish. When they're done, the result will be ready to return.
+        return kj::joinPromises(promiseArray.finish());
     });
 }
 

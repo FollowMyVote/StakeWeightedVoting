@@ -19,7 +19,7 @@
 #define FEEDGENERATOR_HPP
 
 #include "Objects/Contest.hpp"
-#include "ContestResultsServer.hpp"
+#include "LiveContestResultsServer.hpp"
 #include "Utilities.hpp"
 #include "VoteDatabase.hpp"
 
@@ -150,7 +150,7 @@ template<typename Index>
 template<typename Index>
 void FeedGenerator<Index>::populateContest(::ContestInfo::Builder nextContest) {
     nextContest.getContestId().setOperationId(currentContest->contestId.instance);
-    auto resultsServer = kj::heap<ContestResultsServer>(vdb, currentContest->contestId);
+    auto resultsServer = kj::heap<LiveContestResultsServer>(vdb, currentContest->contestId);
     nextContest.setVotingStake(resultsServer->totalVotingStake());
     nextContest.setContestResults(kj::mv(resultsServer));
     // TODO: set engagement notification API

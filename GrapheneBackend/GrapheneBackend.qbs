@@ -16,6 +16,10 @@ CppApplication {
     capnp.importPaths: ["../shared/capnp"]
 
     files: [
+        "ApiServers/LiveContestResultsServer.cpp",
+        "ApiServers/LiveContestResultsServer.hpp",
+        "ApiServers/SnapshotDecisionGenerator.cpp",
+        "ApiServers/SnapshotDecisionGenerator.hpp",
         "BackendConfiguration.cpp",
         "BackendConfiguration.hpp",
         "VoteDatabase.cpp",
@@ -28,8 +32,6 @@ CppApplication {
         "ApiServers/BackendServer.hpp",
         "ApiServers/ContestCreatorServer.cpp",
         "ApiServers/ContestCreatorServer.hpp",
-        "ApiServers/ContestResultsServer.cpp",
-        "ApiServers/ContestResultsServer.hpp",
         "ApiServers/FeedGenerator.hpp",
         "Objects/Objects.hpp",
         "Objects/CoinVolumeHistory.cpp",

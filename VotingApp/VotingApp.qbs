@@ -39,6 +39,7 @@ Project {
             "qml/ContestDetailPage.qml",
             "qml/ContestStatusRow.qml",
             "qml/CreateContestPage.qml",
+            "qml/DecisionDelegate.qml",
             "qml/FeedPage.qml",
             "qml/NavigationDrawer.qml",
             "qml/ShadowedPopup.qml",

@@ -19,6 +19,7 @@
 #include "BlockchainWalletApi.hpp"
 #include "DataStructures/Coin.hpp"
 #include "DataStructures/Balance.hpp"
+#include "DataStructures/DecisionRecord.hpp"
 #include "Converters.hpp"
 #include "PromiseConverter.hpp"
 
@@ -161,17 +162,19 @@ kj::Promise<std::unique_ptr<data::Decision>> BlockchainWalletApi::_getDecision(Q
     });
 }
 
-void BlockchainWalletApi::unlockWallet() {
-    promiseConverter.adopt(m_chain.unlockWalletRequest().send().then([](auto){}));
+QJSValue BlockchainWalletApi::getDecisionRecord(QString decisionId) {
+    auto request = m_chain.getDecisionRecordByIdRequest();
+    auto id = QByteArray::fromHex(decisionId.toLocal8Bit());
+    BlobMessageReader reader(convertBlob(id));
+    request.setId(reader->getRoot<::DecisionId>());
+    return promiseConverter.convert(request.send(),
+                                    [](capnp::Response<BlockchainWallet::GetDecisionRecordByIdResults> r) {
+        return QVariant::fromValue(new swv::data::DecisionRecord(r.getRecord()));
+    });
 }
 
-QJSValue BlockchainWalletApi::getBalance(QByteArray id) {
-    auto request = m_chain.getBalanceRequest();
-    BlobMessageReader reader(convertBlob(id));
-    request.setId(reader->getRoot<::BalanceId>());
-    return promiseConverter.convert(request.send(), [](auto response) -> QVariant {
-        return {QVariant::fromValue<QObject*>(new data::Balance(response.getBalance()))};
-    });
+void BlockchainWalletApi::unlockWallet() {
+    promiseConverter.adopt(m_chain.unlockWalletRequest().send().then([](auto){}));
 }
 
 QJSValue BlockchainWalletApi::getBalancesBelongingTo(QString owner) {

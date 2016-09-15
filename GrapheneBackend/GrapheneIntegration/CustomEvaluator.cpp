@@ -56,8 +56,7 @@ void processDecision(gch::database& db, const gch::account_balance_object& balan
         KJ_REQUIRE(opinion.getOpinion() == 1, "Only opinions of 1 are supported", decision);
     }
 
-    // Store decision and update tally
-    // NOTE: See issue #143: this tally algorithm is completely wrong, but it gives us fake/test results to play with
+    // Store decision
     auto& newDecision = db.create<Decision>([&db, decision, &contest, balance](Decision& d) {
         auto& index = db.get_index_type<gch::simple_index<gch::operation_history_object>>();
         d.decisionId = gch::operation_history_id_type(index.size());
