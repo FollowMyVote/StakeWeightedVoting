@@ -220,9 +220,13 @@ Page {
                         fetchAllDecisions(generator)
                     })
                 }
+                function refreshDecisions() {
+                    fetchAllDecisions(contest.resultsApi.getDecisionGenerator())
+                }
 
                 Component.onCompleted: {
-                    fetchAllDecisions(contest.resultsApi.getDecisionGenerator())
+                    refreshDecisions()
+                    contest.resultsApi.resultsChanged.connect(refreshDecisions)
                 }
             }
         }
