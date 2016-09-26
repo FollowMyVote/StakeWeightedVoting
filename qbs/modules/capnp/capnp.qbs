@@ -74,7 +74,8 @@ Module {
             var command = "capnp"
             var compilerOption = "-oc++"
             var importPaths = product.moduleProperty("capnp", "importPaths").map(function(path) { return "-I" + path })
-            if (product.moduleProperty("capnp", "capnpPath") !== "") {
+            if (product.moduleProperty("capnp", "capnpPath") !== ""
+                   && File.exists(product.moduleProperty("capnp", "capnpPath") + "/capnp")) {
                 command = product.moduleProperty("capnp", "capnpPath") + "/capnp"
                 compilerOption = "-o" + product.moduleProperty("capnp", "capnpPath") + "/capnpc-c++"
             }
