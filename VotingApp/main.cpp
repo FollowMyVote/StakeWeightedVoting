@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
     QPPromise::setEngine(&engine);
     engine.addImportPath("qrc:/");
     registerQtQmlTricksUiElements(&engine);
-    engine.load(QUrl("qml/main.qml"));
+    engine.load(QUrl("qrc:/qml/main.qml"));
 
     return app.exec();
 }

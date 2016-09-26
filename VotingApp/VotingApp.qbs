@@ -34,6 +34,7 @@ Project {
             "capnqt/QtEventPort.hpp",
             "icons.yml",
             "main.cpp",
+            "qml.qrc",
             "qml/ConnectionProgressPopup.qml",
             "qml/ContestDelegate.qml",
             "qml/ContestDetailPage.qml",
