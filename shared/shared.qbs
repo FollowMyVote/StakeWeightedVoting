@@ -9,10 +9,9 @@ StaticLibrary {
 
     cpp.cxxLanguageVersion: "c++14"
     cpp.cxxStandardLibrary: qbs.hostOS.contains("osx") ? "libc++" : "libstdc++"
-    cpp.cxxFlags: capnp.cxxFlags
     cpp.dynamicLibraries: [].concat(capnp.dynamicLibraries).concat(botan.dynamicLibraries)
-    cpp.includePaths: ["capnp"].concat(botan.includePaths)
-    cpp.libraryPaths: botan.libraryPaths
+    cpp.includePaths: ["capnp"].concat(botan.includePaths).concat(capnp.includePaths)
+    cpp.libraryPaths: [].concat(botan.libraryPaths).concat(capnp.libraryPaths)
 
     files: [
         "Utilities.hpp",
@@ -31,7 +30,7 @@ StaticLibrary {
         cpp.cxxStandardLibrary: qbs.hostOS.contains("osx") ? "libc++" : "libstdc++"
         cpp.cxxFlags: capnp.cxxFlags
         cpp.dynamicLibraries: [].concat(capnp.dynamicLibraries).concat(botan.dynamicLibraries)
-        cpp.includePaths: [".", "capnp"].concat(botan.includePaths)
-        cpp.libraryPaths: botan.libraryPaths
+        cpp.includePaths: [".", "capnp"].concat(botan.includePaths).concat(capnp.includePaths)
+        cpp.libraryPaths: [].concat(botan.libraryPaths).concat(capnp.libraryPaths)
     }
 }

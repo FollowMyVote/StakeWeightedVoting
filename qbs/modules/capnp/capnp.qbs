@@ -16,9 +16,14 @@ Module {
             throw "Unable to find capnp. Try setting PATH and PKG_CONFIG_PATH to ensure capnp can be found."
         return true
     }
-    property var cxxFlags: capnpProbe.cflags
+    property var includePaths: capnpProbe.cflags.filter(function(name) {
+        return name.startsWith("-I")
+    }).map(function(name){return name.slice(2)})
     property var dynamicLibraries: capnpProbe.libs.filter(function(name) {
         return name.startsWith("-l")
+    }).map(function(name) { return name.slice(2) })
+    property var libraryPaths: capnpProbe.libs.filter(function(name) {
+        return name.startsWith("-L")
     }).map(function(name) { return name.slice(2) })
 
     PropertyOptions {
