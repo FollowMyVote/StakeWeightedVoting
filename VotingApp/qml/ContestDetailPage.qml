@@ -34,6 +34,9 @@ Page {
     signal closed
     onClosed: {
         contestDetailPage.StackView.view.pop()
+        // TODO: The page is not destroyed when popped, so I need to manually disconnect from the results updates.
+        // Figure out why the page isn't getting destroyed as it should. Also, why does it crash? Qt bug?
+        contest.resultsApi.resultsChanged.disconnect(decisionRecordsRepeater.refreshDecisions)
     }
 
     header: ToolBar {
