@@ -5,8 +5,8 @@ const static int INITIAL_READ_SIZE = 100;
 
 void TlsPskAdaptor::startReadLoop() {
     auto buffer = std::make_unique<std::vector<Botan::byte>>(INITIAL_READ_SIZE);
-    tasks.add(stream->tryRead(buffer->data(), 1, buffer->size()).then(
-                      [this, buffer = kj::mv(buffer)](size_t bytesRead) mutable {
+    auto promise = stream->tryRead(buffer->data(), 1, buffer->size());
+    tasks.add(promise.then([this, buffer = kj::mv(buffer)](size_t bytesRead) mutable {
         buffer->resize(bytesRead);
         processBytes(kj::mv(buffer));
     }));
