@@ -4,24 +4,24 @@ namespace fmv {
 const static int INITIAL_READ_SIZE = 100;
 
 void TlsPskAdaptor::startReadLoop() {
-    auto buffer = std::vector<Botan::byte>(INITIAL_READ_SIZE);
-    tasks.add(stream->tryRead(buffer.data(), 1, buffer.size()).then(
+    auto buffer = std::make_unique<std::vector<Botan::byte>>(INITIAL_READ_SIZE);
+    tasks.add(stream->tryRead(buffer->data(), 1, buffer->size()).then(
                       [this, buffer = kj::mv(buffer)](size_t bytesRead) mutable {
-        buffer.resize(bytesRead);
+        buffer->resize(bytesRead);
         processBytes(kj::mv(buffer));
     }));
 }
 
-void TlsPskAdaptor::processBytes(std::vector<Botan::byte> buffer) {
-    if (buffer.size() == 0)
+void TlsPskAdaptor::processBytes(std::unique_ptr<std::vector<Botan::byte>> buffer) {
+    if (buffer->size() == 0)
         return handleEof();
-    auto bytesNeeded = channel->received_data(kj::mv(buffer));
+    auto bytesNeeded = channel->received_data(kj::mv(*buffer));
 
     if (bytesNeeded) {
-        buffer.resize(bytesNeeded);
-        tasks.add(stream->read(buffer.data(), buffer.size(), buffer.size()).then(
+        buffer->resize(bytesNeeded);
+        tasks.add(stream->read(buffer->data(), buffer->size(), buffer->size()).then(
                           [this, buffer = kj::mv(buffer)](size_t bytesRead) mutable {
-            buffer.resize(bytesRead);
+            buffer->resize(bytesRead);
             processBytes(kj::mv(buffer));
         }));
     } else
