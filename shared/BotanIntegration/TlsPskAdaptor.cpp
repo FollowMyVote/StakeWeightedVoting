@@ -19,8 +19,8 @@ void TlsPskAdaptor::processBytes(std::unique_ptr<std::vector<Botan::byte>> buffe
 
     if (bytesNeeded) {
         buffer->resize(bytesNeeded);
-        tasks.add(stream->read(buffer->data(), buffer->size(), buffer->size()).then(
-                          [this, buffer = kj::mv(buffer)](size_t bytesRead) mutable {
+        auto promise = stream->read(buffer->data(), buffer->size(), buffer->size());
+        tasks.add(promise.then([this, buffer = kj::mv(buffer)](size_t bytesRead) mutable {
             buffer->resize(bytesRead);
             processBytes(kj::mv(buffer));
         }));
