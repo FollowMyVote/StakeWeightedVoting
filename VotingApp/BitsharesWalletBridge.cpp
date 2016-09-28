@@ -530,7 +530,7 @@ kj::Promise<BlockchainWallet::Client> BitsharesWalletBridge::nextWalletClient() 
     auto paf = kj::newPromiseAndFulfiller<BlockchainWallet::Client>();
     contexts.emplace(std::make_pair(nextContextId, ClientContext{QMetaObject::Connection(), kj::mv(paf.fulfiller)}));
     contexts[nextContextId].connection = connect(this, &QWebSocketServer::newConnection,
-                                                 [this, contextId = nextContextId++]() mutable {
+                                                 [this, contextId = nextContextId]() mutable {
         auto context = kj::mv(contexts[contextId]);
         contexts.erase(contextId);
         disconnect(context.connection);
@@ -541,6 +541,7 @@ kj::Promise<BlockchainWallet::Client> BitsharesWalletBridge::nextWalletClient() 
                  << socket->peerAddress() << ":" << socket->peerPort();
         context.fulfiller->fulfill(kj::heap<BlockchainWalletApiImpl>(kj::mv(socket)));
     });
+    ++nextContextId;
     KJ_LOG(DBG, "Promising a BlockchainWallet client");
     return kj::mv(paf.promise);
 }
