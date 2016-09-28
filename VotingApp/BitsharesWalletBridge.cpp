@@ -350,11 +350,9 @@ kj::Promise<void> BWB::BlockchainWalletApiImpl::getContestById(GetContestByIdCon
         [this, result, decodedOp](QJsonValue response) mutable {
             // TODO: Be less optimistic here; check data validity like in getContestById
             // Share code between this and getContestById? Perhaps implement caching?
-            auto data = response.toObject()["op"].toArray()[1].toObject()["data"].toString().toLocal8Bit();
-            auto dataReader = convertBlob(data);
-            BlobMessageReader datagramMessage(dataReader.slice(::VOTE_MAGIC->size(), dataReader.size()));
-            auto datagramReader = datagramMessage->getRoot<::Datagram>();
-            BlobMessageReader contestMessage(datagramReader.getContent());
+            auto data = QByteArray::fromHex(response.toObject()["op"].toArray()[1].toObject()["data"].toString().toLocal8Bit());
+            auto datagram = convertSerialStruct<::Datagram>(data.mid(VOTE_MAGIC->size()));
+            BlobMessageReader contestMessage(::Datagram::Reader(*datagram).getContent());
             auto coinInstance = contestMessage->getRoot<::Contest>().getCoin();
 
             return beginCall("blockchain.getAccountBalances", QJsonArray() << decodedOp["payer"]).then(
