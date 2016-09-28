@@ -23,6 +23,8 @@
 #include <QByteArray>
 #include <QVariantMap>
 
+#include <memory>
+
 namespace swv {
 
 inline QByteArray convertBlob(capnp::Data::Reader data) {
@@ -46,6 +48,30 @@ inline QList<T> convertList(kj::Array<T>&& kjList) {
     for (const T& elem : kjList)
         result.append(kj::mv(elem));
     return result;
+}
+
+namespace _ {
+template <typename Struct>
+class Storage {
+    std::unique_ptr<QByteArray> blob;
+    BlobMessageReader message;
+    capnp::ReaderFor<Struct> content;
+
+public:
+    Storage(QString serialHex)
+        : blob(std::make_unique<QByteArray>(QByteArray::fromHex(serialHex.toLocal8Bit()))),
+          message(convertBlob(*blob)),
+          content(message->getRoot<Struct>()) {}
+
+    operator capnp::ReaderFor<Struct>() { return content; }
+};
+}
+
+/// @return A kj::Own pointer to an opaque object which is implicitly convertible to a Struct::Reader. The reader will
+/// be valid for the lifetime of the opaque object.
+template <typename Struct>
+inline kj::Own<_::Storage<Struct>> convertSerialStruct(QString serialHex) {
+    return kj::heap<_::Storage<Struct>>(serialHex);
 }
 
 } // namespace swv

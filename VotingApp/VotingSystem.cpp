@@ -408,10 +408,11 @@ QJSValue VotingSystem::castPendingDecision(swv::data::Contest* contest) {
             request.setPublishingBalance(balance.getId());
 
             auto dgram = request.initDatagram();
-            dgram.initKey().initKey().initDecisionKey().setBalanceId(balance.getId());
+            auto contestId = convertSerialStruct<::ContestId>(contest->get_id());
+            dgram.initKey().initKey().initDecisionKey().setContestId(*contestId);
             dgram.setContent(packer.array());
 
-            promises.add(request.send().then([](auto){}));
+            promises.add(request.send().then([](const auto&){}));
         }
 
         return kj::joinPromises(promises.finish());

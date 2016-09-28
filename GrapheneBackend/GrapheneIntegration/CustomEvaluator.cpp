@@ -40,15 +40,23 @@
 
 namespace swv {
 
-void processDecision(gch::database& db, const gch::account_balance_object& balance, ::Decision::Reader decision) {
+void processDecision(gch::database& db, gch::account_id_type publisherId, ::Decision::Reader decision) {
     KJ_REQUIRE(decision.getOpinions().size() <= 1, "Only single-candidate votes are supported", decision);
+
     // Recall that contests are ID'd by their operation history ID, not the object ID
     auto& contestIndex = db.get_index_type<ContestIndex>().indices().get<ById>();
-    auto itr = contestIndex.find(gch::operation_history_id_type(decision.getContest().getOperationId()));
-    KJ_REQUIRE(itr != contestIndex.end(), "Decision references unknown contest");
-    auto& contest = *itr;
-    FC_ASSERT(contest.coin == balance.asset_type, "Publishing balance is in a different coin than the contest",
-              ("balance", balance)("contest", contest));
+    auto contestItr = contestIndex.find(gch::operation_history_id_type(decision.getContest().getOperationId()));
+    KJ_REQUIRE(contestItr != contestIndex.end(), "Decision references unknown contest");
+    auto& contest = *contestItr;
+
+    // Look up the balance that cast this decision
+    auto assetId = contest.coin;
+    auto& balanceIndex = db.get_index_type<gch::account_balance_index>().indices().get<gch::by_account_asset>();
+    auto balanceItr = balanceIndex.find(boost::make_tuple(publisherId, assetId));
+    KJ_REQUIRE(balanceItr != balanceIndex.end(), "Ignoring decision on a nonexistent balance.");
+    const gch::account_balance_object& balance = *balanceItr;
+
+    // If decision specifies an opinion, check that the opinion is valid
     if (decision.getOpinions().size() == 1) {
         auto opinion = decision.getOpinions()[0];
         KJ_REQUIRE(opinion.getContestant() < contest.contestants.size() + decision.getWriteIns().getEntries().size(),
@@ -144,15 +152,10 @@ graphene::chain::void_result CustomEvaluator::do_apply(const CustomEvaluator::op
                 auto content = datagramMessage->getRoot<::Decision>();
                 KJ_LOG(DBG, "Custom op is a vote", datagram, content);
                 auto key = datagram.getKey().getKey().getDecisionKey();
-                auto publisherId = gch::account_id_type(key.getBalanceId().getAccountInstance());
-                auto assetId = gch::asset_id_type(key.getBalanceId().getCoinInstance());
-                KJ_REQUIRE(publisherId == op.fee_payer(),
-                           "Nice try. You may not publish decisions for someone else");
-                auto& balanceIndex = db().get_index_type<gch::account_balance_index>()
-                                     .indices().get<gch::by_account_asset>();
-                auto itr = balanceIndex.find(boost::make_tuple(publisherId, assetId));
-                KJ_REQUIRE(itr != balanceIndex.end(), "Ignoring decision on a nonexistent balance.");
-                processDecision(db(), *itr, content);
+                KJ_REQUIRE(key.getContestId().getOperationId() == content.getContest().getOperationId(),
+                           "Decision is not valid: key's contest ID doesn't match decision's contest ID",
+                           key.getContestId(), content.getContest());
+                processDecision(db(), op.fee_payer(), content);
                 break;
             }
             case Datagram::DatagramKey::Key::CONTEST_KEY: {

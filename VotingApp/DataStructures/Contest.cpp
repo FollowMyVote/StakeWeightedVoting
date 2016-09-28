@@ -47,6 +47,12 @@ void Contest::serialize(::Contest::Builder b) {
     serializeTags(b.initTags());
 }
 
+QString Contest::getCandidateName(int candidateId, Decision* decision) {
+    if (candidateId < m_contestants.size())
+        return m_contestants[candidateId].toMap()["name"].toString();
+    return decision->get_writeIns()[candidateId - m_contestants.size()].toMap()["name"].toString();
+}
+
 void Contest::setPendingDecision(Decision* newDecision) {
     if (newDecision == m_pendingDecision)
         return;

@@ -14,6 +14,8 @@ Item {
     clip: true
     state: "HIDDEN"
 
+    property var contest
+
     Behavior on height { NumberAnimation {
             duration: 150
             easing.type: Easing.InOutQuad

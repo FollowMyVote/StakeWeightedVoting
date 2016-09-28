@@ -16,18 +16,18 @@
 
 @0x8ed11a20887e5444;
 
-using BalanceId = import "ids.capnp".BalanceId;
+using ContestId = import "ids.capnp".ContestId;
 
 const voteMagic :Data = 0x"BA1107";
 # Magic number that goes at the beginning of all vote-related datagrams, to identify them as vote-related datagrams
 
 struct Datagram {
 # A piece of data stored on the blockchain. Datagrams are stored as belonging to a particular Balance, and the datagram
-# index is unique per-balance.
+# key is unique per-balance.
 
     struct DecisionKey {
     # The schema for the Key field of a decision datagram
-        balanceId @0 :BalanceId;
+        contestId @0 :ContestId;
     }
     struct ContestKey {
     # The schema for the Key field of a contest datagram

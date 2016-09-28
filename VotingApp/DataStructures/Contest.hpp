@@ -79,6 +79,19 @@ public:
         return m_officialDecision;
     }
 
+    /**
+     * @brief Get the name for the specified candidate
+     * @param candidateId The ID of the candidate to get a name for
+     * @param decision The decision from which the candidate ID was taken
+     * @return Name of the candidate having the provided ID
+     *
+     * On its face, it seems like getting the name for a candidate would require only the contest (and particularly,
+     * the list of contestants), but this isn't actually so because decisions may specify write-in candidates. Thus it
+     * is necessary to know the decision in order to get the candidate name, in case the candidate is a write-in and
+     * not a well-known contestant.
+     */
+    Q_INVOKABLE QString getCandidateName(int candidateId, swv::data::Decision* decision);
+
 public slots:
     /// @brief Set the pending decision. Destroys the old pending decision and takes ownership of the new one.
     void setPendingDecision(Decision* newDecision);

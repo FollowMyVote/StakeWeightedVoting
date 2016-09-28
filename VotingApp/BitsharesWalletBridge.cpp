@@ -323,41 +323,54 @@ kj::Promise<void> BWB::BlockchainWalletApiImpl::getContestById(GetContestByIdCon
         auto key = datagramReader.getKey().getKey();
         KJ_REQUIRE(key.isDecisionKey(), "Invalid decision ID references a datagram which does not contain a decision",
                    operationInstance);
-        KJ_REQUIRE(decodedOp["payer"].toString().replace("1.2.", QString::null).toULongLong() ==
-                       key.getDecisionKey().getBalanceId().getAccountInstance(),
-                   "Decision claims to be published by a different account than actually published it.");
 
         // Set the actual decision in the result
         auto result = context.getResults().getRecord();
         BlobMessageReader contestMessage(datagramReader.getContent());
         result.setDecision(contestMessage->getRoot<::Decision>());
 
+        auto contestId = QStringLiteral("1.11.%1").arg(result.getDecision().getContest().getOperationId());
+
         // Fire off calls to fetch the other necessary info, storing promises for when that's done
         auto promiseArray = kj::heapArrayBuilder<kj::Promise<void>>(3);
+        // Set timestamp
         promiseArray.add(beginCall("blockchain.getBlockByHeight", QJsonArray() << response.toObject()["block_num"])
                 .then([result](QJsonValue block) mutable {
             auto timestamp = static_cast<uint64_t>(QDateTime::fromString(block.toObject()["timestamp"].toString(),
                                                    Qt::ISODate).toMSecsSinceEpoch());
             result.setTimestamp(timestamp);
         }));
+        // Set voter name
         promiseArray.add(beginCall("blockchain.getObjectById", QJsonArray() << decodedOp["payer"])
                 .then([result](QJsonValue response) mutable {
             result.setVoter(response.toObject()["name"].toString().toStdString());
         }));
-        promiseArray.add(beginCall("blockchain.getAccountBalances", QJsonArray() << decodedOp["payer"]).then(
-                    [result, coinInstance = key.getDecisionKey().getBalanceId().getCoinInstance()]
-                    (QJsonValue response) mutable {
-            // Set weight to 0, and overwrite it if we find a balance of the right type
-            result.setWeight(0);
-            auto balances = response.toArray();
-            auto coinId = QStringLiteral("1.3.%1").arg(coinInstance);
-            // I don't care whether I find it or not, I'm just using find_if so it stops iterating if we find it
-            std::find_if(balances.begin(), balances.end(), [result, coinId](const QJsonValue& balance) mutable {
-                if (balance.toObject()["type"].toString() == coinId) {
-                    result.setWeight(balance.toObject()["amount"].toString().toULongLong());
-                    return true;
-                }
-                return false;
+        // Set stake (fetch contest, get it's coin, find voter's balance in that coin)
+        promiseArray.add(beginCall("blockchain.getObjectById", QJsonArray() << contestId).then(
+        [this, result, decodedOp](QJsonValue response) mutable {
+            // TODO: Be less optimistic here; check data validity like in getContestById
+            // Share code between this and getContestById? Perhaps implement caching?
+            auto data = response.toObject()["op"].toArray()[1].toObject()["data"].toString().toLocal8Bit();
+            auto dataReader = convertBlob(data);
+            BlobMessageReader datagramMessage(dataReader.slice(::VOTE_MAGIC->size(), dataReader.size()));
+            auto datagramReader = datagramMessage->getRoot<::Datagram>();
+            BlobMessageReader contestMessage(datagramReader.getContent());
+            auto coinInstance = contestMessage->getRoot<::Contest>().getCoin();
+
+            return beginCall("blockchain.getAccountBalances", QJsonArray() << decodedOp["payer"]).then(
+            [result, coinInstance] (QJsonValue response) mutable {
+                // Set weight to 0, and overwrite it if we find a balance of the right type
+                result.setWeight(0);
+                auto balances = response.toArray();
+                auto coinId = QStringLiteral("1.3.%1").arg(coinInstance);
+                // I don't care whether I find it or not, I'm just using find_if so it stops iterating if we find it
+                std::find_if(balances.begin(), balances.end(), [result, coinId](const QJsonValue& balance) mutable {
+                    if (balance.toObject()["type"].toString() == coinId) {
+                        result.setWeight(balance.toObject()["amount"].toString().toULongLong());
+                        return true;
+                    }
+                    return false;
+                });
             });
         }));
 
@@ -432,7 +445,7 @@ kj::Promise<void> BWB::BlockchainWalletApiImpl::publishDatagram(PublishDatagramC
              {"data", QString(buffer.toHex())}
          }}
     };
-    return setFeesAndBroadcastTransaction(QJsonArray() << customOp).then([](auto){});
+    return setFeesAndBroadcastTransaction(QJsonArray() << customOp).then([](const auto&){});
 }
 
 kj::Promise<void> BWB::BlockchainWalletApiImpl::transfer(TransferContext context) {
@@ -484,8 +497,8 @@ kj::Promise<void> BWB::BlockchainWalletApiImpl::transfer(TransferContext context
 
     // Wait for all promises in the vector to resolve; at that point, transferOp will be ready.
     return kj::joinPromises(promises.releaseAsArray()).then([this, op = kj::mv(transferOp)] {
-        return setFeesAndBroadcastTransaction(QJsonArray() << *op);
-    }).then([](auto){});
+        return setFeesAndBroadcastTransaction(QJsonArray() << *op).then([](QString){});
+    });
 }
 
 ::kj::Promise<void> BWB::BlockchainWalletApiImpl::getSharedSecret(GetSharedSecretContext context) {

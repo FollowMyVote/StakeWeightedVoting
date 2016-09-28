@@ -56,7 +56,7 @@ ContestResultsApi::ContestResultsApi(ContestResults::Client resultsApi, PromiseC
 
     auto subscribeRequest = resultsApi.subscribeRequest();
     subscribeRequest.setNotifier(kj::heap<ResultsNotifier>(*this));
-    converter.adopt(subscribeRequest.send().then([](auto){}));
+    converter.adopt(subscribeRequest.send());
 }
 
 ContestResultsApi::~ContestResultsApi() noexcept {}

@@ -102,7 +102,8 @@ kj::Promise<std::unique_ptr<data::Decision>> BlockchainWalletApi::_getDecision(Q
                 // Start a lookup for the datagram and store the promise.
                 auto request = wrapper->m_chain.getDatagramByBalanceRequest();
                 request.setBalanceId(balance.getId());
-                request.initKey().initKey().initDecisionKey().setBalanceId(balance.getId());
+                auto contestIdReader = convertSerialStruct<::ContestId>(contestId);
+                request.initKey().initKey().initDecisionKey().setContestId(*contestIdReader);
                 datagramPromises.add(request.send().then([](auto response) -> kj::Maybe<DatagramResponse> {
                         return kj::mv(response);
                     }, [](kj::Exception e) -> kj::Maybe<DatagramResponse> {
@@ -118,7 +119,7 @@ kj::Promise<std::unique_ptr<data::Decision>> BlockchainWalletApi::_getDecision(Q
                 }
             }
         } accumulator{this, contestId,
-                    kj::heapArrayBuilder<kj::Promise<kj::Maybe<DatagramResponse>>>(balances.size()), {}};
+                      kj::heapArrayBuilder<kj::Promise<kj::Maybe<DatagramResponse>>>(balances.size()), {}};
 
         // Process all of the balances. Fetch the appropriate decision for each.
         qDebug() << "Looking for decisions on" << balances.size() << "balances.";

@@ -160,6 +160,7 @@ Page {
                                 Repeater {
                                     model: recordGroupColumn.replacedDecisions
                                     delegate: DecisionDelegate {
+                                        contest: contestDetailPage.contest
                                         decision: modelData
                                         UI.ExtraAnchors.horizontalFill: parent
                                     }
@@ -168,6 +169,7 @@ Page {
                         }
                         DecisionDelegate {
                             UI.ExtraAnchors.horizontalFill: parent
+                            contest: contestDetailPage.contest
                             decision: recordGroupColumn.currentDecision
                         }
                     }

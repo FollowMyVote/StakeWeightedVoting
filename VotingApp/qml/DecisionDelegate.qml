@@ -11,17 +11,15 @@ import QuickPromise 1.0
 
 Label {
     property var decision
+    property var contest
     property string voteAction: {
         var chosenOnes = Object.keys(decision.opinions).filter(function(c) {
             return !!decision.opinions[c]
         })
         if (chosenOnes.length !== 1)
             return qsTr("revoked his/her vote")
-        var name = contestDetailPage.candidates[chosenOnes[0]]
+        var name = contest.getCandidateName(chosenOnes[0], contest)
         return qsTr("voted for %1").arg(name)
     }
-    text: qsTr("On %1, %2 %3").arg(decision.timestamp)
-    .arg(decision.voter)
-    .arg(voteAction)
+    text: qsTr("On %1, %2 %3").arg(decision.timestamp).arg(decision.voter).arg(voteAction)
 }
-    
