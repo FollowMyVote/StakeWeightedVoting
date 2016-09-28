@@ -100,7 +100,7 @@ public:
                     request.setCoinId(wrapper->get_coinId());
                     // Get one week of volume history
                     request.setVolumeHistoryLength(24 * 7);
-                    tasks.add(request.send().then([wrapper](auto r) {
+                    tasks.add(request.send().then([wrapper](capnp::Response<::Backend::GetCoinDetailsResults> r) {
                         wrapper->updateFields(r.getDetails());
                     }));
                 });
@@ -412,7 +412,7 @@ QJSValue VotingSystem::castPendingDecision(swv::data::Contest* contest) {
             dgram.initKey().initKey().initDecisionKey().setContestId(*contestId);
             dgram.setContent(packer.array());
 
-            promises.add(request.send().then([](const auto&){}));
+            promises.add(request.send().then([](capnp::Response<::BlockchainWallet::PublishDatagramResults>){}));
         }
 
         return kj::joinPromises(promises.finish());

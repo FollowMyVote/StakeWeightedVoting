@@ -184,7 +184,7 @@ kj::Promise<void> BWB::BlockchainWalletApiImpl::getAllCoins(GetAllCoinsContext c
 
 kj::Promise<void> BWB::BlockchainWalletApiImpl::unlockWallet(UnlockWalletContext) {
     KJ_LOG(DBG, __FUNCTION__);
-    return beginCall("wallet.unlockWallet", {}, true).then([](auto){});
+    return beginCall("wallet.unlockWallet", {}, true).then([](QJsonValue){});
 }
 
 kj::Promise<void> BWB::BlockchainWalletApiImpl::listMyAccounts(ListMyAccountsContext context) {
