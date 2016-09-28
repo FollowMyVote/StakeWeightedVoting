@@ -165,9 +165,7 @@ kj::Promise<std::unique_ptr<data::Decision>> BlockchainWalletApi::_getDecision(Q
 
 QJSValue BlockchainWalletApi::getDecisionRecord(QString decisionId) {
     auto request = m_chain.getDecisionRecordByIdRequest();
-    auto id = QByteArray::fromHex(decisionId.toLocal8Bit());
-    BlobMessageReader reader(convertBlob(id));
-    request.setId(reader->getRoot<::DecisionId>());
+    request.setId(*convertSerialStruct<::DecisionId>(decisionId));
     return promiseConverter.convert(request.send(),
                                     [](capnp::Response<BlockchainWallet::GetDecisionRecordByIdResults> r) {
         return QVariant::fromValue(new swv::data::DecisionRecord(r.getRecord()));
@@ -204,8 +202,7 @@ QJSValue BlockchainWalletApi::getContest(QString contestId, QString pendingDecis
             if (settings.contains(key)) {
                 try {
                     auto bytes = settings.value(key, QByteArray()).toByteArray();
-                    BlobMessageReader reader(convertBlob(bytes));
-                    decision->updateFields(reader->getRoot<::Decision>());
+                    decision->updateFields(*convertSerialStruct<::Decision>(bytes));
                     contest->setPendingDecision(decision);
                 } catch (kj::Exception e) {
                     emit this->error(tr("Error when recovering decision: %1")
@@ -247,9 +244,7 @@ QJSValue BlockchainWalletApi::transfer(QString sender, QString recipient, qint64
 
 capnp::RemotePromise<BlockchainWallet::GetContestByIdResults> BlockchainWalletApi::getContestImpl(QString contestId) {
     auto request = m_chain.getContestByIdRequest();
-    auto id = QByteArray::fromHex(contestId.toLocal8Bit());
-    BlobMessageReader reader(convertBlob(id));
-    request.setId(reader->getRoot<::ContestId>());
+    request.setId(*convertSerialStruct<::ContestId>(contestId));
     return request.send();
 }
 

@@ -463,7 +463,8 @@ void VotingSystem::cancelPendingDecision(data::Contest* contest) {
 
     auto promise = d->chain->_getDecision(currentAccount()->get_name(), contest->get_id());
     d->tasks.add(promise.then([contest](std::unique_ptr<swv::data::Decision> decision) {
-        contest->setPendingDecision(decision.release());
+        contest->pendingDecision()->set_writeIns(decision->get_writeIns());
+        contest->pendingDecision()->set_opinions(decision->get_opinions());
     }, [contest](kj::Exception) {
         contest->pendingDecision()->set_opinions({});
         contest->pendingDecision()->set_writeIns({});
