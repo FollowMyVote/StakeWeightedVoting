@@ -61,7 +61,7 @@ class TlsPskAdaptor : public kj::AsyncIoStream {
     /// Begin an asynchronous loop reading bytes from the wire and passing them to the TLS channel
     void startReadLoop();
     /// The body of the read loop
-    void processBytes(std::vector<Botan::byte> buffer);
+    void processBytes(std::unique_ptr<std::vector<Botan::byte>> buffer);
 
     kj::Promise<void> writeImpl(kj::ArrayPtr<const kj::byte> buffer);
 

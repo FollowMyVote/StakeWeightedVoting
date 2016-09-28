@@ -70,6 +70,10 @@ public:
     void adopt(kj::Promise<void>&& promise) {
         tasks.add(kj::mv(promise));
     }
+    template<typename ResultType>
+    void adopt(kj::Promise<ResultType>&& promise) {
+        tasks.add(promise.then([](ResultType){}));
+    }
 
 private:
     kj::TaskSet& tasks;

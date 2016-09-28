@@ -47,6 +47,8 @@ void ContestResultsApi::updateResults(capnp::List<ContestResults::TalliedOpinion
 ContestResultsApi::ContestResultsApi(ContestResults::Client resultsApi, PromiseConverter& converter)
     : resultsApi(resultsApi),
       converter(converter) {
+    KJ_DBG("Created results API", this);
+
     auto resultsRequest = resultsApi.resultsRequest().send();
 
     converter.adopt(resultsRequest.then([this](capnp::Response<ContestResults::ResultsResults> results) {
@@ -56,10 +58,12 @@ ContestResultsApi::ContestResultsApi(ContestResults::Client resultsApi, PromiseC
 
     auto subscribeRequest = resultsApi.subscribeRequest();
     subscribeRequest.setNotifier(kj::heap<ResultsNotifier>(*this));
-    converter.adopt(subscribeRequest.send().then([](auto){}));
+    converter.adopt(subscribeRequest.send());
 }
 
-ContestResultsApi::~ContestResultsApi() noexcept {}
+ContestResultsApi::~ContestResultsApi() noexcept {
+    KJ_DBG("Destroyed results API", this);
+}
 
 DecisionGeneratorApi* ContestResultsApi::getDecisionGenerator() {
     return new DecisionGeneratorApi(resultsApi.decisionsRequest().send().getDecisionGenerator(), converter);

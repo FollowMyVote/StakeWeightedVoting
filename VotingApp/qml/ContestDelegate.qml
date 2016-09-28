@@ -19,11 +19,14 @@ Rectangle {
         // Mention these, so the binding re-evaluates if they change
         contest.pendingDecision.opinions && contest.pendingDecision.writeIns && contest.officialDecision &&
                 contest.officialDecision.opinions && contest.officialDecision.writeIns
-        if (!contest || !contest.pendingDecision || !contest.officialDecision || contest.officialDecision.isNull())
-            return contest.pendingDecision.isNull()? ContestDecisionStatus.NoDecision
-                                                   : ContestDecisionStatus.PendingDecision
-        return contest.officialDecision.isEqual(contest.pendingDecision)?
-                    ContestDecisionStatus.OfficialDecision : ContestDecisionStatus.PendingDecision
+
+        if (!contest || !contest.pendingDecision)
+            return ContestDecisionStatus.NoDecision
+        if (contest.pendingDecision.isNull() && (!contest.officialDecision || contest.officialDecision.isNull()))
+            return ContestDecisionStatus.NoDecision
+        if (contest.officialDecision && contest.pendingDecision.isEqual(contest.officialDecision))
+            return ContestDecisionStatus.OfficialDecision
+        return ContestDecisionStatus.PendingDecision
     }
 
     Column {
@@ -97,6 +100,7 @@ Rectangle {
         ContestStatusRow {
             id: buttonRowContainer
             width: parent.width
+            contest: contestDelegate.contest
             state: {
                 if (contestDelegate.status === ContestDecisionStatus.NoDecision)
                     return "HIDDEN"

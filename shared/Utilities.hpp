@@ -82,9 +82,9 @@ inline bool operator== (const ::Datagram::DatagramKey::Reader& a, const ::Datagr
         return ac.getSignature().getId() == bc.getSignature().getId() &&
                 ac.getSignature().getSignature() == bc.getSignature().getSignature();
     }
-    auto ad = a.getKey().getDecisionKey().getBalanceId();
-    auto bd = b.getKey().getDecisionKey().getBalanceId();
-    return ad.getAccountInstance() == bd.getAccountInstance() && ad.getCoinInstance() == bd.getCoinInstance();
+    auto ad = a.getKey().getDecisionKey().getContestId();
+    auto bd = b.getKey().getDecisionKey().getContestId();
+    return ad.getOperationId() == bd.getOperationId();
 }
 inline bool operator!= (const ::Datagram::DatagramKey::Reader& a, const ::Datagram::DatagramKey::Reader& b) {
     return !(a==b);
