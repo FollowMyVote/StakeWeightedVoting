@@ -411,13 +411,12 @@ kj::Promise<void> BWB::BlockchainWalletApiImpl::getDatagramByBalance(GetDatagram
                 continue;
 
             // Deserialize the datagram
-            data = data.mid(VOTE_MAGIC->size());
-            BlobMessageReader datagramMessage(convertBlob(data));
-            auto datagram = datagramMessage->getRoot<::Datagram>();
+            auto datagram = convertSerialStruct<::Datagram>(data.mid(VOTE_MAGIC->size()));
+            ::Datagram::Reader reader = *datagram;
 
             // If the datagram's key matches our search key, finish the call
-            if (datagram.getKey() == context.getParams().getKey()) {
-                context.getResults().setDatagram(datagramMessage->getRoot<::Datagram>());
+            if (reader.getKey() == context.getParams().getKey()) {
+                context.getResults().setDatagram(reader);
                 return;
             }
         }

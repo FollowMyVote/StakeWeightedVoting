@@ -62,6 +62,10 @@ public:
         : blob(std::make_unique<QByteArray>(QByteArray::fromHex(serialHex.toLocal8Bit()))),
           message(convertBlob(*blob)),
           content(message->getRoot<Struct>()) {}
+    Storage(const QByteArray& serial)
+        : blob(std::make_unique<QByteArray>(serial)),
+          message(convertBlob(*blob)),
+          content(message->getRoot<Struct>()) {}
 
     operator capnp::ReaderFor<Struct>() { return content; }
 };
@@ -72,6 +76,10 @@ public:
 template <typename Struct>
 inline kj::Own<_::Storage<Struct>> convertSerialStruct(QString serialHex) {
     return kj::heap<_::Storage<Struct>>(serialHex);
+}
+template <typename Struct>
+inline kj::Own<_::Storage<Struct>> convertSerialStruct(const QByteArray& serial) {
+    return kj::heap<_::Storage<Struct>>(serial);
 }
 
 } // namespace swv
