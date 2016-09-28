@@ -173,7 +173,7 @@ QJSValue BlockchainWalletApi::getDecisionRecord(QString decisionId) {
 }
 
 void BlockchainWalletApi::unlockWallet() {
-    promiseConverter.adopt(m_chain.unlockWalletRequest().send().then([](auto){}));
+    promiseConverter.adopt(m_chain.unlockWalletRequest().send());
 }
 
 QJSValue BlockchainWalletApi::getBalancesBelongingTo(QString owner) {
