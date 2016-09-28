@@ -444,7 +444,7 @@ kj::Promise<void> BWB::BlockchainWalletApiImpl::publishDatagram(PublishDatagramC
              {"data", QString(buffer.toHex())}
          }}
     };
-    return setFeesAndBroadcastTransaction(QJsonArray() << customOp).then([](const auto&){});
+    return setFeesAndBroadcastTransaction(QJsonArray() << customOp).then([](QString){});
 }
 
 kj::Promise<void> BWB::BlockchainWalletApiImpl::transfer(TransferContext context) {
