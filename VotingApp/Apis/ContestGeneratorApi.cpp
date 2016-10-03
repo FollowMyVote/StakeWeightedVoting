@@ -43,21 +43,21 @@ QJSValue ContestGeneratorApi::getContests(int count) {
     auto request = generator.getValuesRequest();
     request.setCount(count);
     m_isFetchingContests = true;
-    emit isFetchingContestsChanged(true);
+    emit this->isFetchingContestsChanged(true);
 
     auto pass = [this](auto&& e) {
         m_isFetchingContests = false;
-        emit isFetchingContestsChanged(false);
+        emit this->isFetchingContestsChanged(false);
         return kj::mv(e);
     };
 
     auto contestsPromise = request.send().then([this, count](capnp::Response<ContestGenerator::GetValuesResults> r) {
         if (!r.hasValues() || r.getValues().size() < count) {
             m_isOutOfContests = true;
-            emit isOutOfContestsChanged(true);
+            emit this->isOutOfContestsChanged(true);
         }
         m_isFetchingContests = false;
-        emit isFetchingContestsChanged(false);
+        emit this->isFetchingContestsChanged(false);
         return kj::mv(r);
     }, pass);
 

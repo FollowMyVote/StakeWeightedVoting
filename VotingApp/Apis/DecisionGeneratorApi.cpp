@@ -37,22 +37,22 @@ QJSValue DecisionGeneratorApi::getDecisions(int count) {
     auto request = generator.getValuesRequest();
     request.setCount(count);
     m_isFetchingDecisions = true;
-    emit isFetchingDecisionsChanged(true);
+    emit this->isFetchingDecisionsChanged(true);
 
     auto pass = [this](auto&& e) {
         KJ_DBG(e);
         m_isFetchingDecisions = false;
-        emit isFetchingDecisionsChanged(false);
+        emit this->isFetchingDecisionsChanged(false);
         return kj::mv(e);
     };
 
     auto contestsPromise = request.send().then([this, count](capnp::Response<DecisionGenerator::GetValuesResults> r) {
         if (!r.hasValues() || r.getValues().size() < count) {
             m_isOutOfDecisions = true;
-            emit isOutOfDecisionsChanged(true);
+            emit this->isOutOfDecisionsChanged(true);
         }
         m_isFetchingDecisions = false;
-        emit isFetchingDecisionsChanged(false);
+        emit this->isFetchingDecisionsChanged(false);
         return kj::mv(r);
     }, pass);
 
