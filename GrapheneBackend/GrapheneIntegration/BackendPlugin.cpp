@@ -20,6 +20,7 @@
 #include "ApiServers/BackendServer.hpp"
 #include "compat/FcStreamWrapper.hpp"
 #include <BotanIntegration/TlsPskAdaptorFactory.hpp>
+#include <BotanIntegration/TlsPskAdaptor.hpp>
 
 #include <contest.capnp.h>
 

@@ -31,6 +31,7 @@
 
 #include <Utilities.hpp>
 #include <BotanIntegration/TlsPskAdaptorFactory.hpp>
+#include <BotanIntegration/TlsPskAdaptor.hpp>
 
 #include <QDebug>
 #include <QQmlEngine>
@@ -183,7 +184,8 @@ public:
             }, authenticatingAccount.toStdString());
 
             qDebug() << "Authenticating to server as" << authenticatingAccount;
-            serverStream = cryptoFactory->addClientTlsAdaptor(kj::heap<QSocketWrapper>(*socket));
+            auto stream = cryptoFactory->addClientTlsAdaptor(kj::heap<QSocketWrapper>(*socket));
+            serverStream = kj::Own<kj::AsyncIoStream>(kj::mv(stream));
             client = kj::heap<TwoPartyClient>(*serverStream);
             backend = kj::heap<BackendApi>(client->bootstrap().castAs<Backend>(), *promiseConverter);
             emit q->backendConnected();
