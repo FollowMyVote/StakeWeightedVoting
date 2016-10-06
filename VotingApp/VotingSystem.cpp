@@ -185,13 +185,21 @@ public:
 
             qDebug() << "Authenticating to server as" << authenticatingAccount;
             auto stream = cryptoFactory->addClientTlsAdaptor(kj::heap<QSocketWrapper>(*socket));
+            promiseConverter->adopt(stream->handshakeComplete().then([this, q, promise = connectionPromise.get()]() {
+                client = kj::heap<TwoPartyClient>(*serverStream);
+                backend = kj::heap<BackendApi>(client->bootstrap().castAs<Backend>(), *promiseConverter);
+                emit q->backendConnected();
+                emit q->backendConnectedChanged(true);
+                promise->resolve();
+            }, [this, q, promise = connectionPromise.get()](const kj::Exception& e) {
+                KJ_LOG(ERROR, "TLS handshake failed", e);
+                promise->reject("Couldn't connect to Follow My Vote; handshake failed");
+                emit q->backendConnectedChanged(false);
+                backend = nullptr;
+                client = nullptr;
+                serverStream = nullptr;
+            }).attach(kj::mv(connectionPromise)));
             serverStream = kj::Own<kj::AsyncIoStream>(kj::mv(stream));
-            client = kj::heap<TwoPartyClient>(*serverStream);
-            backend = kj::heap<BackendApi>(client->bootstrap().castAs<Backend>(), *promiseConverter);
-            emit q->backendConnected();
-            emit q->backendConnectedChanged(true);
-            qDebug() << "Backend connected";
-            connectionPromise->resolve();
         }));
     }
 
