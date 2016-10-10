@@ -76,7 +76,7 @@ TlsPskAdaptorFactory::TlsPskAdaptorFactory(GetPskFunction&& getPskForAccount, st
 
 TlsPskAdaptorFactory::~TlsPskAdaptorFactory() {}
 
-kj::Own<kj::AsyncIoStream> TlsPskAdaptorFactory::addClientTlsAdaptor(kj::Own<kj::AsyncIoStream>&& stream) {
+kj::Own<TlsPskAdaptor> TlsPskAdaptorFactory::addClientTlsAdaptor(kj::Own<kj::AsyncIoStream>&& stream) {
     auto adaptor = kj::heap<TlsPskAdaptor>(kj::mv(stream));
     adaptor->setChannel(kj::heap<Botan::TLS::Client>(adaptor->outputFunction(),
                                                      adaptor->dataCallback(),
@@ -89,7 +89,7 @@ kj::Own<kj::AsyncIoStream> TlsPskAdaptorFactory::addClientTlsAdaptor(kj::Own<kj:
     return kj::mv(adaptor);
 }
 
-kj::Own<kj::AsyncIoStream> TlsPskAdaptorFactory::addServerTlsAdaptor(kj::Own<kj::AsyncIoStream>&& stream) {
+kj::Own<TlsPskAdaptor> TlsPskAdaptorFactory::addServerTlsAdaptor(kj::Own<kj::AsyncIoStream>&& stream) {
     auto adaptor = kj::heap<TlsPskAdaptor>(kj::mv(stream));
     adaptor->setChannel(kj::heap<Botan::TLS::Server>(adaptor->outputFunction(),
                                                      adaptor->dataCallback(),

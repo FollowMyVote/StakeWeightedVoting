@@ -69,6 +69,9 @@ public:
     TlsPskAdaptor(kj::Own<kj::AsyncIoStream> stream);
     virtual ~TlsPskAdaptor(){}
 
+    /// @brief Get a promise which resolves when the handshake completes, or breaks when it fails
+    kj::Promise<void> handshakeComplete() { return handshakeCompleted.addBranch(); }
+
     void setChannel(kj::Own<Botan::TLS::Channel>&& channel) {
         this->channel = kj::mv(channel);
         startReadLoop();
