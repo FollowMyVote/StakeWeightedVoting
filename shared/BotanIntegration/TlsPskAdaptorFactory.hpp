@@ -1,7 +1,7 @@
 #ifndef TLSPSKSERVER_HPP
 #define TLSPSKSERVER_HPP
 
-#include <kj/common.h>
+#include <kj/memory.h>
 
 #include <functional>
 #include <vector>
@@ -12,6 +12,7 @@ namespace kj { class AsyncIoStream; }
 namespace Botan { using byte = uint8_t; namespace TLS { class Alert; class Session; } }
 
 namespace fmv {
+class TlsPskAdaptor;
 
 class TlsPskAdaptorFactory {
 protected:
@@ -23,8 +24,8 @@ public:
     TlsPskAdaptorFactory(GetPskFunction&& getPskForAccount, std::string myAccountName);
     ~TlsPskAdaptorFactory();
 
-    kj::Own<kj::AsyncIoStream> addClientTlsAdaptor(kj::Own<kj::AsyncIoStream>&& stream);
-    kj::Own<kj::AsyncIoStream> addServerTlsAdaptor(kj::Own<kj::AsyncIoStream>&& stream);
+    kj::Own<fmv::TlsPskAdaptor> addClientTlsAdaptor(kj::Own<kj::AsyncIoStream>&& stream);
+    kj::Own<fmv::TlsPskAdaptor> addServerTlsAdaptor(kj::Own<kj::AsyncIoStream>&& stream);
 };
 
 } // namespace fmv
