@@ -2,6 +2,7 @@ import qbs
 
 Project {
     id: project
+    minimumQbsVersion: "1.6.0"
 
     property bool ignoreApp: false
 
