@@ -71,8 +71,8 @@ class PurchaseServer : public ::Purchase::Server {
     }
 
     gch::account_id_type publisher;
-    gch::asset_id_type vote;
     gch::asset_id_type bitUsd;
+    gch::asset_id_type vote;
 
     struct PaymentTransferVisitor;
 
@@ -328,7 +328,7 @@ graphene::chain::custom_operation PurchaseServer::buildPublishOperation() {
     return kj::READY_NOW;
 }
 
-::kj::Promise<void> PurchaseServer::prices(Purchase::Server::PricesContext context) {
+::kj::Promise<void> PurchaseServer::prices(Purchase::Server::PricesContext context) { try {
     KJ_LOG(DBG, __FUNCTION__, context.getParams());
     const auto& db = vdb.db();
     gch::custom_operation op = buildPublishOperation();
@@ -367,7 +367,7 @@ graphene::chain::custom_operation PurchaseServer::buildPublishOperation() {
     }
 
     return kj::READY_NOW;
-}
+} FC_LOG_AND_RETHROW() }
 
 ::kj::Promise<void> PurchaseServer::subscribe(Purchase::Server::SubscribeContext context) {
     KJ_LOG(DBG, __FUNCTION__, context.getParams());

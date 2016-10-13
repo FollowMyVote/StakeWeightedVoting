@@ -210,7 +210,8 @@ Page {
                     return total
                 })
                 adjustmentsRepeater.model = totalsAndAdjustments.adjustments.map(function(adjustment) {
-                    var coin = votingSystem.getCoin("VOTE")
+                    // TODO: change this to VOTE when we start dealing in VOTE
+                    var coin = votingSystem.getCoin("BTS")
                     adjustment.text = adjustment.reason + ": " +
                             (adjustment.amount / Math.pow(10, coin.precision)).toString() + " " + coin.name
                     return adjustment
