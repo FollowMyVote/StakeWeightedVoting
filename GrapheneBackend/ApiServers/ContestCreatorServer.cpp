@@ -64,6 +64,7 @@ class PurchaseServer : public ::Purchase::Server {
     }
     const gch::asset_object& lookupVote() {
         auto& assetIndex = vdb.db().get_index_type<gch::asset_index>().indices().get<gch::by_symbol>();
+        bitUsd = assetIndex.find("USD")->get_id();
         auto voteItr = assetIndex.find("VOTE");
         KJ_ASSERT(voteItr != assetIndex.end(), "Wat? VOTE is not registered?...");
         return *voteItr;
@@ -71,6 +72,7 @@ class PurchaseServer : public ::Purchase::Server {
 
     gch::account_id_type publisher;
     gch::asset_id_type vote;
+    gch::asset_id_type bitUsd;
 
     struct PaymentTransferVisitor;
 
@@ -330,23 +332,29 @@ graphene::chain::custom_operation PurchaseServer::buildPublishOperation() {
     KJ_LOG(DBG, __FUNCTION__, context.getParams());
     const auto& db = vdb.db();
     gch::custom_operation op = buildPublishOperation();
-    wdump((op));
 
-    // Calculate surcharges
-    std::map<std::string, int64_t> adjustments;
-    if (oversized) {
-        auto fee = op.fee;
-        auto charge = gch::asset(fee) * vote(db).options.core_exchange_rate;
-        adjustments["Data fee"] = charge.amount.value;
-        votePrice += charge.amount.value;
-    }
+    // We don't yet support payments in VOTE, so just disable all the fancy price logic for now.
+
+//    // Calculate surcharges
+    const auto& usd = bitUsd(db);
+    auto earlyRate = usd.amount(10000) * usd.bitasset_data(db).current_feed.settlement_price;
+    std::map<std::string, int64_t> adjustments = {{"Early Adopter Rate", earlyRate.amount.value},
+                                                  {"Publishing fee", op.fee.amount.value}};
+//    if (oversized) {
+//        auto fee = op.fee;
+//        auto charge = gch::asset(fee) * vote(db).options.core_exchange_rate;
+//        adjustments["Data fee"] = charge.amount.value;
+//        votePrice += charge.amount.value;
+//    }
 
     // TODO: handle sponsorships
     // TODO: handle promo codes
 
     auto price = context.getResults().initPrices(1)[0];
-    price.setCoinId(vote.instance);
-    price.setAmount(votePrice);
+//    price.setCoinId(vote.instance);
+//    price.setAmount(votePrice);
+    price.setCoinId(0);
+    price.setAmount(earlyRate.amount.value + op.fee.amount.value);
     price.setPayAddress(publisher(db).name);
     price.setPaymentMemo(purchaseUuid);
 

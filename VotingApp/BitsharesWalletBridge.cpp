@@ -465,8 +465,8 @@ kj::Promise<void> BWB::BlockchainWalletApiImpl::transfer(TransferContext context
              // null.
              {"memo", QJsonObject {
                   {"message", QString::fromStdString(context.getParams().getMemo())},
-                  {"from", "GPH1111111111111111111111111111111114T1Anm"},
-                  {"to", "GPH1111111111111111111111111111111114T1Anm"},
+                  {"from", "BTS1111111111111111111111111111111114T1Anm"},
+                  {"to", "BTS1111111111111111111111111111111114T1Anm"},
                   {"nonce", 0}
               }}
          }}

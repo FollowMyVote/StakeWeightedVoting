@@ -61,7 +61,7 @@ ApplicationWindow {
             if (currentAccount) {
                 console.log("*** Connecting to backend as", currentAccount.name)
                 connectionProgressPopup.text = qsTr("Connecting to Follow My Vote")
-                connectToBackend("localhost", 17073, currentAccount.name)
+                connectToBackend("swv-server.followmyvote.com", 17073, currentAccount.name)
             } else {
                 console.log("*** Current account unset; No accounts in wallet?")
                 connectionProgressPopup.text = qsTr("Wallet contains no accounts.\nCannot continue.")
