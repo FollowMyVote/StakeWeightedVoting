@@ -260,7 +260,8 @@ PurchaseServer::PurchaseServer(VoteDatabase& vdb, int64_t votePrice, bool oversi
 }
 
 void PurchaseServer::processPayment(const graphene::chain::transfer_operation& paymentTransfer) {
-    auto price = vote(vdb.db()).amount(votePrice);
+    // TODO: Change back to vote(vdb.db()) when we start processing payments in VOTE
+    auto price = gch::asset_id_type()(vdb.db()).amount(votePrice);
     wdump(("Processing payment")(paymentTransfer)(price));
     // TODO: Handle all the possible weird payment cases (payment in wrong asset, payment in wrong amount, payment in
     // multiple transfers) in some sane way, at least logging that it happened
@@ -340,6 +341,7 @@ graphene::chain::custom_operation PurchaseServer::buildPublishOperation() {
     auto earlyRate = usd.amount(10000) * usd.bitasset_data(db).current_feed.settlement_price;
     std::map<std::string, int64_t> adjustments = {{"Early Adopter Rate", earlyRate.amount.value},
                                                   {"Publishing fee", op.fee.amount.value}};
+    votePrice = earlyRate.amount.value;
 //    if (oversized) {
 //        auto fee = op.fee;
 //        auto charge = gch::asset(fee) * vote(db).options.core_exchange_rate;
