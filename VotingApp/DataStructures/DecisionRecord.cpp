@@ -2,6 +2,8 @@
 #include "Decision.hpp"
 #include "Converters.hpp"
 
+#include <QTimeZone>
+
 namespace swv {
 namespace data {
 
@@ -15,6 +17,8 @@ void DecisionRecord::updateFields(::DecisionRecord::Reader r) {
     update_voter(QString::fromStdString(r.getVoter()));
     update_weight(r.getWeight());
     update_timestamp(QDateTime::fromMSecsSinceEpoch(r.getTimestamp()));
+    // Blockchain time is UTC; update timezone to match.
+    m_timestamp.setTimeZone(QTimeZone::utc());
 
     // Decision has a fair bit of code to parse the opinions and writeins. Just use that rather than rewrite it here.
     swv::data::Decision d(r.getDecision());

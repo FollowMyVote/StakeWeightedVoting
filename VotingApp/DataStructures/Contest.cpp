@@ -20,6 +20,7 @@
 
 #include <QDebug>
 #include <QQmlEngine>
+#include <QTimeZone>
 
 namespace swv { namespace data {
 
@@ -34,6 +35,8 @@ void Contest::updateFields(::Contest::Reader r) {
     update_description(QString::fromStdString(r.getDescription()));
     update_name(QString::fromStdString(r.getName()));
     update_startTime(QDateTime::fromMSecsSinceEpoch(r.getStartTime()));
+    // Blockchain time is UTC; update timezone to match.
+    m_startTime.setTimeZone(QTimeZone::utc());
     updateContestants(r.getContestants());
     updateTags(r.getTags());
 }
