@@ -28,8 +28,17 @@ VoteDatabase::VoteDatabase(gch::database& chain)
     : chain(chain) {
 }
 
-void VoteDatabase::registerIndexes() {
+void VoteDatabase::initialize(const fc::path& dataDir) {
+    if (!fc::exists(dataDir / "configuration.bin") && fc::exists(dataDir / "blockchain" / "configuration.bin")) {
+        KJ_DBG("Moving Follow My Vote configuration to new location.");
+        fc::rename((dataDir / "blockchain" / "configuration.bin"), (dataDir / "configuration.bin"));
+    }
+    config.open((dataDir / "configuration.bin").preferred_string().c_str());
+    CustomEvaluator::setVoteDatabase(*this);
     chain.register_evaluator<CustomEvaluator>();
+}
+
+void VoteDatabase::registerIndexes() {
     _contestIndex = chain.add_index<gdb::primary_index<ContestIndex>>();
     // If build fails on this next line, it's because https://github.com/cryptonomex/graphene/pull/653 hasn't been
     // merged yet. You will need that patch in order to build this.
@@ -40,7 +49,6 @@ void VoteDatabase::registerIndexes() {
 
 void VoteDatabase::startup(graphene::net::node_ptr node) {
     p2p_node = node;
-    config.open((chain.get_data_dir() / "configuration.bin").preferred_string().c_str());
 }
 
 void VoteDatabase::ResultUpdateWatcher::object_modified(const graphene::db::object& after) {
