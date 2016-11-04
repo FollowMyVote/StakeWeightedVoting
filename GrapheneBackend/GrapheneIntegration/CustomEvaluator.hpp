@@ -21,12 +21,9 @@
 #include <graphene/chain/evaluator.hpp>
 #include <graphene/chain/protocol/custom.hpp>
 
-#include <kj/common.h>
-
 namespace gch = graphene::chain;
 
 namespace swv {
-class VoteDatabase;
 
 /**
  * @brief The CustomEvaluator class implements an evaluator for custom_operation ops, specifically for voting
@@ -37,20 +34,11 @@ class VoteDatabase;
  *
  * The data in a relevant custom_operation is a serialized Datagram. For the operation types and descriptions of their
  * behavior, see datagram.capnp
- *
- * @note The CustomEvaluator needs a reference to the VoteDatabase. Set this reference using the static setVoteDatabase
- * method before constructing any instances of CustomEvaluator
  */
-class CustomEvaluator : public gch::evaluator<CustomEvaluator> {
-    static kj::Maybe<VoteDatabase&> vdb;
+class CustomEvaluator : public gch::evaluator<CustomEvaluator>
+{
 public:
     using operation_type = gch::custom_operation;
-
-    CustomEvaluator();
-
-    static void setVoteDatabase(VoteDatabase& vdb) {
-        CustomEvaluator::vdb = vdb;
-    }
 
     gch::void_result do_evaluate(const operation_type&) { return {}; }
     gch::void_result do_apply(const operation_type& op);

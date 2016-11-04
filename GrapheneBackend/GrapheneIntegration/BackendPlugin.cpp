@@ -30,8 +30,6 @@
 
 #include <fc/crypto/digest.hpp>
 
-#include <boost/filesystem/path.hpp>
-
 namespace swv {
 
 BackendPlugin::BackendPlugin()
@@ -45,7 +43,6 @@ std::string BackendPlugin::plugin_name() const {
 void BackendPlugin::plugin_initialize(const boost::program_options::variables_map& options) {
     serverPort = options["port"].as<uint16_t>();
     database = kj::heap<VoteDatabase>(*app().chain_database());
-    database->initialize(options["data-dir"].as<boost::filesystem::path>());
     database->registerIndexes();
     KJ_LOG(INFO, "Follow My Vote plugin initialized");
 }
