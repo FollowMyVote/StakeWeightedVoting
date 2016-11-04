@@ -38,6 +38,7 @@
 #include <fc/io/raw_variant.hpp>
 #include <fc/crypto/elliptic.hpp>
 #include <fc/crypto/digest.hpp>
+#include <fc/smart_ref_impl.hpp>
 
 namespace swv {
 
