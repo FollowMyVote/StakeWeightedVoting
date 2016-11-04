@@ -20,7 +20,6 @@
 #include "Objects/Contest.hpp"
 #include "Objects/Decision.hpp"
 #include "Objects/CoinVolumeHistory.hpp"
-#include "VoteDatabase.hpp"
 
 #include <datagram.capnp.h>
 #include <decision.capnp.h>
@@ -41,8 +40,7 @@
 
 namespace swv {
 
-void processDecision(VoteDatabase& vdb, gch::account_id_type publisherId, ::Decision::Reader decision) {
-    auto& db = vdb.db();
+void processDecision(gch::database& db, gch::account_id_type publisherId, ::Decision::Reader decision) {
     KJ_REQUIRE(decision.getOpinions().size() <= 1, "Only single-candidate votes are supported", decision);
 
     // Recall that contests are ID'd by their operation history ID, not the object ID
@@ -99,29 +97,14 @@ inline T unpack(capnp::Data::Reader r) {
     return fc::raw::unpack<T>(std::vector<char>(r.begin(), r.end()));
 }
 
-void processContest(VoteDatabase& vdb, ::Datagram::ContestKey::Creator::Reader key,
+void processContest(gch::database& db, ::Datagram::ContestKey::Creator::Reader key,
                     fc::sha256 contestDigest, ::Contest::Reader contest) {
-    auto& db = vdb.db();
-    auto& index = db.get_index_type<gch::simple_index<gch::operation_history_object>>();
-    auto contestId = gch::operation_history_id_type(index.size());
-
-    auto blacklist = vdb.configuration().reader().getContestBlacklist();
-    KJ_DBG("Hey, fuck you! :D");
-    std::for_each(blacklist.begin(), blacklist.end(), [](::ContestId::Reader fuckyou) {KJ_DBG(fuckyou);});
-    auto idItr = std::find_if(blacklist.begin(), blacklist.end(),
-                              [id = contestId.instance.value](::ContestId::Reader r) {
-        return r.getOperationId() == id;
-    });
-    if (idItr != blacklist.end()) {
-        KJ_LOG(DBG, "Ignoring blacklisted contest", contestId.instance.value);
-        return;
-    }
-
     // All relevant data consistency checks should have been done before FMV published the contest to the chain. We
     // should be able to skip them here, relying on the FMV signature to be sure this is a legitimate contest creation
     // request.
-    const auto& contestObject = db.create<Contest>([&db, key, contestDigest, contest, contestId](Contest& c) {
-        c.contestId = contestId;
+    const auto& contestObject = db.create<Contest>([&db, key, contestDigest, contest](Contest& c) {
+        auto& index = db.get_index_type<gch::simple_index<gch::operation_history_object>>();
+        c.contestId = gch::operation_history_id_type(index.size());
         if (key.isSignature()) {
             auto signaturePack = key.getSignature();
             auto id = unpack<gch::account_id_type>(signaturePack.getId());
@@ -149,11 +132,6 @@ inline fc::sha256 digest(capnp::Data::Reader r) {
     return fc::digest(std::vector<char>(r.begin(), r.end()));
 }
 
-kj::Maybe<VoteDatabase&> CustomEvaluator::vdb;
-CustomEvaluator::CustomEvaluator() {
-    KJ_REQUIRE(vdb != nullptr, "Must call CustomEvaluator::setVoteDatabase() before constructing a CustomEvaluator.");
-}
-
 graphene::chain::void_result CustomEvaluator::do_apply(const CustomEvaluator::operation_type& op) {
     try {
         kj::ArrayPtr<const kj::byte> data(reinterpret_cast<const kj::byte*>(op.data.data()), op.data.size());
@@ -177,7 +155,7 @@ graphene::chain::void_result CustomEvaluator::do_apply(const CustomEvaluator::op
                 KJ_REQUIRE(key.getContestId().getOperationId() == content.getContest().getOperationId(),
                            "Decision is not valid: key's contest ID doesn't match decision's contest ID",
                            key.getContestId(), content.getContest());
-                processDecision(KJ_ASSERT_NONNULL(vdb), op.fee_payer(), content);
+                processDecision(db(), op.fee_payer(), content);
                 break;
             }
             case Datagram::DatagramKey::Key::CONTEST_KEY: {
@@ -186,7 +164,7 @@ graphene::chain::void_result CustomEvaluator::do_apply(const CustomEvaluator::op
                 KJ_REQUIRE(kj::StringPtr(op.fee_payer()(db()).name) == CONTEST_PUBLISHING_ACCOUNT,
                            "Unauthorized account attempted to publish contest",
                            op.fee_payer()(db()).name, *CONTEST_PUBLISHING_ACCOUNT);
-                processContest(KJ_ASSERT_NONNULL(vdb), datagram.getKey().getKey().getContestKey().getCreator(),
+                processContest(db(), datagram.getKey().getKey().getContestKey().getCreator(),
                                digest(datagram.getContent()), content);
                 break;
             }
