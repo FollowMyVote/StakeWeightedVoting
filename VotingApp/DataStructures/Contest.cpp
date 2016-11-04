@@ -17,6 +17,7 @@
  */
 
 #include "Contest.hpp"
+#include "Converters.hpp"
 
 #include <QDebug>
 #include <QQmlEngine>
@@ -54,6 +55,10 @@ QString Contest::getCandidateName(int candidateId, Decision* decision) {
     if (candidateId < m_contestants.size())
         return m_contestants[candidateId].toMap()["name"].toString();
     return decision->get_writeIns()[candidateId - m_contestants.size()].toMap()["name"].toString();
+}
+
+QString Contest::simpleId() const {
+    return QString::number(convertSerialStruct<::ContestId>(m_id)->reader().getOperationId());
 }
 
 void Contest::setPendingDecision(Decision* newDecision) {
