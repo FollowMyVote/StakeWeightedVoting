@@ -92,6 +92,14 @@ public:
      */
     Q_INVOKABLE QString getCandidateName(int candidateId, swv::data::Decision* decision);
 
+    /**
+     * @brief Get a simplified format of the contest ID
+     *
+     * Instead of a long-form contest ID, such as 100210010108, returns simply 8
+     * @note This may not be applicable on all blockchains, in which case this simply returns the unmodified ID
+     */
+    Q_INVOKABLE QString simpleId() const;
+
 public slots:
     /// @brief Set the pending decision. Destroys the old pending decision and takes ownership of the new one.
     void setPendingDecision(Decision* newDecision);
