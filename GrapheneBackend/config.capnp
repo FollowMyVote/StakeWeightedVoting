@@ -1,6 +1,7 @@
 @0xc958eba51b7c4b59;
 
 using ContestCreator = import "/contestcreator.capnp".ContestCreator;
+using ContestId = import "/ids.capnp".ContestId;
 using Map = import "/map.capnp".Map;
 
 struct Config {
@@ -12,6 +13,9 @@ struct Config {
     # Private key (WIF format) for the contest publishing account
     authenticatingKeyWif @3 :Text;
     # Private key to authenticate to client with (usually the contest publisher's memo key)
+
+    contestBlacklist @4 :List(ContestId);
+    # List of contest IDs which the server will not track
 
     struct Price {
        lineItem @0 :ContestCreator.LineItems;
