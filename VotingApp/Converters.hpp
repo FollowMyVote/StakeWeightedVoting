@@ -68,6 +68,7 @@ public:
           content(message->getRoot<Struct>()) {}
 
     operator capnp::ReaderFor<Struct>() { return content; }
+    capnp::ReaderFor<Struct>& reader() {return content; }
 };
 }
 
