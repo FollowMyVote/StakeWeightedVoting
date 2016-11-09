@@ -70,7 +70,7 @@ void processDecision(VoteDatabase& vdb, gch::account_id_type publisherId, ::Deci
     // Store decision
     auto& newDecision = db.create<Decision>([&db, decision, &contest, balance](Decision& d) {
         auto& index = db.get_index_type<gch::simple_index<gch::operation_history_object>>();
-        d.decisionId = gch::operation_history_id_type(index.size());
+        d.decisionId = gch::operation_history_id_type(index.size() + db.get_applied_operations().size() - 1);
         d.voter = balance.id;
         d.contestId = contest.contestId;
         for (auto opinion : decision.getOpinions())
@@ -78,6 +78,8 @@ void processDecision(VoteDatabase& vdb, gch::account_id_type publisherId, ::Deci
         for (auto writeIn : decision.getWriteIns().getEntries())
             d.writeIns.emplace_back(std::make_pair(writeIn.getKey(), writeIn.getValue()));
     });
+    KJ_LOG(DBG, "Creating new Decision object", fc::json::to_string(newDecision),
+           fc::json::to_string(db.get_applied_operations().size()));
 
     // Register decision with coin volume history mechanism
     {
@@ -104,7 +106,7 @@ void processContest(VoteDatabase& vdb, ::Datagram::ContestKey::Creator::Reader k
                     fc::sha256 contestDigest, ::Contest::Reader contest) {
     auto& db = vdb.db();
     auto& index = db.get_index_type<gch::simple_index<gch::operation_history_object>>();
-    auto contestId = gch::operation_history_id_type(index.size());
+    auto contestId = gch::operation_history_id_type(index.size() + db.get_applied_operations().size() - 1);
 
     auto blacklist = vdb.configuration().reader().getContestBlacklist();
     for (int i = 0; i < blacklist.size(); ++i)
@@ -138,7 +140,7 @@ void processContest(VoteDatabase& vdb, ::Datagram::ContestKey::Creator::Reader k
                                fc::time_point(db.head_block_time()));
         c.endTime = fc::time_point(fc::milliseconds(contest.getEndTime()));
     });
-    KJ_LOG(DBG, "Created new contest", contestObject.contestId.instance.value);
+    KJ_LOG(DBG, "Created a new contest", contestObject.contestId.instance.value, fc::json::to_string(db.get_applied_operations()));
 }
 
 inline fc::sha256 digest(capnp::Data::Reader r) {
