@@ -366,7 +366,13 @@ kj::Promise<void> BWB::BlockchainWalletApiImpl::getContestById(GetContestByIdCon
                 // I don't care whether I find it or not, I'm just using find_if so it stops iterating if we find it
                 std::find_if(balances.begin(), balances.end(), [result, coinId](const QJsonValue& balance) mutable {
                     if (balance.toObject()["type"].toString() == coinId) {
-                        result.setWeight(balance.toObject()["amount"].toString().toULongLong());
+                        auto weight = balance.toObject()["amount"];
+                        // For some reason, the weight does not consistently come as a string or as a number, so handle
+                        // both cases...
+                        if (weight.isDouble())
+                            result.setWeight(weight.toInt());
+                        else
+                            result.setWeight(weight.toString().toULongLong());
                         return true;
                     }
                     return false;
