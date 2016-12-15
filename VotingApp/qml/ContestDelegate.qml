@@ -2,6 +2,7 @@ import QtQuick 2.7
 import QtQuick.Controls 2.0
 import QtQuick.Controls.Material 2.0
 import QtQuick.Layouts 1.1
+import QtQuick.Window 2.2
 import QtQml 2.2
 import QtGraphicalEffects 1.0
 import Qt.labs.settings 1.0
@@ -12,7 +13,11 @@ import QuickPromise 1.0
 Rectangle {
     id: delegate
     height: contestMainColumn.height + 8
+    // Max width: 4.5 in (25.4 mm per in)
+    width: Math.min(parent.width, Screen.pixelDensity * 25.4 * 4.5)
+    anchors.horizontalCenter: parent.horizontalCenter
 
+    property bool shouldElide: false
     property var contest
     property VotingSystem votingSystem
     property int status: {
@@ -73,10 +78,42 @@ Rectangle {
             font.pixelSize: 20
             wrapMode: Label.WrapAtWordBoundaryOrAnywhere
         }
-        Label {
-            UI.ExtraAnchors.horizontalFill: contestMainColumn
-            text: contest.description
-            wrapMode: Label.WrapAtWordBoundaryOrAnywhere
+        Column {
+            width: parent.width
+
+            Label {
+                id: descriptionText
+                UI.ExtraAnchors.horizontalFill: parent
+                text: contest.description
+                wrapMode: Label.WrapAtWordBoundaryOrAnywhere
+                height: elided? font.pixelSize * 4.5 : implicitHeight
+                clip: elided
+
+                property bool elided: shouldElide && contentHeight > font.pixelSize * 11
+
+                Rectangle {
+                    visible: parent.elided
+                    UI.ExtraAnchors.bottomDock: parent
+                    height: parent.font.pixelSize * 1.5
+                    gradient: Gradient {
+                        GradientStop {
+                            color: "transparent"
+                            position: 0
+                        }
+                        GradientStop {
+                            color: delegate.color
+                            position: 1
+                        }
+                    }
+                }
+            }
+            UI.SvgIconLoader {
+                visible: descriptionText.elided
+                icon: "qrc:/icons/navigation/more_horiz.svg"
+                color: descriptionText.color
+                size: descriptionText.font.pixelSize
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
         }
         UI.GridContainer {
             UI.ExtraAnchors.horizontalFill: contestMainColumn

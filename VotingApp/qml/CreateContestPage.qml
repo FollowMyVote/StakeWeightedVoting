@@ -126,8 +126,12 @@ Page {
             }
             Button {
                 text: qsTr("Add Contestant")
-                onClicked: contestantModel.append({name: contestantNameField.text,
-                                                   description: contestantDescriptionField.text})
+                onClicked: {
+                    contestantModel.append({name: contestantNameField.text,
+                                            description: contestantDescriptionField.text})
+                    contestantNameField.text = ""
+                    contestantDescriptionField.text = ""
+                }
             }
         }
         RowLayout {
