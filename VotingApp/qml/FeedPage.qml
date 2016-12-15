@@ -61,8 +61,8 @@ Page {
                         transparentBorder: true
                     }
                 }
-                UI.ExtraAnchors.horizontalFill: parent
                 votingSystem: feedPage.votingSystem
+                shouldElide: true
                 contest: {
                     if (model && model.contest && model.contest.name)
                         return model.contest
