@@ -63,7 +63,6 @@ Page {
 
             ContestDelegate {
                 id: contestDelegate
-                width: parent.width
                 votingSystem: contestDetailPage.votingSystem
             }
             ChartView {
