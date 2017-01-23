@@ -293,6 +293,8 @@ kj::Promise<void> BWB::BlockchainWalletApiImpl::getContestById(GetContestByIdCon
 
         return blockPromise;
     }).then([context](QJsonValue block) mutable {
+        // Contests may have a start time of zero, which indicates that they start when published. If this is the case,
+        // set the start time to the time of publication.
         auto contest = context.getResults().getContest().getValue();
         auto timestamp = static_cast<uint64_t>(QDateTime::fromString(block.toObject()["timestamp"].toString(),
                                                Qt::ISODate).toMSecsSinceEpoch());
@@ -364,7 +366,13 @@ kj::Promise<void> BWB::BlockchainWalletApiImpl::getContestById(GetContestByIdCon
                 // I don't care whether I find it or not, I'm just using find_if so it stops iterating if we find it
                 std::find_if(balances.begin(), balances.end(), [result, coinId](const QJsonValue& balance) mutable {
                     if (balance.toObject()["type"].toString() == coinId) {
-                        result.setWeight(balance.toObject()["amount"].toString().toULongLong());
+                        auto weight = balance.toObject()["amount"];
+                        // For some reason, the weight does not consistently come as a string or as a number, so handle
+                        // both cases...
+                        if (weight.isDouble())
+                            result.setWeight(weight.toInt());
+                        else
+                            result.setWeight(weight.toString().toULongLong());
                         return true;
                     }
                     return false;

@@ -17,9 +17,11 @@
  */
 
 #include "Contest.hpp"
+#include "Converters.hpp"
 
 #include <QDebug>
 #include <QQmlEngine>
+#include <QTimeZone>
 
 namespace swv { namespace data {
 
@@ -34,6 +36,8 @@ void Contest::updateFields(::Contest::Reader r) {
     update_description(QString::fromStdString(r.getDescription()));
     update_name(QString::fromStdString(r.getName()));
     update_startTime(QDateTime::fromMSecsSinceEpoch(r.getStartTime()));
+    // Blockchain time is UTC; update timezone to match.
+    m_startTime.setTimeZone(QTimeZone::utc());
     updateContestants(r.getContestants());
     updateTags(r.getTags());
 }
@@ -51,6 +55,10 @@ QString Contest::getCandidateName(int candidateId, Decision* decision) {
     if (candidateId < m_contestants.size())
         return m_contestants[candidateId].toMap()["name"].toString();
     return decision->get_writeIns()[candidateId - m_contestants.size()].toMap()["name"].toString();
+}
+
+QString Contest::simpleId() const {
+    return QString::number(convertSerialStruct<::ContestId>(m_id)->reader().getOperationId());
 }
 
 void Contest::setPendingDecision(Decision* newDecision) {

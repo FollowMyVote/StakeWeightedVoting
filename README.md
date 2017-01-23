@@ -25,6 +25,7 @@ See [Architecture](Architecture.md) for more information on how the components i
 - Python 2 with PyYAML (to fetch icons)
 - [Graphene](https://github.com/followmyvote/graphene) (Optional)
  - If building with graphene, be sure to set the `GRAPHENE_PATH` environment variable to the path graphene is installed to
+ - Graphene only works with Boost 1.60 and *older* -- building against 1.61 or later will fail
 
 These video tutorials show how to build and test this project:
  - [Graphene blockchain testnet setup](https://youtu.be/7ETrFkZ9LM0)

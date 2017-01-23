@@ -30,6 +30,8 @@
 
 #include <fc/crypto/digest.hpp>
 
+#include <boost/filesystem/path.hpp>
+
 namespace swv {
 
 BackendPlugin::BackendPlugin()
@@ -43,7 +45,9 @@ std::string BackendPlugin::plugin_name() const {
 void BackendPlugin::plugin_initialize(const boost::program_options::variables_map& options) {
     serverPort = options["port"].as<uint16_t>();
     database = kj::heap<VoteDatabase>(*app().chain_database());
+    database->initialize(options["data-dir"].as<boost::filesystem::path>());
     database->registerIndexes();
+
     KJ_LOG(INFO, "Follow My Vote plugin initialized");
 }
 
@@ -80,10 +84,12 @@ void BackendPlugin::plugin_shutdown() {
 void BackendPlugin::plugin_set_program_options(boost::program_options::options_description& command_line_options,
                                                     boost::program_options::options_description& config_file_options) {
     namespace bpo = boost::program_options;
-    command_line_options.add_options()("port,p", bpo::value<uint16_t>()->default_value(17073),
-                                       "The port for the server to listen on");
-    config_file_options.add_options()("port,p", bpo::value<uint16_t>()->default_value(17073),
-                                      "The port for the server to listen on");
+    command_line_options.add_options()
+            ("port,p", bpo::value<uint16_t>()->default_value(17073),
+             "The port for the server to listen on");
+    config_file_options.add_options()
+            ("port,p", bpo::value<uint16_t>()->default_value(17073),
+             "The port for the server to listen on");
 }
 
 struct BackendPlugin::ClientConnection {
