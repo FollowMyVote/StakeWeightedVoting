@@ -1,4 +1,7 @@
 Follow My Vote: Stake-Weighted Voting
+git remote -v defs
+	upstream (the original repo forked from used to pull changes from original repo)
+
 ========
 
 This is the official repository for Follow My Vote's Stake-Weighted Voting application.
