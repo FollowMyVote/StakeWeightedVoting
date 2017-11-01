@@ -1,6 +1,10 @@
 Follow My Vote: Stake-Weighted Voting
 ========
 
+git remote -v defs
+	upstream (the original repo forked from used to pull changes from original repo)
+		remote = remote repo sources could be the original source(usually configured as upstream) or the forked source (origin)
+
 This is the official repository for Follow My Vote's Stake-Weighted Voting application.
 
 Linux and Mac are both fully supported. Windows support is pending.
