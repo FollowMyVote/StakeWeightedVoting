@@ -1,6 +1,8 @@
 Follow My Vote: Stake-Weighted Voting
 ========
 
+[![Help Contribute to Open Source](https://www.codetriage.com/followmyvote/stakeweightedvoting/badges/users.svg)](https://www.codetriage.com/followmyvote/stakeweightedvoting)
+
 This is the official repository for Follow My Vote's Stake-Weighted Voting application.
 
 Linux and Mac are both fully supported. Windows support is pending.
@@ -50,5 +52,5 @@ Also on Mac, if Graphene is linked against OpenSSL from Homebrew, linking Graphe
 You may use qbs to run the app:
 
 	qbs run -p VotingApp
-	
+
 It's recommended to run the VotingApp through qbs, as qbs will automatically configure the environment so that the app can find the chain adaptor library.
