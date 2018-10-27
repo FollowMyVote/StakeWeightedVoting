@@ -25,6 +25,8 @@
 
 #include <fc/io/json.hpp>
 
+const int FC_VARIANT_MAX_DEPTH = 100;
+
 namespace swv {
 
 void populateCoinVolumeHistory(CoinDetails::VolumeHistory::Builder builder,
@@ -134,7 +136,7 @@ inline const Contest* findFirstContest<ById, ById>(decltype (nullptr), const gch
 
 gch::account_id_type getAccountId(kj::StringPtr nameOrId, const gch::database& db) {
     if (std::isdigit(nameOrId[0]))
-        return fc::json::from_string(nameOrId).as<gch::account_id_type>();
+        return fc::json::from_string(nameOrId).as<gch::account_id_type>(FC_VARIANT_MAX_DEPTH);
     else {
         auto& index = db.get_index_type<gch::account_index>().indices().get<gch::by_name>();
         auto itr = index.find(nameOrId);
@@ -196,7 +198,7 @@ ContestGenerator::Client FilteredGenerator(capnp::List<Backend::Filter>::Reader 
         } else if (filter.getType() == Filter::CONTEST_VOTER) {
             KJ_REQUIRE(filter.getArguments().size() == 1, "Unexpected number of arguments for voter filter");
             try {
-                auto voter = fc::json::from_string(filter.getArguments()[0]).as<gch::account_id_type>();
+                auto voter = fc::json::from_string(filter.getArguments()[0]).as<gch::account_id_type>(FC_VARIANT_MAX_DEPTH);
                 filterFunctions.emplace_back([voter] (const Contest& contest,
                                              const gch::database& db) {
                     // First, look up the account_balance_object for this voter/coin

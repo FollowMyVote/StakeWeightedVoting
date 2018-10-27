@@ -18,7 +18,6 @@
 
 using ContestId = import "ids.capnp".ContestId;
 using DecisionId = import "ids.capnp".DecisionId;
-using Contestant = import "contest.capnp".UnsignedContest.Contestant;
 using Map = import "map.capnp".Map;
 
 struct Decision {

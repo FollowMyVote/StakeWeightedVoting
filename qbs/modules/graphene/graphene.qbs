@@ -24,7 +24,7 @@ Module {
         "graphene_chain",
         "graphene_utilities",
         "graphene_net",
-        "graphene_time",
+        "graphene_grouped_orders",
         "graphene_egenesis_full",
         "graphene_db",
         "graphene_debug_witness",

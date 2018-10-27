@@ -12,7 +12,7 @@ Project {
         Depends { name: "libqtqmltricks-qtsupermacros" }
         Depends { name: "libqtqmltricks-qtqmlmodels" }
 
-        qmlImportPaths: ["vendor/QuickPromise"]
+        property var qmlImportPaths: ["vendor/QuickPromise"]
 
         cpp.cxxLanguageVersion: "c++14"
         cpp.cxxStandardLibrary: qbs.hostOS.contains("osx")? "libc++" : "libstdc++"

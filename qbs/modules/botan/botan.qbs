@@ -21,6 +21,6 @@ Module {
 
     Probes.PkgConfigProbe {
         id: botanProbe
-        name: "botan-1.11"
+        name: "botan-2"
     }
 }
