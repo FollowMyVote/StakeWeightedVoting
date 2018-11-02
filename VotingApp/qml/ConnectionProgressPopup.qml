@@ -42,7 +42,7 @@ Popup {
         }
         Label {
             id: progressLabel
-            anchors.horizontalCenter: parent.horizontalCenter
+            Layout.alignment: Qt.AlignHCenter
         }
     }
 }

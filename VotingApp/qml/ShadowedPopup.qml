@@ -36,8 +36,7 @@ Popup {
         }
         Row {
             id: buttonRow
-            anchors.right: parent.right
-            anchors.bottom: parent.bottom
+            Layout.alignment: Qt.AlignRight | Qt.AlignBottom
             spacing: 10
 
             Button {
