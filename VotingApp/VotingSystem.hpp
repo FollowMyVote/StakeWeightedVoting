@@ -105,7 +105,7 @@ public:
      */
     Q_INVOKABLE QJSValue connectToBackend(QString hostname, quint16 port, QString myAccountName);
     /**
-      * @brief Initialize the voting system by fetching chain state and account information from the backand and wallet
+      * @brief Initialize the voting system by fetching chain state and account information from the backend and wallet
       * @return A promise which will resolve when initialization is complete
       */
     Q_INVOKABLE QJSValue syncWithBlockchain();
