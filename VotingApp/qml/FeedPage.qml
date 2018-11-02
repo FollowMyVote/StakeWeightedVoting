@@ -104,7 +104,7 @@ Page {
 
         Connections {
             target: votingSystem
-            enabled: !!votingSystem && !!generator && !!votingSystem.currentAccount
+            enabled: !!votingSystem && !!contestListView.generator && !!votingSystem.currentAccount
             onCurrentAccountChanged: contestListView.repopulateContests()
         }
 
