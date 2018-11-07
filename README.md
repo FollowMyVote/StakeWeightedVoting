@@ -8,24 +8,23 @@ Linux and Mac are both fully supported. Windows support is pending.
 More developers are always welcome! [Get started](https://followmyvote.com/code-contributors/)
 
 ## What's in the box
-In this repo are 4 components:
+In this repo are 3 components:
 
 - The `shared` folder contains code shared between the other components
-- The `StubChainAdaptor` folder contains a shared library implementing a dummy blockchain, backend, and wallet
-- The `StubBackend` folder contains a dummy server daemon which the application can connect to, though by default it is unused
+- The `GrapheneBackend` folder contains the blockchain daemon
 - The `VotingApp` folder contains the voting application itself
 
 See [Architecture](Architecture.md) for more information on how the components interact.
 
 ## Build Instructions
 ### Dependencies:
-- [Cap'n Proto](https://capnproto.org) 0.5.3+
-- [Qt](https://qt.io) 5.7+ including QBS
-- [Botan](https://botan.randombit.net) 1.11.30+
+- [Cap'n Proto](https://capnproto.org) (Tested against 0.7.0)
+- [Qt](https://qt.io) (Tested against 5.11.2) including QBS
+- [Botan](https://botan.randombit.net) (Tested against 2.8.0)
 - Python 2 with PyYAML (to fetch icons)
-- [Graphene](https://github.com/followmyvote/graphene) (Optional)
- - If building with graphene, be sure to set the `GRAPHENE_PATH` environment variable to the path graphene is installed to
- - Graphene only works with Boost 1.60 and *older* -- building against 1.61 or later will fail
+- [Graphene](https://github.com/followmyvote/graphene)
+  - Optional, but required in order to build GrapheneBackend component
+  - To enable, set the `GRAPHENE_PATH` environment variable to the path graphene is installed to
 
 These video tutorials show how to build and test this project:
  - [Graphene blockchain testnet setup](https://youtu.be/7ETrFkZ9LM0)
