@@ -39,7 +39,7 @@ BackendPlugin::BackendPlugin()
 BackendPlugin::~BackendPlugin() noexcept {}
 
 std::string BackendPlugin::plugin_name() const {
-    return "Follow My Vote Backend";
+    return "fmv_backend";
 }
 
 void BackendPlugin::plugin_initialize(const boost::program_options::variables_map& options) {
@@ -48,7 +48,7 @@ void BackendPlugin::plugin_initialize(const boost::program_options::variables_ma
     database->initialize(options["data-dir"].as<boost::filesystem::path>());
     database->registerIndexes();
 
-    KJ_LOG(INFO, "Follow My Vote plugin initialized");
+    KJ_LOG(INFO, "Follow My Vote plugin initialized on port", serverPort);
 }
 
 void BackendPlugin::plugin_startup() {

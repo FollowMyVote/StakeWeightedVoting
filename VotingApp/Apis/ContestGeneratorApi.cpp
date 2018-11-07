@@ -63,7 +63,7 @@ QJSValue ContestGeneratorApi::getContests(int count) {
 
     return converter.convert(kj::mv(contestsPromise),
                              [this](capnp::Response<ContestGenerator::GetValuesResults> r) -> QVariant {
-        KJ_LOG(DBG, "Got contests", r.getValues().size());
+        KJ_LOG(DBG, "Got contests", r.toString());
         QVariantList contests;
         for (auto contestWrapper : r.getValues()) {
             auto contest = contestWrapper.getValue();

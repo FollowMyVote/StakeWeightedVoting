@@ -91,8 +91,8 @@ int main(int argc, char** argv) {
              "Directory containing databases, configuration file, etc.")
             ;
 
-      auto backend_plugin = node->register_plugin<swv::BackendPlugin>();
-      auto history_plugin = node->register_plugin<account_history::account_history_plugin>();
+      auto backend_plugin = node->register_plugin<swv::BackendPlugin>(true);
+      auto history_plugin = node->register_plugin<account_history::account_history_plugin>(true);
 
       bpo::variables_map options;
 
@@ -169,7 +169,7 @@ int main(int argc, char** argv) {
 
       bpo::notify(options);
       node->initialize(data_dir, options);
-      node->initialize_plugins( options );
+      node->initialize_plugins(options);
 
       node->startup();
       node->startup_plugins();

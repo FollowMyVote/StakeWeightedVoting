@@ -69,7 +69,7 @@ void processDecision(VoteDatabase& vdb, gch::account_id_type publisherId, ::Deci
 
     // Store decision
     auto& newDecision = db.create<Decision>([&db, decision, &contest, balance](Decision& d) {
-        auto& index = db.get_index_type<gch::simple_index<gch::operation_history_object>>();
+        auto& index = db.get_index_type<gch::operation_history_index>().indices();
         d.decisionId = gch::operation_history_id_type(index.size() + db.get_applied_operations().size() - 1);
         d.voter = balance.id;
         d.contestId = contest.contestId;
@@ -105,7 +105,7 @@ inline T unpack(capnp::Data::Reader r) {
 void processContest(VoteDatabase& vdb, ::Datagram::ContestKey::Creator::Reader key,
                     fc::sha256 contestDigest, ::Contest::Reader contest) {
     auto& db = vdb.db();
-    auto& index = db.get_index_type<gch::simple_index<gch::operation_history_object>>();
+    auto& index = db.get_index_type<gch::operation_history_index>().indices();
     auto contestId = gch::operation_history_id_type(index.size() + db.get_applied_operations().size() - 1);
 
     auto blacklist = vdb.configuration().reader().getContestBlacklist();
@@ -140,7 +140,7 @@ void processContest(VoteDatabase& vdb, ::Datagram::ContestKey::Creator::Reader k
                                fc::time_point(db.head_block_time()));
         c.endTime = fc::time_point(fc::milliseconds(contest.getEndTime()));
     });
-    KJ_LOG(DBG, "Created a new contest", contestObject.contestId.instance.value, fc::json::to_string(db.get_applied_operations()));
+    KJ_LOG(DBG, "Created a new contest", fc::json::to_string(contestObject.contestId), fc::json::to_string(db.get_applied_operations()));
 }
 
 inline fc::sha256 digest(capnp::Data::Reader r) {
